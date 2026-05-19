@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>扫码测试 - 寻宝游戏</title>
+
+    <style>
+        /* ====== 基础重置 ====== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: #f0f4f8;
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        /* ====== 顶部导航栏 ====== */
+        .header {
+            background: #1565C0;
+            color: white;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 15px;
+            cursor: pointer;
+            /* 手指点击更容易 */
+            min-height: 44px;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* 顶部标注：这是测试页面 */
+        .dev-badge {
+            margin-left: auto;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 10px;
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+
+        /* ====== 主内容区 ====== */
+        .main {
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* ====== 状态文字：告诉用户现在是什么状态 ====== */
+        .status-text {
+            font-size: 17px;
+            color: #444;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* ====== 扫码器容器：html5-qrcode 会在这里渲染摄像头画面 ====== */
+        #reader {
+            width: 100%;
+            max-width: 420px;
+            /* 让扫码框圆角，好看一些 */
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        /* html5-qrcode 库自带的内部样式有时会带边框，这里覆盖掉 */
+        #reader video {
+            border-radius: 12px;
+        }
+
+        /* ====== 错误提示框 ====== */
+        .error-box {
+            background: #fff8e1;
+            border: 2px solid #ffb300;
+            border-radius: 14px;
+            padding: 16px 20px;
+            width: 100%;
+            max-width: 420px;
+            display: none; /* 默认隐藏，有错误时才显示 */
+            text-align: center;
+        }
+
+        .error-icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+        }
+
+        .error-text {
+            font-size: 16px;
+            color: #555;
+            line-height: 1.6;
+            white-space: pre-line; /* 让 \n 换行生效 */
+        }
+
+        /* ====== 扫码结果框：扫到后显示内容 ====== */
+        .result-box {
+            background: white;
+            border: 2px solid #43a047;
+            border-radius: 14px;
+            padding: 16px 20px;
+            width: 100%;
+            max-width: 420px;
+            display: none; /* 默认隐藏，扫到后显示 */
+        }
+
+        .result-label {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 6px;
+        }
+
+        .result-content {
+            font-size: 16px;
+            color: #222;
+            /* 长链接自动换行，不撑破容器 */
+            word-break: break-all;
+            line-height: 1.5;
+        }
+
+        /* ====== 按钮样式 ====== */
+        .btn-primary {
+            background: #1565C0;
+            color: white;
+            border: none;
+            border-radius: 14px;
+            padding: 0 32px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            max-width: 300px;
+            height: 60px; /* 大手指友好尺寸 */
+            transition: transform 0.1s ease;
+        }
+
+        .btn-primary:active {
+            transform: scale(0.97);
+        }
+
+        /* "再扫一个"按钮用绿色区分 */
+        .btn-rescan {
+            background: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== 顶部导航 ====== -->
+    <div class="header">
+        <button class="btn-back" onclick="goBack()">← 返回</button>
+        <span class="header-title">扫码功能测试</span>
+        <span class="dev-badge">开发测试</span>
+    </div>
+
+    <!-- ====== 主内容 ====== -->
+    <div class="main">
+
+        <!-- 状态提示：每个阶段会更新这里的文字 -->
+        <p class="status-text" id="statusText">点击下方按钮，调起摄像头开始扫码</p>
+
+        <!-- 扫码器渲染区域：html5-qrcode 会把摄像头画面放进这个 div -->
+        <div id="reader"></div>
+
+        <!-- 错误提示框：权限被拒、设备不支持等情况 -->
+        <div class="error-box" id="errorBox">
+            <div class="error-icon">⚠️</div>
+            <p class="error-text" id="errorText"></p>
+        </div>
+
+        <!-- 扫码结果框：成功扫到后显示 -->
+        <div class="result-box" id="resultBox">
+            <p class="result-label">✅ 扫到的内容：</p>
+            <p class="result-content" id="resultContent"></p>
+        </div>
+
+        <!-- 开始扫码按钮 -->
+        <button class="btn-primary" id="btnStart" onclick="startScan()">
+            📷 开始扫码
+        </button>
+
+        <!-- 再扫一个按钮（默认隐藏，扫成功后显示） -->
+        <button class="btn-primary btn-rescan" id="btnRescan" onclick="rescan()" style="display:none;">
+            🔄 再扫一个
+        </button>
+
+    </div>
+
+    <!-- ====== 引入 html5-qrcode 库（CDN，不需要安装任何东西） ====== -->
+    <!-- 这个库帮我们处理调用摄像头、识别二维码的所有底层工作 -->
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <script>
+        // ====== 全局变量 ======
+        // 存储扫码器实例，方便在不同函数里操作同一个扫码器
+        var qrScanner = null;
+        // 标记当前是否正在扫码（用来决定返回时是否需要先停止）
+        var isScanning = false;
+
+        // ====== 返回首页 ======
+        // 返回前要先停止摄像头，否则 iPad 上摄像头指示灯会一直亮
+        function goBack() {
+            if (isScanning && qrScanner) {
+                // 先停止扫码，回调里再跳转
+                qrScanner.stop()
+                    .then(function () {
+                        window.location.href = './index.html';
+                    })
+                    .catch(function () {
+                        // 即使停止失败，也要跳转走
+                        window.location.href = './index.html';
+                    });
+            } else {
+                window.location.href = './index.html';
+            }
+        }
+
+        // ====== 更新状态文字 ======
+        function setStatus(text) {
+            document.getElementById('statusText').textContent = text;
+        }
+
+        // ====== 显示错误框 ======
+        function showError(message) {
+            var box = document.getElementById('errorBox');
+            box.style.display = 'block';
+            document.getElementById('errorText').textContent = message;
+        }
+
+        // ====== 隐藏错误框 ======
+        function hideError() {
+            document.getElementById('errorBox').style.display = 'none';
+        }
+
+        // ====== 开始扫码 ======
+        function startScan() {
+
+            // 第一关：检查浏览器是否支持摄像头 API
+            // 旧版浏览器或 http（非 https）环境下这个 API 不存在
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showError(
+                    '你的浏览器不支持摄像头功能 😢\n\n' +
+                    '请确认：\n' +
+                    '1. 使用 Safari 或 Chrome 浏览器\n' +
+                    '2. 网址是 https:// 开头（不是 http://）'
+                );
+                return;
+            }
+
+            // 重置页面状态
+            hideError();
+            document.getElementById('resultBox').style.display = 'none';
+            document.getElementById('btnStart').style.display = 'none';
+            document.getElementById('btnRescan').style.display = 'none';
+            // 清空上次遗留的扫码器 DOM（防止重复叠加）
+            document.getElementById('reader').innerHTML = '';
+
+            setStatus('正在启动摄像头，请稍候...');
+
+            // 创建扫码器，传入要渲染到的 div 的 id
+            qrScanner = new Html5Qrcode('reader');
+
+            // 扫码器配置
+            var config = {
+                fps: 10,           // 每秒扫描 10 次
+                qrbox: {           // 识别框尺寸（框内的二维码才会被识别）
+                    width: 250,
+                    height: 250
+                }
+            };
+
+            // 启动扫码
+            // { facingMode: 'environment' } = 使用后置摄像头（iPad 上就是拍照那个）
+            qrScanner.start(
+                { facingMode: 'environment' },
+                config,
+                onScanSuccess,   // 成功识别到二维码时调用
+                function () { }  // 每次"没扫到"都会调用，属于正常现象，忽略即可
+            ).then(function () {
+                // 摄像头成功启动
+                isScanning = true;
+                setStatus('📷 将二维码放入框内...');
+            }).catch(function (err) {
+                // 摄像头启动失败
+                isScanning = false;
+                document.getElementById('btnStart').style.display = 'block';
+                setStatus('启动失败，请重试');
+
+                // 根据错误类型给出不同提示
+                var errStr = err.toString();
+
+                if (errStr.includes('NotAllowedError') || errStr.includes('Permission')) {
+                    // 用户拒绝了摄像头权限
+                    showError(
+                        '请允许相机权限才能扫码哦 📷\n\n' +
+                        '在 iPad 上的解决方法：\n' +
+                        '设置 → Safari → 相机 → 允许\n\n' +
+                        '然后重新打开这个页面'
+                    );
+                } else if (errStr.includes('NotFoundError')) {
+                    // 设备没有摄像头（比如在没摄像头的电脑上）
+                    showError('没有找到摄像头 😢\n请在有摄像头的设备上使用');
+                } else if (errStr.includes('NotReadableError')) {
+                    // 摄像头被其他 App 占用
+                    showError('摄像头被其他应用占用了\n请关闭其他正在使用摄像头的 App 后重试');
+                } else {
+                    // 其他未知错误，直接显示原始信息，方便调试
+                    showError('摄像头启动失败 😢\n错误信息：' + errStr);
+                }
+            });
+        }
+
+        // ====== 扫码成功的处理 ======
+        // decodedText = 二维码里的文字内容（可能是网址、也可能是其他文字）
+        function onScanSuccess(decodedText) {
+            // 停止摄像头（释放资源，iPad 上摄像头指示灯会熄灭）
+            qrScanner.stop().then(function () {
+                isScanning = false;
+            });
+
+            // 显示结果
+            document.getElementById('resultContent').textContent = decodedText;
+            document.getElementById('resultBox').style.display = 'block';
+
+            // 显示"再扫一个"按钮
+            document.getElementById('btnRescan').style.display = 'block';
+
+            setStatus('✅ 扫码成功！');
+        }
+
+        // ====== 再扫一个：重置 UI，等用户再次点击开始 ======
+        function rescan() {
+            document.getElementById('resultBox').style.display = 'none';
+            document.getElementById('btnRescan').style.display = 'none';
+            document.getElementById('btnStart').style.display = 'block';
+            setStatus('点击下方按钮，调起摄像头开始扫码');
+        }
+
+        // ====== 页面隐藏时自动停止摄像头 ======
+        // 比如：用户切换到其他 App、锁屏，都会触发这个事件
+        // 这样做是为了释放摄像头资源，避免 iPad 上摄像头一直被占用
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden && isScanning && qrScanner) {
+                qrScanner.stop().then(function () {
+                    isScanning = false;
+                    document.getElementById('btnStart').style.display = 'block';
+                    document.getElementById('reader').innerHTML = '';
+                    setStatus('摄像头已暂停，点击按钮重新开始');
+                });
+            }
+        });
+    </script>
+
+</body>
+</html>
