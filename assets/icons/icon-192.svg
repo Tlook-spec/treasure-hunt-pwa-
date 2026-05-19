@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <!-- 蓝色渐变背景 -->
+    <linearGradient id="bgGrad192" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D47A1"/>
+      <stop offset="100%" stop-color="#42A5F5"/>
+    </linearGradient>
+    <!-- 金色渐变（宝箱） -->
+    <linearGradient id="goldGrad192" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFD600"/>
+      <stop offset="100%" stop-color="#FF8F00"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 背景：蓝色圆角正方形 -->
+  <rect width="192" height="192" rx="36" fill="url(#bgGrad192)"/>
+
+  <!-- 宝箱：下半部分（箱身） -->
+  <rect x="44" y="98" width="104" height="58" rx="10" fill="url(#goldGrad192)"/>
+
+  <!-- 宝箱：上半部分（箱盖，用圆弧形状） -->
+  <path d="M 44 98 Q 44 60 96 60 Q 148 60 148 98 Z" fill="#FFD600"/>
+  <!-- 箱盖上的深色纹理线 -->
+  <path d="M 52 90 Q 52 68 96 68 Q 140 68 140 90" fill="none" stroke="#FF8F00" stroke-width="3" opacity="0.6"/>
+
+  <!-- 宝箱：中间分割线（金属铰链） -->
+  <rect x="44" y="94" width="104" height="8" rx="2" fill="#E65100"/>
+
+  <!-- 宝箱：锁扣 -->
+  <rect x="80" y="88" width="32" height="26" rx="6" fill="#BF360C"/>
+  <!-- 锁孔 -->
+  <circle cx="96" cy="104" r="8" fill="#FF8F00"/>
+  <circle cx="96" cy="104" r="4" fill="#E65100"/>
+
+  <!-- 装饰：从宝箱里溢出的星星 -->
+  <circle cx="58"  cy="78"  r="4" fill="#FFF9C4" opacity="0.9"/>
+  <circle cx="134" cy="74"  r="3" fill="#FFF9C4" opacity="0.8"/>
+  <circle cx="118" cy="62"  r="5" fill="#FFD600"  opacity="0.7"/>
+  <circle cx="74"  cy="64"  r="3" fill="#FFF9C4"  opacity="0.75"/>
+
+  <!-- 底部文字 -->
+  <text
+    x="96" y="174"
+    font-size="18"
+    font-weight="700"
+    text-anchor="middle"
+    fill="rgba(255,255,255,0.92)"
+    font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif"
+  >寻宝游戏</text>
+</svg>

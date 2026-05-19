@@ -1,0 +1,29 @@
+# macOS 系统文件（在 Mac 上开发时自动生成，不需要上传）
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows 系统文件
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Node.js 依赖包（如果以后用到 npm，这个目录可能很大，不要上传）
+node_modules/
+
+# 编辑器配置（VS Code 的本地配置，不同人可能不一样，不上传）
+.vscode/settings.json
+.vscode/launch.json
+
+# Claude Code 的工作目录（本地专用，不上传）
+.claude/
+
+# 日志文件
+*.log
+npm-debug.log*
+
+# 临时文件
+*.tmp
+*.bak

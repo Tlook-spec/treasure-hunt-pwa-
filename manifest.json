@@ -1,0 +1,38 @@
+{
+    "name": "寻宝游戏",
+    "short_name": "寻宝",
+    "description": "iPad 上离线运行的儿童户外解谜游戏——家长出题贴二维码，孩子按顺序找点、扫码、答题",
+    "lang": "zh-CN",
+
+    "start_url": "./",
+    "scope": "./",
+
+    "display": "standalone",
+    "orientation": "portrait",
+
+    "theme_color": "#1565C0",
+    "background_color": "#1565C0",
+
+    "icons": [
+        {
+            "src": "assets/icons/icon-192.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "assets/icons/icon-512.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any"
+        },
+        {
+            "src": "assets/icons/icon-maskable-192.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "maskable"
+        }
+    ],
+
+    "categories": ["games", "education"]
+}

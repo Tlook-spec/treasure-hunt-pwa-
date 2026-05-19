@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <!--
+    Maskable 图标：图标可能被系统裁成圆形或其他形状
+    规则：重要内容必须在中心 80% 的"安全区"内（即四周各留 10% 空白）
+    安全区范围：x: 9.6~182.4，y: 9.6~182.4（约等于 10px 内边距）
+  -->
+  <defs>
+    <linearGradient id="bgMask" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D47A1"/>
+      <stop offset="100%" stop-color="#42A5F5"/>
+    </linearGradient>
+    <linearGradient id="goldMask" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFD600"/>
+      <stop offset="100%" stop-color="#FF8F00"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 背景填满整个方块（maskable 不需要圆角，系统会裁切） -->
+  <rect width="192" height="192" fill="url(#bgMask)"/>
+
+  <!-- 以下内容缩小并居中，确保在安全区内 -->
+  <!-- 宝箱：箱身 -->
+  <rect x="52" y="106" width="88" height="48" rx="8" fill="url(#goldMask)"/>
+
+  <!-- 宝箱：箱盖 -->
+  <path d="M 52 106 Q 52 74 96 74 Q 140 74 140 106 Z" fill="#FFD600"/>
+
+  <!-- 中间铰链 -->
+  <rect x="52" y="102" width="88" height="7" rx="2" fill="#E65100"/>
+
+  <!-- 锁扣 -->
+  <rect x="84" y="96" width="24" height="20" rx="5" fill="#BF360C"/>
+  <circle cx="96" cy="107" r="7" fill="#FF8F00"/>
+  <circle cx="96" cy="107" r="3" fill="#E65100"/>
+
+  <!-- 星星 -->
+  <circle cx="62"  cy="88"  r="3.5" fill="#FFF9C4" opacity="0.9"/>
+  <circle cx="130" cy="84"  r="3"   fill="#FFF9C4" opacity="0.8"/>
+  <circle cx="116" cy="70"  r="4"   fill="#FFD600"  opacity="0.75"/>
+
+  <!-- 文字（放在安全区内） -->
+  <text
+    x="96" y="168"
+    font-size="16"
+    font-weight="700"
+    text-anchor="middle"
+    fill="rgba(255,255,255,0.9)"
+    font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif"
+  >寻宝游戏</text>
+</svg>
