@@ -11,7 +11,7 @@
 // ====== 版本号 ======
 // 每次修改代码后，改一下这个版本号（比如 v2、v3）
 // 版本号变了，浏览器就知道要重新下载缓存
-const CACHE_NAME = 'treasure-hunt-v1';
+const CACHE_NAME = 'treasure-hunt-v2';
 
 // ====== 需要缓存的文件列表 ======
 // 这些文件在用户第一次打开 App 时会被下载并保存到本地
@@ -19,6 +19,7 @@ const CACHE_NAME = 'treasure-hunt-v1';
 const FILES_TO_CACHE = [
     './',
     './index.html',
+    './test-scan.html',
     './manifest.json',
     './assets/icons/icon-192.svg',
     './assets/icons/icon-512.svg',
