@@ -61,18 +61,20 @@ python -m http.server 8080
 
 ## 进行中任务
 
-### 🔄 T07 - 扫码功能试水
-**当前状态**：test-scan.html 已创建，等待本地 + iPad 验证
+### ✅ T07 - 扫码功能试水
+**完成时间**：2026-05-19
 
 **新增文件**：
 - `test-scan.html` — 独立扫码测试页，使用 html5-qrcode CDN
 - `index.html` 底部增加"🔧 测试扫码"临时入口
 
-**待验证**：
-- [ ] Windows 本地摄像头测试
-- [ ] iPad Safari 权限请求正常
-- [ ] iPad 扫码识别成功
-- [ ] 扫码后"再扫一个"流程正常
+**验证结果**：
+- [x] Windows 本地摄像头测试通过
+- [x] iPad Safari 权限请求正常
+- [x] iPad 扫码识别成功
+- [x] 扫码后"再扫一个"流程正常
+
+**结论**：html5-qrcode 在 iPad Safari PWA 模式下稳定可用，可用于正式功能开发。
 
 ---
 
@@ -100,7 +102,7 @@ git push
 
 - [x] T05 - 部署到 GitHub Pages
 - [x] T06 - 在 iPad 上"添加到主屏幕"试用（离线问题已解决）
-- [ ] T07 - 扫码功能试水（test-scan.html 已创建，待 iPad 验证）
+- [x] T07 - 扫码功能试水（iPad 验证通过）
 - [ ] T08-T12 - 阶段 1：产品设计
 
 ---
