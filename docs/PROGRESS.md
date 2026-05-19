@@ -7,7 +7,10 @@
 ## 当前状态
 
 **阶段**：阶段 0 - 环境搭建与基础试水
-**最后更新**：2026-05-18
+**最后更新**：2026-05-19
+
+**线上地址**：https://Tlook-spec.github.io/treasure-hunt-pwa-/
+**GitHub 仓库**：https://github.com/Tlook-spec/treasure-hunt-pwa-
 
 ---
 
@@ -52,18 +55,29 @@ python -m http.server 8080
 
 ## 进行中任务
 
-### 🔄 T05 - 部署到 GitHub Pages
-**下一步操作**：
-1. 在 GitHub 创建仓库（建议命名 `treasure-hunt`）
-2. 把本地文件推送到 GitHub
-3. 在仓库设置里开启 GitHub Pages（选 main 分支 / root 目录）
-4. 访问 `https://用户名.github.io/treasure-hunt/` 验证
+### ✅ T05 - 部署到 GitHub Pages
+**完成时间**：2026-05-19
+
+**完成内容**：
+- 创建 `.gitignore`（忽略 .DS_Store、node_modules、.claude/ 等）
+- 初始化本地 git 仓库，分支名 `main`
+- 创建 GitHub 仓库：`Tlook-spec/treasure-hunt-pwa-`
+- 推送代码到 GitHub，开启 GitHub Pages
+
+**线上地址**：https://Tlook-spec.github.io/treasure-hunt-pwa-/
+
+**以后更新部署的命令**（改完代码后在终端运行）：
+```
+git add .
+git commit -m "描述这次改了什么"
+git push
+```
 
 ---
 
 ## 待完成任务
 
-- [ ] T05 - 部署到 GitHub Pages
+- [x] T05 - 部署到 GitHub Pages
 - [ ] T06 - 在 iPad 上"添加到主屏幕"试用
 - [ ] T07 - 扫码功能试水（含 Eruda 调试工具）
 - [ ] T08-T12 - 阶段 1：产品设计
