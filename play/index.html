@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- 告诉浏览器这是移动端页面，禁止自动缩放，让布局按我们设计的来显示 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <!-- 主题色：浏览器工具栏会变成这个颜色 -->
+    <meta name="theme-color" content="#1565C0">
+
+    <!-- 链接 PWA 配置文件 -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- iOS Safari 专属配置（iOS 对 PWA 支持不完整，需要单独写这些） -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Treasure Hunt">
+    <!-- iOS 主屏幕图标（后面会换成正式图标） -->
+    <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
+
+    <title>Treasure Hunt</title>
+
+    <style>
+        /* ====== 全局重置：清除浏览器默认的边距和内边距 ====== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box; /* 让宽高计算包含边框和内边距 */
+        }
+
+        /* ====== 整个页面的样式 ====== */
+        body {
+            /* 蓝色渐变背景：从深蓝（左上）渐变到亮蓝（右下） */
+            background: linear-gradient(150deg, #0D47A1 0%, #1565C0 30%, #1976D2 60%, #42A5F5 100%);
+
+            /* 让页面至少占满整个屏幕高度 */
+            min-height: 100vh;
+            min-height: 100dvh; /* dvh 是新单位，在手机上能正确处理地址栏 */
+
+            /* Flexbox 布局：让内容在页面中央（纵向居中、横向居中） */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            /* 中文优先的字体顺序 */
+            font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+
+            /* 防止文字被用户选中（游戏界面不需要选文字） */
+            user-select: none;
+            -webkit-user-select: none;
+
+            /* 防止 iOS Safari 双击放大 */
+            touch-action: manipulation;
+        }
+
+        /* ====== 主容器：把内容限制在合理宽度内 ====== */
+        .container {
+            width: 100%;
+            max-width: 400px; /* 最宽 400px，在 iPad 竖屏上居中显示 */
+            padding: 48px 32px;
+
+            /* Flexbox：让内部元素纵向排列、横向居中 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+
+            /* gap 是每个子元素之间的间距 */
+            gap: 20px;
+        }
+
+        /* ====== 游戏图标：用大号 emoji 临时代替正式图标 ====== */
+        .game-icon {
+            font-size: 96px;
+            line-height: 1;
+            /* 轻微投影让图标有立体感 */
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+            /* 上下浮动动画，让图标"活"起来 */
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* 浮动动画：每 3 秒上下移动 10px */
+        @keyframes float {
+            0%   { transform: translateY(0px); }
+            50%  { transform: translateY(-12px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* ====== 主标题 ====== */
+        .title {
+            font-size: 42px;
+            font-weight: 900;
+            color: #FFFFFF;
+            text-align: center;
+            letter-spacing: 6px; /* 字间距大一点，更有气势 */
+            /* 文字阴影，增加可读性 */
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        /* ====== 副标题 ====== */
+        .subtitle {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.88);
+            text-align: center;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        /* ====== "开始游戏"按钮 ====== */
+        .btn-start {
+            /* 尺寸：宽 220px、高 64px，手指容易点击 */
+            width: 220px;
+            height: 64px;
+
+            /* 黄橙渐变按钮，和蓝色背景形成强对比，非常醒目 */
+            background: linear-gradient(135deg, #FFD600 0%, #FF8F00 100%);
+
+            border: none;          /* 去掉默认边框 */
+            border-radius: 32px;   /* 完全圆角，更友好 */
+            cursor: pointer;       /* 鼠标悬停时显示手形图标 */
+
+            /* 按钮底部阴影，增加立体感 */
+            box-shadow:
+                0 6px 20px rgba(255, 143, 0, 0.55),
+                0 2px 4px rgba(0, 0, 0, 0.25);
+
+            font-size: 22px;
+            font-weight: 800;
+            color: #1A237E; /* 深蓝色文字，和黄色背景对比清晰 */
+
+            /* 让图标和文字在按钮里水平、垂直都居中 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+
+            margin-top: 12px;
+
+            /* 按钮按下/松开时的动画时长 */
+            transition: transform 0.12s ease, box-shadow 0.12s ease;
+        }
+
+        /* 手指按下按钮时：稍微缩小 + 阴影变淡，模拟"按下去"的感觉 */
+        .btn-start:active {
+            transform: scale(0.95);
+            box-shadow:
+                0 3px 10px rgba(255, 143, 0, 0.4),
+                0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        /* ====== 底部版本号（小字，方便调试时确认版本） ====== */
+        .version-info {
+            position: fixed; /* 固定在屏幕底部，不随内容滚动 */
+            bottom: 16px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* ====== 横屏适配 ====== */
+        /* 横屏且屏幕高度很小时（手机横屏），缩小各元素 */
+        @media (orientation: landscape) and (max-height: 480px) {
+            .game-icon {
+                font-size: 56px;
+                /* 横屏时停止动画，避免感觉怪 */
+                animation: none;
+            }
+            .title {
+                font-size: 30px;
+                letter-spacing: 4px;
+            }
+            .subtitle {
+                font-size: 15px;
+            }
+            .container {
+                padding: 20px 32px;
+                gap: 12px;
+            }
+            .btn-start {
+                height: 52px;
+                font-size: 18px;
+                margin-top: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 主容器，所有内容都在这里面 -->
+    <div class="container">
+
+        <!-- 游戏图标（暂时用 emoji，后续会换成正式设计图标） -->
+        <div class="game-icon">🗺️</div>
+
+        <!-- 主标题 -->
+        <h1 class="title">Treasure Hunt</h1>
+
+        <!-- 副标题 -->
+        <p class="subtitle">一起去探险吧！<br>Embark on an adventure with your friends!</p>
+
+        <!-- 开始游戏按钮 -->
+        <!-- onclick 暂时弹一个提示，后续会改成跳转到关卡选择页 -->
+        <button class="btn-start" onclick="handleStartGame()">
+            ✨ 开始游戏
+        </button>
+
+    </div>
+
+    <!-- 底部版本号 -->
+    <div class="version-info">v0.1.0 </div>
+
+    <!-- ====== 临时开发测试入口（正式版本会删除） ====== -->
+    <div style="
+        position: fixed;
+        bottom: 40px;
+        right: 16px;
+    ">
+        <a href="./test-scan.html" style="
+            display: inline-block;
+            background: rgba(255,255,255,0.15);
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            border: 1px solid rgba(255,255,255,0.3);
+        ">🔧 测试扫码</a>
+    </div>
+
+    <script>
+        // ====== 注册 Service Worker（PWA 离线功能的核心） ======
+        // Service Worker 是一个在后台运行的脚本，负责缓存文件、拦截网络请求
+        // 就像一个"快递员"，帮你把文件存在家里，断网时也能取出来用
+        if ('serviceWorker' in navigator) {
+            // 页面加载完成后再注册，不影响首屏速度
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(function (registration) {
+                        console.log('✅ Service Worker 注册成功，覆盖范围：', registration.scope);
+                    })
+                    .catch(function (error) {
+                        console.log('❌ Service Worker 注册失败：', error);
+                    });
+            });
+        } else {
+            console.log('⚠️ 当前浏览器不支持 Service Worker，离线功能不可用');
+        }
+
+        // ====== 开始游戏按钮的处理函数 ======
+        // 现在只弹一个提示窗，后续阶段会改成真正的游戏流程
+        function handleStartGame() {
+            alert('🎮 游戏功能正在开发中，敬请期待！');
+        }
+    </script>
+
+</body>
+</html>
