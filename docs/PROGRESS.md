@@ -10,7 +10,7 @@
 
 **阶段**：MVP 开发阶段 A（共享层）进行中
 
-**下一个任务**：M02 — 定义数据模型 + 短 ID 生成工具
+**下一个任务**：M03 — IndexedDB 封装（Dexie + 运行时拦截）
 
 ---
 
@@ -42,7 +42,7 @@
 ### 阶段 A：共享层
 
 - **M01** ✅ CDN 链接验证（浏览器加载 5 个库全部通过；二维码库由 qrcode 换为 qrcode-generator@2.0.4）
-- [ ] M02 数据模型 + 短 ID 生成工具
+- **M02** ✅ 数据模型（JSDoc types.js）+ 短 ID 生成（id.js）+ 6 位数字码工具（code-generator.js）
 - [ ] M03 IndexedDB 封装（Dexie + 运行时拦截）
 - [ ] M04 JSON 导入导出工具（基础）
 - [ ] M05 6 位数字码工具
