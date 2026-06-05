@@ -10,7 +10,7 @@
 
 **阶段**：MVP 开发阶段 A（共享层）进行中
 
-**下一个任务**：M05 — 6 位数字码工具（收尾确认）
+**下一个任务**：M06 — 编辑端项目骨架 + 路由 + 导航
 
 ---
 
@@ -45,7 +45,7 @@
 - **M02** ✅ 数据模型（JSDoc types.js）+ 短 ID 生成（id.js）+ 6 位数字码工具（code-generator.js）
 - **M03** ✅ IndexedDB 封装（db-config.js 常量+运行时拦截 / admin-db.js / play-db.js）
 - **M04** ✅ JSON 导入导出工具（exportFull / validateJson / importFull，含事务原子性）
-- [ ] M05 6 位数字码工具
+- **M05** ✅ 6 位数字码工具（已并入 M02，code-generator.js）
 
 ### 阶段 B：编辑端
 
