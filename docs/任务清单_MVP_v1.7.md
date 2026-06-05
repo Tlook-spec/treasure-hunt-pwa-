@@ -36,7 +36,7 @@
 - ✅ M05. 6 位数字码工具（已并入 M02，code-generator.js）
 
 **MVP 阶段 B:编辑端(2-2.5 周)**
-- [ ] M06. 编辑端项目骨架 + 路由 + 导航
+- ✅ M06. 编辑端项目骨架 + 路由 + 导航
 - [ ] M07. L1 探险 CRUD
 - [ ] M08. L2 点位 CRUD + 上移下移 + 题目绑定
 - [ ] M09. L3 题库 CRUD + 筛选(含 usedCount 维度)
@@ -597,6 +597,8 @@ treasure-hunt/
 
 ### [ ] M03. IndexedDB 封装(Dexie + 运行时拦截)
 
+注意:admin-db.js / play-db.js 里直接用全局 Dexie(new Dexie(...)),不要 import dexie。
+test-db.html 里 Dexie 用普通 <script> 标签加载。
 **前置**:M02
 **预计时间**:3-4 小时
 **类型**:核心代码 + 安全机制
@@ -749,12 +751,12 @@ treasure-hunt/
 
 1. admin/index.html
    - 加载 shared/ 的依赖(用 <script type="module">)
-   - 加载 Dexie CDN
+   - 加载 Dexie CDN(普通 <script> 标签,放在自己的 <script type="module"> 之前)
    - 顶部 logo + 标题「寻宝游戏 - 编辑端」
    - 左侧导航(桌面端固定):
      📝 探险管理
      📚 题库管理
-     📥📤 导入导出
+     🔄 导入导出
    - 移动端 ≤ 768px:汉堡菜单
    - 主区域显示当前路由对应的页面
 
@@ -771,8 +773,9 @@ treasure-hunt/
    - questions.html(题库管理,占位)
    - import-export.html(导入导出,占位)
 
-5. PowerShell 启动本地服务器,访问 http://localhost:8000/admin/
-   验证导航能跳转、布局正常。
+5. 启动本地服务器让我访问 http://localhost:8000/admin/。
+   用 M01 那次确认过、我电脑上能跑的那个命令(Python 或 Node),
+   并把启动命令再贴给我一次。验证导航能跳转、布局正常。
 
 6. F12 Console 看不到红色错误。
 
@@ -1016,6 +1019,7 @@ treasure-hunt/
      - Excel 截图 2:格式下拉选「CSV UTF-8」
    - 文件选择按钮(只接受 .csv)
    - 上传后用 PapaParse.parse 解析(按 UTF-8)
+   注意:直接用全局 Papa(Papa.parse(...)),不要 import papaparse。
    - 预览前 5 行(表格显示)
    - 如果预览显示乱码(中文变 ??? 或锟斤拷):提示「文件不是 UTF-8 编码,请按上面教学重新保存」
    - 「确认导入」按钮:
@@ -1062,24 +1066,25 @@ treasure-hunt/
 
 1. 单张二维码生成:
    - L2 编辑页加「预览二维码」按钮
-   - 点击 → 用 qrcode-generator 把 6 位数字码生成图片
+   - 点击 → 用 qrcode-generator 把 6 位数字码生成二维码图片。
+     注意:全局名是小写的 qrcode(一个函数),用法:
+       var qr = qrcode(0, 'M');        // 0=自动尺寸,'M'=容错级别
+       qr.addData(code);
+       qr.make();
+       容器.innerHTML = qr.createImgTag(5, 8);   // 参数:格子大小、外边距
    - 弹窗显示二维码图片
-   - 「保存 PNG」按钮 → 下载图片(文件名:L1名_第N站_点位名.png)
+   - 「保存图片」按钮 → 下载(文件名:L1名_第N站_点位名)。
+     说明:这个库原生输出是 GIF(二维码黑白,GIF 完全够用,扫码不受影响)。
+     如果你坚持要 PNG,就把二维码画到 <canvas> 再 canvas.toDataURL('image/png')导出。
 
 2. 全部二维码生成 + 打印:
    - L1 详情页加「🖨️ 打印二维码」按钮
    - 点击进入打印预览页 admin/pages/print-qr.html?levelId=xxx
-   - 页面渲染所有 L2 的二维码(每页 2-4 个,用 CSS Grid 控制)
-   - 每个二维码下方显示:
-     * 大字:第 X 站
-     * 中字:点位名称
-     * 大字:6 位短码(如「482931」)
-     * 小字:家长备忘
-   - CSS @media print 样式:
-     * 隐藏导航和打印按钮
-     * 每 2-4 个二维码一页(@page A4)
-     * 二维码黑白清晰
-   - 「🖨️ 立即打印」按钮 → 调用 window.print()
+   - 用 qrcode-generator 渲染所有 L2 的二维码(每页 2-4 个,CSS Grid 控制)。
+     打印建议优先用 qr.createSvgTag(5, 8) 输出 SVG —— 放大打印最清晰,不会糊。
+   - 每个二维码下方显示:大字「第 X 站」、中字点位名称、大字 6 位短码、小字家长备忘
+   - CSS @media print:隐藏导航和按钮、每 2-4 个一页(@page A4)、二维码黑白清晰
+   - 「🖨️ 立即打印」按钮 → window.print()
 
 3. iPad 打印提示(在打印预览页顶部显示警告):
    "⚠️ 建议在电脑浏览器上完成打印。iPad Safari 的打印对话框 CSS 支持有限,
@@ -1398,7 +1403,7 @@ treasure-hunt/
    - 注册 service-worker.js
    - 加载 shared/ 依赖
    - 加载 CDN 的 Dexie、Eruda(?debug=1 时)
-   - **MVP 不引入 html5-qrcode 和 qrcode-generator**(扫码时再加载)
+   - **MVP 不引入 html5-qrcode 和 qrcode**(扫码时再加载)
    - 显示「寻宝游戏」启动页骨架(空内容,后续 M17 填充)
 
 4. 调整原 test-scan.html(T07 的):
@@ -1428,6 +1433,7 @@ treasure-hunt/
 - [ ] F12 应用面板看 SW 已注册
 - [ ] 测试 checklist 归档
 - [ ] PROGRESS.md 更新
+- [ ] 在家联网完整打开一次游戏后,开飞行模式 → 进扫码页 → 摄像头能正常起来(证明扫码库已缓存)
 
 ---
 
@@ -1618,6 +1624,8 @@ treasure-hunt/
 
 1. 在 play/index.html 加载 html5-qrcode CDN:
    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+   注意:直接用全局 Html5Qrcode(new Html5Qrcode(...)),不要 import。
+html5-qrcode 已在 M16 的 index.html 里加载,这里不用重复加载。
 
 2. play/pages/scan.html?sessionId=xxx&pointIndex=0(扫码界面)
    - 顶部:第 N 站(进度)+ 「← 返回提示」

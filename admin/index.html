@@ -1,88 +1,68 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>编辑端 - 寻宝游戏</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>寻宝游戏 - 编辑端</title>
+  <link rel="stylesheet" href="styles/main.css">
 
-        body {
-            background: #f4f6f9;
-            min-height: 100vh;
-            min-height: 100dvh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-            padding: 32px 24px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 20px;
-            padding: 48px 40px;
-            max-width: 440px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-        }
-
-        .icon {
-            font-size: 64px;
-            margin-bottom: 20px;
-        }
-
-        h1 {
-            font-size: 24px;
-            font-weight: 800;
-            color: #1A237E;
-            margin-bottom: 12px;
-        }
-
-        p {
-            font-size: 16px;
-            color: #666;
-            line-height: 1.7;
-            margin-bottom: 32px;
-        }
-
-        /* 返回主页按钮 */
-        .btn-back {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: #1565C0;
-            color: white;
-            text-decoration: none;
-            padding: 14px 28px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            transition: transform 0.12s ease;
-        }
-
-        .btn-back:active {
-            transform: scale(0.97);
-        }
-    </style>
+  <!-- CDN 库：普通 <script>，必须在 type="module" 之前 -->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
 </head>
 <body>
 
-    <div class="card">
-        <div class="icon">📝</div>
-        <h1>编辑端开发中...</h1>
-        <p>
-            家长的关卡编辑和题库管理功能正在建设中，<br>
-            敬请期待！
-        </p>
-        <a href="../" class="btn-back">← 返回主页</a>
+<!-- 顶部 Header -->
+<header class="header">
+  <button class="hamburger" id="hamburger-btn" aria-label="打开菜单">☰</button>
+  <span class="header-logo">🗺️</span>
+  <span class="header-title">寻宝游戏 - 编辑端</span>
+</header>
+
+<!-- 整体布局 -->
+<div class="layout">
+
+  <!-- 移动端遮罩 -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- 左侧导航 -->
+  <nav class="sidebar" id="sidebar">
+    <ul class="nav-list">
+      <li class="nav-item">
+        <a href="#/levels">
+          <span class="nav-icon">📝</span>
+          探险管理
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#/questions">
+          <span class="nav-icon">📚</span>
+          题库管理
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="#/import-export">
+          <span class="nav-icon">🔄</span>
+          导入导出
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- 主内容区：由 router.js 动态填充 -->
+  <main class="main-content" id="main-content">
+    <div class="placeholder-page">
+      <div class="placeholder-icon">⏳</div>
+      <p>初始化中...</p>
     </div>
+  </main>
+
+</div>
+
+<!-- 我们自己的模块代码：放在 CDN <script> 之后 -->
+<script type="module">
+  import { initRouter } from './scripts/router.js';
+  initRouter();
+</script>
 
 </body>
 </html>

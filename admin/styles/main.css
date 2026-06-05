@@ -1,0 +1,188 @@
+/* admin/styles/main.css — 编辑端全局样式 */
+/* 色值、字号、圆角均来自 docs/design-tokens.md */
+
+/* ── CSS 变量（Design Tokens） ──────────────────────────── */
+:root {
+  /* 主色 */
+  --color-primary:       #4A90E2;
+  --color-primary-dark:  #3A7BC8;
+  --color-primary-light: #7BB0EE;
+  /* 辅助 / 强调 / 错误 */
+  --color-accent:   #F5A623;
+  --color-success:  #7ED321;
+  --color-error:    #FF9F89;
+  /* 中性 */
+  --color-bg:         #FFFFFF;
+  --color-bg-card:    #F8F9FA;
+  --color-text:       #2C3E50;
+  --color-text-muted: #6C757D;
+  --color-border:     #E9ECEF;
+  /* 圆角 */
+  --radius-btn:  12px;
+  --radius-card: 16px;
+  --radius-img:  8px;
+  /* 间距 */
+  --space-xs: 8px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 32px;
+  /* 阴影 */
+  --shadow-card:  0 2px 8px rgba(0,0,0,0.1);
+  --shadow-float: 0 4px 12px rgba(0,0,0,0.15);
+  /* 布局尺寸 */
+  --header-height: 60px;
+  --nav-width:     220px;
+}
+
+/* ── Reset & Base ──────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-size: 16px;
+  color: var(--color-text);
+  background: var(--color-bg);
+  min-height: 100vh;
+}
+
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; }
+
+/* ── 顶部 Header ─────────────────────────────────────────── */
+.header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--header-height);
+  background: var(--color-primary);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 0 var(--space-md);
+  box-shadow: var(--shadow-float);
+  z-index: 100;
+}
+
+.header-logo { font-size: 22px; }
+
+.header-title {
+  font-size: 18px;
+  font-weight: 600;
+  flex: 1;
+}
+
+/* 汉堡菜单按钮：仅在移动端显示 */
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  padding: var(--space-xs);
+  border-radius: var(--radius-btn);
+  line-height: 1;
+}
+
+/* ── 整体布局（header 下方）────────────────────────────── */
+.layout {
+  display: flex;
+  padding-top: var(--header-height);
+  min-height: 100vh;
+}
+
+/* ── 左侧导航 ────────────────────────────────────────────── */
+.sidebar {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  bottom: 0;
+  width: var(--nav-width);
+  background: var(--color-bg-card);
+  border-right: 1px solid var(--color-border);
+  padding: var(--space-sm) 0;
+  overflow-y: auto;
+  z-index: 90;
+  transition: transform 0.25s ease;
+}
+
+.nav-list { list-style: none; }
+
+.nav-item a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px var(--space-sm);
+  font-size: 15px;
+  color: var(--color-text);
+  border-left: 3px solid transparent;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-item a:hover {
+  background: rgba(74, 144, 226, 0.08);
+  color: var(--color-primary);
+}
+
+/* 当前选中：左竖蓝条 + 浅蓝背景 */
+.nav-item a.active {
+  border-left-color: var(--color-primary);
+  background: rgba(74, 144, 226, 0.12);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.nav-icon { font-size: 18px; width: 24px; text-align: center; }
+
+/* ── 主内容区 ─────────────────────────────────────────────── */
+.main-content {
+  margin-left: var(--nav-width);
+  flex: 1;
+  padding: var(--space-md);
+  min-height: calc(100vh - var(--header-height));
+}
+
+/* 占位页样式 */
+.placeholder-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: var(--color-text-muted);
+  text-align: center;
+  gap: var(--space-sm);
+}
+
+.placeholder-page .placeholder-icon { font-size: 48px; }
+.placeholder-page h2 { font-size: 20px; color: var(--color-text); }
+.placeholder-page p  { font-size: 14px; }
+
+/* ── 移动端响应式（≤ 768px）────────────────────────────── */
+@media (max-width: 768px) {
+  .hamburger { display: block; }
+
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  /* JS 给 sidebar 加 .open 类时滑出 */
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: var(--shadow-float);
+  }
+
+  /* 移动端点击遮罩关闭菜单 */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 85;
+  }
+  .sidebar-overlay.open { display: block; }
+
+  .main-content {
+    margin-left: 0;
+    padding: var(--space-sm);
+  }
+}
