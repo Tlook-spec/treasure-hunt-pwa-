@@ -1,169 +1,90 @@
-# 寻宝游戏 PWA - 开发进度记录
+# 项目进度记录
 
-> Claude Code：每次完成任务后在这里更新进度。新对话开始时先读这个文件。
+> 每完成一个任务后更新这里。新对话开始时先读本文件。
+>
+> **当前版本**：v1.7（对应 CLAUDE.md v1.7）
 
 ---
 
 ## 当前状态
 
-**阶段**：阶段 0 末 - 架构调整完成，准备进入阶段 1
-**最后更新**：2026-05-22
+**阶段**：阶段 1 设计完成 ✅ → MVP 开发待开始
 
-**线上地址（旧，待架构调整后更新 GitHub Pages 路径）**：
-- 主入口：https://Tlook-spec.github.io/treasure-hunt-pwa-/
-- 游戏端：https://Tlook-spec.github.io/treasure-hunt-pwa-/play/
-- 编辑端：https://Tlook-spec.github.io/treasure-hunt-pwa-/admin/
-
-**GitHub 仓库**：https://github.com/Tlook-spec/treasure-hunt-pwa-
-
----
-
-## 当前项目文件结构
-
-```
-treasure-hunt/
-├── index.html              ✅ 根入口页（主页跳转按钮）
-│
-├── admin/
-│   └── index.html          ✅ 编辑端占位页（"开发中"）
-│
-├── play/
-│   ├── index.html          ✅ 游戏端首页（蓝色背景 + 开始游戏按钮）
-│   ├── manifest.json       ✅ PWA 配置
-│   ├── service-worker.js   ✅ 离线缓存（v1.2）
-│   ├── test-scan.html      ✅ 扫码测试页
-│   ├── assets/icons/       ✅ icon-192.svg / icon-512.svg / icon-maskable-192.svg
-│   ├── styles/             📁 空目录，待添加样式
-│   └── scripts/            📁 空目录，待添加脚本
-│
-├── shared/
-│   ├── models/             📁 空目录，待添加数据模型
-│   ├── db/                 📁 空目录，待添加 IndexedDB 封装
-│   ├── utils/              📁 空目录，待添加工具函数
-│   └── libs/               📁 空目录，待添加第三方库
-│
-├── docs/                   ✅ 项目文档目录
-├── CLAUDE.md               ✅ Claude Code 项目说明 v1.3
-├── README.md               ✅ 项目说明（已更新为双站点结构）
-└── .gitignore
-```
+**下一个任务**：M01 — 验证 CDN 链接 + 安装第三方库
 
 ---
 
 ## 已完成任务
 
-### ✅ T01 - 注册 GitHub 账号
-完成。
+### 阶段 0：环境搭建 + 技术验证（T01–T08）✅
 
-### ✅ T02 - 安装 VS Code 和 Claude Code
-完成。
+- **T01** ✅ GitHub 账号注册 + 仓库 `treasure-hunt` 创建
+- **T02** ✅ VS Code + Claude Code 安装配置（Windows 11）
+- **T03** ✅ 项目初始化（Git 仓库 + .gitignore + README）
+- **T04** ✅ Hello World PWA（manifest.json + Service Worker + 图标）
+- **T05** ✅ 部署到 GitHub Pages，`https://tlook-spec.github.io/treasure-hunt/` 可访问
+- **T06** ✅ iPad 添加到主屏幕，PWA 图标安装验证通过
+- **T07** ✅ 扫码功能（html5-qrcode + Eruda 调试）— **iPad Safari PWA 模式真机验证通过**
+- **T08** ✅ 架构调整：拆分为 `admin/` + `play/` + `shared/` 双站点结构
 
-### ✅ T03 - 创建项目文件夹和初始化
-完成。已有 CLAUDE.md、docs/PRD.md、docs/任务清单。
+### 阶段 1：产品设计（T09–T13）✅
 
-### ✅ T04 - 创建第一个 Hello World PWA
-**完成时间**：2026-05-18
-
-**创建的文件**（已迁移至 play/）：
-- `play/index.html` — 首页，蓝色背景，显示标题和"开始游戏"按钮
-- `play/manifest.json` — PWA 配置（名称、主题色、图标）
-- `play/service-worker.js` — 离线缓存（Cache First 策略）
-- `play/assets/icons/icon-192.svg` — 192×192 图标
-- `play/assets/icons/icon-512.svg` — 512×512 图标
-- `play/assets/icons/icon-maskable-192.svg` — Maskable 图标
-
-**本地预览命令**：
-```
-python -m http.server 8000
-```
-打开 http://localhost:8000/play/
-
-**验证清单**：
-- [x] 页面正常显示标题和按钮
-- [x] 蓝色背景，竖屏居中
-- [x] 横屏不错乱
-- [x] 开发者工具 → Application → Service Workers 状态正常
-- [x] 开发者工具 → Application → Manifest 信息正确
-- [ ] 在 iPad 上重新以新路径 /play/ 添加到主屏幕（T08 架构调整后需重新验证）
+- **T09** ✅ 阅读并确认 PRD v1.7（`docs/PRD.md`）
+- **T10** ✅ Excalidraw 线框图（`docs/wireframes/`）— admin 7 页 + play 10 页 + flow 图，共 17 张
+- **T11** ✅ 页面数据字段清单（`docs/pages-data.md`）
+- **T12** ✅ 视觉设计令牌（`docs/design-tokens.md`）— 主色 `#4A90E2`，字体/圆角/按钮尺寸全部定稿
+- **T13** ✅ 阶段 0-1 总结里程碑（`docs/MILESTONE_0-1.md`）
 
 ---
 
-### ✅ T05 - 部署到 GitHub Pages
-**完成时间**：2026-05-19
+## MVP 开发进度（M01–M30，待开始）
 
-**完成内容**：
-- 创建 `.gitignore`
-- 初始化本地 git 仓库，分支名 `main`
-- 创建 GitHub 仓库：`Tlook-spec/treasure-hunt-pwa-`
-- 推送代码到 GitHub，开启 GitHub Pages
+### 阶段 A：共享层
 
-**线上地址**：https://Tlook-spec.github.io/treasure-hunt-pwa-/
-（架构调整后游戏端地址变为 /play/，编辑端 /admin/）
+- [ ] M01 验证 CDN 链接可用性
+- [ ] M02 数据模型 + 短 ID 生成工具
+- [ ] M03 IndexedDB 封装（Dexie + 运行时拦截）
+- [ ] M04 JSON 导入导出工具（基础）
+- [ ] M05 6 位数字码工具
 
-**以后更新部署的命令**：
-```
-git add .
-git commit -m "描述这次改了什么"
-git push
-```
+### 阶段 B：编辑端
 
----
+- [ ] M06 编辑端骨架 + 路由 + 导航
+- [ ] M07 L1 探险 CRUD
+- [ ] M08 L2 点位 CRUD + 题目绑定
+- [ ] M09 L3 题库 CRUD + 筛选
+- [ ] M10 CSV 批量导入题目
+- [ ] M11 单张二维码生成 + 打印
+- [ ] M12 应急小抄打印
+- [ ] M13 JSON 整库导入导出
+- [ ] M14 删除引用保护
+- [ ] M15 编辑端联调测试
 
-### ✅ T06 - iPad 离线验证
-**完成时间**：2026-05-19
-问题：主屏幕 PWA 首次从图标打开需联网，让 Service Worker 在该上下文安装缓存，之后才能离线使用。已验证通过。
+### 阶段 C：游戏端
 
----
+- [ ] M16 游戏端 PWA 框架（动态缓存 SW）
+- [ ] M17 启动页 + 探险选择页 + 设置页
+- [ ] M18 JSON 整库导入（游戏端）
+- [ ] M19 游戏主流程框架
+- [ ] M20 扫码功能集成
+- [ ] M21 数字码输入 + 「找不到?」按钮
+- [ ] M22 L2 内多题连答主流程
+- [ ] M23 答题反馈 + 3 次容错 + 求助按钮
+- [ ] M24 L2 通关拍合影 + 「继续扫码」按钮
+- [ ] M25 极简通关页
+- [ ] M26 自动保存 + 续玩
 
-### ✅ T07 - 扫码功能试水
-**完成时间**：2026-05-19
+### 阶段 D：联调 + 真实测试
 
-**文件**（已迁移至 play/）：
-- `play/test-scan.html` — 独立扫码测试页
-
-**验证结果**：
-- [x] Windows 本地摄像头测试通过
-- [x] iPad Safari 权限请求正常
-- [x] iPad 扫码识别成功
-- [x] 扫码后"再扫一个"流程正常
-- [x] iPad PWA 模式下验证通过
-
-**结论**：html5-qrcode 在 iPad Safari PWA 模式下稳定可用，可用于正式功能开发。
-
----
-
-### ✅ T08 - 架构调整（双站点结构）
-**完成时间**：2026-05-22
-
-**改动内容**：
-1. **文件迁移**：根目录的 `index.html`、`manifest.json`、`service-worker.js`、`test-scan.html`、`assets/` 全部迁移到 `play/` 子目录
-2. **新建目录**：`admin/`、`play/`、`shared/`（含 models/db/utils/libs 子目录）
-3. **新建根入口页**：`index.html`（主页，含两个大按钮跳转到 admin/ 和 play/）
-4. **新建 admin/ 占位页**：`admin/index.html`（"编辑端开发中"占位）
-5. **Service Worker 版本升级**：v1.1 → v1.2（路径调整后强制缓存更新）
-6. **README.md 更新**：改为双站点结构说明
-7. **清理旧空目录**：根目录的 `scripts/` 和 `styles/` 已删除
-
-**现在的访问路径**：
-- http://localhost:8000/ → 主入口
-- http://localhost:8000/play/ → 游戏端
-- http://localhost:8000/admin/ → 编辑端占位
-- http://localhost:8000/play/test-scan.html → 扫码测试
+- [ ] M27 端到端联调
+- [ ] M28 第一次真实户外测试 + 修 bug
+- [ ] M29 第二次真实户外测试 + 收尾
+- [ ] M30 MVP 完成里程碑
 
 ---
 
-## 待完成任务
+## 注意事项
 
-- [ ] T09 - 阅读 PRD v1.3，理解全功能清单
-- [ ] iPad 上重新以新路径添加游戏端到主屏幕（路径改为 /play/）
-- [ ] 阶段 1 开始：编辑端基础页面搭建
-
----
-
-## 已知问题
-
-- SVG 图标在 iOS 设备上作为主屏幕图标可能显示不佳（iOS 对 SVG 支持有限）
-  - **解决方案**：在 iPad 重新测试新路径，若有问题则改为 PNG 格式
-- `test-scan.html` 使用 CDN 引入 html5-qrcode（CDN 地址是 jsdelivr）
-  - **现状**：仅作为开发测试页，离线不可用，后续正式功能会本地化
-- iPad 上旧的主屏幕图标（指向根路径）需要删除后重新用新路径 `/play/` 添加
+- **Service Worker**：`play/service-worker.js` 目前仍是静态 FILES_TO_CACHE 策略（T07 遗留），M16 时替换为动态缓存策略
+- **admin/ index.html**：占位页，M06 时开始正式开发
+- **shared/**：目录骨架已建好，M02/M03 时填充代码
