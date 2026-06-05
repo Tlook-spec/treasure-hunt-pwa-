@@ -29,7 +29,7 @@
 **MVP 开发(共 25 个任务,预估 5-6 周)**
 
 **MVP 阶段 A:共享层(0.5-1 周)**
-- [ ] M01. 安装第三方库的 CDN 链接 + 验证
+- ✅ M01. 安装第三方库的 CDN 链接 + 验证
 - [ ] M02. 定义数据模型 + 短 ID 生成工具
 - [ ] M03. IndexedDB 封装(Dexie + 运行时拦截)
 - [ ] M04. JSON 导入导出工具(基础)
@@ -505,32 +505,36 @@ treasure-hunt/
 
 ```
 我们开始 MVP 开发。第一步是把 PRD v1.7 §3 + CLAUDE.md §3 选定的 5 个第三方库
-通过 CDN 引入到项目里,先验证浏览器能加载。
+通过 CDN 引入到项目里，先验证浏览器能加载。
 
-请做以下事情:
+请做以下事情：
 
-1. 在 shared/libs/ 下创建一个 README.md,说明:
-   - MVP 阶段不本地化库,统一通过 CDN 引入
+1. 在 shared/libs/ 下创建一个 README.md，说明：
+   - MVP 阶段不本地化库，统一通过 CDN 引入
    - 列出 5 个库 + 固定版本号 + CDN URL
-   - 提醒「必须用固定版本号,不要用 @latest」
+   - 提醒「必须用固定版本号，不要用 @latest」
 
-2. 创建一个临时验证页面 shared/test-libs.html,用 CDN 加载这 5 个库:
+2. 创建一个临时验证页面 shared/test-libs.html，用 CDN 加载这 5 个库：
    - Dexie.js @3.2.4
    - html5-qrcode @2.3.8
-   - qrcode @1.5.3
+   - qrcode-generator @2.0.4
    - PapaParse @5.4.1
-   - Eruda @3.0.1(用 ?debug=1 才加载)
-   
-   页面显示:
-   - 每个库的名称 + 版本号 + 「已加载 ✅」或「加载失败 ❌」
-   - 简单调用每个库的 API 验证可用(如 new Dexie('test')、Papa.parse 等)
+   - Eruda @3.0.1（只在网址带 ?debug=1 时才加载）
 
-3. PowerShell 启动本地服务器,我访问 http://localhost:8000/shared/test-libs.html
-   验证 5 个库都加载成功。
+   页面显示：
+   - 前 4 个库各显示「名称 + 版本号 + 已加载 ✅ / 加载失败 ❌」
+   - 简单调用每个库的 API 验证可用（如 new Dexie('test')、Papa.parse 等）
+   - Eruda 单独处理：没带 ?debug=1 时显示「访问 ?debug=1 时才加载」（不是红叉），
+     带 ?debug=1 时再检查是否加载成功 ✅
 
-4. 验证通过后,删除 shared/test-libs.html(临时验证用)。
+3. 启动本地服务器让我访问 http://localhost:8000/shared/test-libs.html。
+   注意：我是 Windows 11，零基础，不确定电脑上装没装 Python。
+   请你先检测我电脑上有什么（Python 或 Node 都行），用能跑的那个启动，
+   并把具体的 PowerShell 启动命令直接告诉我，让我自己也会启动。
 
-5. 更新 docs/PROGRESS.md:M01 完成。
+4. 我验证 5 个库都 OK 后，删除 shared/test-libs.html（临时验证用）。
+
+5. 更新 docs/PROGRESS.md：M01 完成。
 ```
 
 **验证清单**:
@@ -1058,7 +1062,7 @@ treasure-hunt/
 
 1. 单张二维码生成:
    - L2 编辑页加「预览二维码」按钮
-   - 点击 → 用 qrcode.js 把 6 位数字码生成 PNG
+   - 点击 → 用 qrcode-generator 把 6 位数字码生成图片
    - 弹窗显示二维码图片
    - 「保存 PNG」按钮 → 下载图片(文件名:L1名_第N站_点位名.png)
 
@@ -1394,7 +1398,7 @@ treasure-hunt/
    - 注册 service-worker.js
    - 加载 shared/ 依赖
    - 加载 CDN 的 Dexie、Eruda(?debug=1 时)
-   - **MVP 不引入 html5-qrcode 和 qrcode**(扫码时再加载)
+   - **MVP 不引入 html5-qrcode 和 qrcode-generator**(扫码时再加载)
    - 显示「寻宝游戏」启动页骨架(空内容,后续 M17 填充)
 
 4. 调整原 test-scan.html(T07 的):

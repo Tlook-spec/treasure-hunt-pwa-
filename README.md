@@ -95,7 +95,7 @@ python -m http.server 8000
 - **纯 HTML + CSS + JavaScript**（不使用任何框架）
 - **Dexie.js**（IndexedDB 本地存储，CDN 引入，固定版本号）
 - **html5-qrcode**（扫码，CDN 引入）
-- **qrcode.js**（生成二维码，CDN 引入）
+- **qrcode-generator**（生成二维码，CDN 引入）
 - **PapaParse**（CSV 解析，CDN 引入）
 - **Service Worker**（游戏端 PWA 动态缓存，自动缓存 CDN 资源）
 - **部署**：GitHub Pages

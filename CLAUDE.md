@@ -62,7 +62,7 @@ L1 探险(Level)              一次完整的户外活动
 |------|---|------------|
 | 本地存储 | Dexie.js | `https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js` |
 | 扫码 | html5-qrcode | `https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js` |
-| 二维码生成 | qrcode.js | `https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js` |
+| 二维码生成 | qrcode-generator | `https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.js` |
 | CSV 解析 | PapaParse | `https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js` |
 | 调试 | Eruda | `https://cdn.jsdelivr.net/npm/eruda@3.0.1/eruda.min.js`(?debug=1 时加载) |
 
@@ -216,6 +216,7 @@ admin 端引用 `ADMIN_DB_NAME`,play 端引用 `PLAY_DB_NAME`,**在每次打开 
 - 每次回答控制长度
 - 多种方案先列选项让用户选
 - Windows 环境用 PowerShell 语法
+- git commit 消息用单行英文（PowerShell 下多行中文 commit message 会乱码）
 
 ### 5.3 范围控制
 
@@ -553,7 +554,8 @@ self.addEventListener('fetch', (event) => {
 | 阶段 0 末末末 | v1.4 | 用户 + Claude Code Review + Claude | 12 项精细化修订 |
 | 阶段 1 初 | v1.5 | 用户 + Claude | 砍掉 L1 密码、导入分两种模式、ID 一致性约定 |
 | 阶段 1 中 | v1.6 | 用户 + Claude | V1 探险地图功能完整设计 |
-| 阶段 1 末(本次) | v1.7 | 用户 + 3 AI Reviewer + Claude | **基于多方 review 整合修订**:① MVP 阶段 CDN 引入第三方库 + 动态缓存 SW ② 删除手写 FILES_TO_CACHE 列表要求 ③ 短 ID 生成方式明确为时间戳+随机 ④ IndexedDB 物理隔离强化为「常量 + 运行时拦截」⑤ 拍照后回扫码改按钮触发 ⑥ usedCount 导入取较大值 ⑦ 应急通关裁判模式从 V1 推到 V2 ⑧ 应急小抄打印功能 ⑨ MVP 编辑端完全隐藏地图 UI ⑩ 删除 zip 包、JSON 智能合并、朗读、完整 PDF、退出玩家重加、头像贴纸、回收站、密码保护、拖拽排序、CSV 编码自动检测 ⑪ 添加测试策略章节(强制写手动测试 checklist + iPad 三态覆盖)⑫ ES Module 全局约定 ⑬ MVP 只做整库覆盖,L1 单导入/单导出推 V1 |
+| 阶段 1 末 | v1.7 | 用户 + 3 AI Reviewer + Claude | **基于多方 review 整合修订**:① MVP 阶段 CDN 引入第三方库 + 动态缓存 SW ② 删除手写 FILES_TO_CACHE 列表要求 ③ 短 ID 生成方式明确为时间戳+随机 ④ IndexedDB 物理隔离强化为「常量 + 运行时拦截」⑤ 拍照后回扫码改按钮触发 ⑥ usedCount 导入取较大值 ⑦ 应急通关裁判模式从 V1 推到 V2 ⑧ 应急小抄打印功能 ⑨ MVP 编辑端完全隐藏地图 UI ⑩ 删除 zip 包、JSON 智能合并、朗读、完整 PDF、退出玩家重加、头像贴纸、回收站、密码保护、拖拽排序、CSV 编码自动检测 ⑪ 添加测试策略章节(强制写手动测试 checklist + iPad 三态覆盖)⑫ ES Module 全局约定 ⑬ MVP 只做整库覆盖,L1 单导入/单导出推 V1 |
+| MVP M01 中 | v1.7.1 | 用户 + Claude | 二维码库由 qrcode@1.5.3 换为 qrcode-generator@2.0.4，原 node-qrcode 浏览器构建无法作为普通脚本暴露全局变量 |
 
 ---
 
