@@ -1,7 +1,245 @@
-<!-- admin/pages/questions.html — 题库管理（M09 实现）-->
-<div class="placeholder-page">
-  <div class="placeholder-icon">📚</div>
-  <h2>题库管理</h2>
-  <p>这里将显示所有题目（L3）列表，支持筛选、新建、编辑、删除。</p>
-  <p style="margin-top:8px;font-size:13px;color:#aaa">M09 开发中…</p>
+<!-- admin/pages/questions.html — L3 题库管理（M09） -->
+
+<!-- ── Panel 1: 题目列表 ──────────────────────────────────── -->
+<div id="questions-list-panel">
+  <div class="page-header">
+    <h1 class="page-title">📚 题库管理</h1>
+    <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap">
+      <button id="btn-create-question" class="btn btn-primary">➕ 新建题目</button>
+      <button id="btn-csv-import" class="btn btn-secondary">📥 CSV 导入</button>
+      <button id="btn-csv-export" class="btn btn-secondary">📤 题库CSV导出</button>
+    </div>
+  </div>
+
+  <!-- 筛选条 -->
+  <div class="q-filter-bar">
+    <select id="filter-subject" class="form-select q-filter-select">
+      <option value="">全部学科</option>
+      <option value="math">数学</option>
+      <option value="chinese">语文</option>
+      <option value="english">英语</option>
+      <option value="science">自然/科学</option>
+      <option value="common">常识</option>
+    </select>
+
+    <div class="q-filter-group" id="filter-difficulty-group">
+      <span class="q-filter-label">难度:</span>
+      <button class="q-filter-btn" data-difficulty="1">★</button>
+      <button class="q-filter-btn" data-difficulty="2">★★</button>
+      <button class="q-filter-btn" data-difficulty="3">★★★</button>
+    </div>
+
+    <select id="filter-age" class="form-select q-filter-select">
+      <option value="">全部年龄段</option>
+      <option value="4-6">4–6 岁</option>
+      <option value="7-9">7–9 岁</option>
+      <option value="10-12">10–12 岁</option>
+    </select>
+
+    <div class="q-filter-group" id="filter-used-group">
+      <span class="q-filter-label">使用:</span>
+      <button class="q-filter-btn" data-used="0">0次</button>
+      <button class="q-filter-btn" data-used="1">1次</button>
+      <button class="q-filter-btn" data-used="2">2+次</button>
+    </div>
+
+    <input id="filter-search" class="form-input q-filter-search"
+           type="text" placeholder="🔍 搜索题干...">
+  </div>
+
+  <!-- 题目计数 -->
+  <div id="questions-count"
+       style="font-size:13px;color:var(--color-text-muted);margin-bottom:var(--space-sm)"></div>
+
+  <!-- 题目列表 -->
+  <div id="questions-container">
+    <div class="empty-state"><div class="empty-icon">⏳</div><p>加载中…</p></div>
+  </div>
 </div>
+
+<!-- ── Panel 2: 新建/编辑表单 ──────────────────────────────── -->
+<div id="questions-form-panel" style="display:none">
+  <div class="detail-header">
+    <button id="btn-question-back" class="btn btn-secondary btn-sm">← 返回题库</button>
+    <h2 id="question-form-title" class="detail-title">新建题目</h2>
+  </div>
+
+  <!-- 题型 -->
+  <div class="detail-section">
+    <div class="detail-section-title">题型（必填）</div>
+    <div class="q-type-group">
+      <button class="q-type-btn active" data-type="single_choice">选择题</button>
+      <button class="q-type-btn" data-type="true_false">判断题</button>
+      <button class="q-type-btn" disabled title="V1 功能">填空题【V1】</button>
+    </div>
+  </div>
+
+  <!-- 题干 -->
+  <div class="detail-section">
+    <div class="form-group">
+      <label class="form-label" for="input-question-text">题目（必填）</label>
+      <textarea id="input-question-text" class="form-textarea" rows="3"
+                placeholder="请输入题目内容" maxlength="500"></textarea>
+    </div>
+  </div>
+
+  <!-- 选项 -->
+  <div class="detail-section">
+    <div class="detail-section-title">选项</div>
+    <div id="options-container"><!-- JS 填入 --></div>
+    <button id="btn-add-option" class="btn btn-secondary btn-sm" style="margin-top:8px">
+      ＋ 添加选项（最多 4 个）
+    </button>
+  </div>
+
+  <!-- 正确答案 -->
+  <div class="detail-section">
+    <div class="detail-section-title">正确答案（必填）</div>
+    <div id="correct-answer-group" class="q-answer-group"><!-- JS 填入 --></div>
+  </div>
+
+  <!-- 分类 -->
+  <div class="detail-section">
+    <div class="detail-section-title">分类信息</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="select-question-subject">学科（必填）</label>
+        <select id="select-question-subject" class="form-select">
+          <option value="">请选择</option>
+          <option value="math">数学</option>
+          <option value="chinese">语文</option>
+          <option value="english">英语</option>
+          <option value="science">自然/科学</option>
+          <option value="common">常识</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="select-question-difficulty">难度（可选）</label>
+        <select id="select-question-difficulty" class="form-select">
+          <option value="">不限</option>
+          <option value="1">★ 简单</option>
+          <option value="2">★★ 中等</option>
+          <option value="3">★★★ 困难</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="select-question-age">推荐年龄段（可选）</label>
+        <select id="select-question-age" class="form-select">
+          <option value="">不限</option>
+          <option value="4-6">4–6 岁</option>
+          <option value="7-9">7–9 岁</option>
+          <option value="10-12">10–12 岁</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示与解析 -->
+  <div class="detail-section">
+    <div class="detail-section-title">提示与解析（可选）</div>
+    <div class="form-group">
+      <label class="form-label" for="input-question-hint">提示（答错后出现）</label>
+      <input id="input-question-hint" class="form-input" type="text"
+             placeholder="可选，留空则不显示" maxlength="200">
+    </div>
+    <div class="form-group" style="margin-top:var(--space-sm)">
+      <label class="form-label" for="input-question-explanation">解析（答对后出现）</label>
+      <input id="input-question-explanation" class="form-input" type="text"
+             placeholder="可选，留空则不显示" maxlength="200">
+    </div>
+  </div>
+
+  <!-- 操作 -->
+  <div style="display:flex;justify-content:flex-end;gap:var(--space-sm);margin-top:var(--space-md)">
+    <button id="btn-question-cancel" class="btn btn-secondary">取消</button>
+    <button id="btn-question-save"   class="btn btn-primary">保存题目</button>
+  </div>
+</div>
+
+<!-- ── 删除弹窗（引用拒绝 / 二次确认二合一）──────────────── -->
+<div id="question-delete-modal" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-header">
+      <span id="q-delete-modal-title" class="modal-title">⚠️ 无法删除</span>
+      <button id="btn-q-delete-close" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="q-delete-message"
+         style="font-size:14px;line-height:1.8;color:var(--color-text);white-space:pre-wrap"></p>
+    </div>
+    <div class="modal-footer">
+      <button id="btn-q-delete-cancel"  class="btn btn-secondary">取消</button>
+      <button id="btn-q-delete-confirm" class="btn btn-danger" style="display:none">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Panel 3: CSV 导入 ──────────────────────────────────── -->
+<div id="csv-import-panel" style="display:none">
+
+  <!-- 页头 -->
+  <div class="detail-header">
+    <button id="btn-csv-back" class="btn btn-secondary btn-sm">← 返回题库</button>
+    <h2 class="detail-title">📥 批量导入题目</h2>
+  </div>
+
+  <!-- ⚠️ UTF-8 编码重要提示（显著位置）-->
+  <div class="csv-warn-box">
+    <div class="csv-warn-title">⚠️ 必看：请用 UTF-8 编码保存 CSV！</div>
+    <p class="csv-warn-body">
+      <strong>Windows Excel</strong> 默认保存的 CSV 是 GBK 编码，会导致中文乱码！<br>
+      正确做法：Excel → <strong>另存为</strong> → 格式下拉选「<strong>CSV UTF-8（逗号分隔）</strong>」<br>
+      <strong>Mac Numbers</strong> 默认就是 UTF-8，直接导出即可。
+    </p>
+    <!-- 教学截图占位（后续手动替换为真实截图）-->
+    <div class="csv-teach-imgs">
+      <div class="csv-teach-img-slot">📸 截图占位 1<br>Excel「另存为」对话框展开</div>
+      <div class="csv-teach-img-slot">📸 截图占位 2<br>格式下拉选「CSV UTF-8（逗号分隔）」</div>
+    </div>
+  </div>
+
+  <!-- 步骤 1：下载模板 -->
+  <div class="csv-step-block">
+    <div class="csv-step-label">步骤 1：下载模板</div>
+    <button id="btn-download-template" class="btn btn-secondary">📥 下载模板（带表头和例子）</button>
+    <div class="csv-step-hint">下载后用 Excel 或 Numbers 填写，保存时按上面教学选 UTF-8 编码。</div>
+  </div>
+
+  <!-- 步骤 2：上传文件 -->
+  <div class="csv-step-block">
+    <div class="csv-step-label">步骤 2：上传 CSV 文件</div>
+    <div style="display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap">
+      <label class="btn btn-secondary" style="cursor:pointer">
+        📁 选择文件
+        <input id="csv-file-input" type="file" accept=".csv" style="display:none">
+      </label>
+      <span id="csv-file-name" style="font-size:14px;color:var(--color-text-muted)">未选择文件</span>
+    </div>
+  </div>
+
+  <!-- 预览区（选文件后出现）-->
+  <div id="csv-preview-area" style="display:none">
+    <div class="csv-step-label">预览（前 5 行数据）：</div>
+    <div id="csv-preview-table" style="overflow-x:auto;margin-top:var(--space-sm)"></div>
+  </div>
+
+  <!-- 确认导入 -->
+  <div class="csv-step-block">
+    <button id="btn-confirm-import" class="btn btn-primary" disabled>✅ 确认导入</button>
+    <div class="csv-step-hint">导入会追加到现有题库，不会覆盖或删除已有题目。</div>
+  </div>
+
+  <!-- 导入结果 -->
+  <div id="csv-import-result" style="display:none">
+    <div id="csv-result-text" class="csv-result-box"></div>
+    <div id="csv-error-list" style="margin-top:8px"></div>
+  </div>
+
+</div>
+
+<script type="module">
+  import { initQuestionsPage } from './scripts/question-list.js';
+  import { initCsvImport }     from './scripts/csv-import.js';
+  initQuestionsPage();
+  initCsvImport();
+</script>

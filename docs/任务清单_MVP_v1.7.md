@@ -833,13 +833,17 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 
 4. 删除:弹「确定删除『XX』吗?这会同时删除其中所有点位」二次确认,确认后级联删除 L1 + 关联 Point
 
-5. 复制 L1:深拷贝整个 L1 + 所有 Point,新 ID,名字加「(副本)」
+5. 复制 L1:深拷贝 L1 + 所有 Point,规则:
+   - L1 和每个 Point 都生成新 ID,Point 的 levelId 指向新 L1
+   - 每个复制出来的 Point 必须用 generateSixDigitCode + isCodeUnique 重新生成
+     新的 6 位码(不能和已有点位重复,否则扫码冲突)
+   - Point 的 questionIds 保持指向原来的题目(题库是共享的,不要复制题目)
+   - 新 L1 名字加「(副本)」
 
 6. 写测试 checklist:docs/test-checklists/MVP-admin-L1CRUD.md
 
-7. 真机测试(桌面 + iPad Safari)
+7. 真机测试(桌面)
    - 桌面 Chrome:建 → 编 → 删 → 复制 流程跑通
-   - iPad Safari:同上
 
 8. 更新 PROGRESS.md。
 ```
@@ -865,6 +869,9 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 **【复制给 Claude Code 的指令】**
 
 ```
+参考布局:docs/wireframes/admin/03-l2-edit.png(L2编辑表单) + docs/wireframes/admin/02-l1-form-and-detail.png(点位列表区)
+参考数据:docs/pages-data.md A3 小节(字段名和 Dexie 查询以此为准,包括 locationHint、discoveryText 的语义)
+
 请基于 PRD v1.7 §4.1.3 实现 L2 点位的 CRUD + 题目绑定:
 
 1. 在 L1 详情页(M07)显示 L2 点位列表:
@@ -936,6 +943,9 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 **【复制给 Claude Code 的指令】**
 
 ```
+参考布局:docs/wireframes/admin/04-l3-list.png(题库主页) + docs/wireframes/admin/05-l3-form.png(题目表单)
+参考数据:docs/pages-data.md A4、A5 小节(字段名和操作逻辑以此为准)
+
 请基于 PRD v1.7 §4.1.4 实现题库 CRUD:
 
 1. admin/pages/questions.html
@@ -958,24 +968,28 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
    - 题型(单选 / 判断,MVP 只这两种)
    - 题干(多行文本)
    - 选项:动态行(单选 2-4 个,判断只 2 个)
-   - 正确答案:选项索引
+   - 正确答案:存字母('A'/'B'/'C'/'D',与 CSV 模板、答题页保持一致;
+     判断题用 'A'/'B' 表示 对/错)。
+     ⚠️ 必须与已有测试题的 correctAnswer 格式一致(我库里现有的题存的就是字母如 'C')
    - 提示(选填)
    - 解析(选填)
    - **MVP 不显示 imagePath / textImagePath 字段**(默认 null)
 
 3. 删除:
-   - 调用 M14 实现的引用保护检查(此处先实现简单版:扫描所有 Point 的 questionIds)
-   - 有引用 → 弹拒绝对话框
+   - 引用保护检查(此处先实现简单版:扫描所有 Point 的 questionIds)
+   - 有引用 → 弹拒绝对话框(提示被哪些 L2 引用,先去解除)
    - 无引用 → 弹「确定删除吗?」→ 确认即删
 
-4. CSV 导入按钮:跳到 M10 实现的页面
-   CSV 导出按钮:导出所有题目为 CSV(用 PapaParse.unparse)
+4. CSV 导入按钮:**先做占位**(点击提示「CSV 导入功能将在 M10 实现」或按钮置灰),
+     不要现在实现导入逻辑(那是 M10 的任务)。
+   CSV 导出按钮:导出所有题目为 CSV(用 PapaParse.unparse,正常实现)。
+   注意:PapaParse 直接用全局 Papa(Papa.unparse(...)),不要 import papaparse。
 
-5. 复制题目:深拷贝,新 ID,usedCount 重置为 0
+5. 复制题目:深拷贝,新 ID(generateId('q')),usedCount 重置为 0
 
 6. 写测试 checklist:docs/test-checklists/MVP-admin-L3CRUD.md
 
-7. 真机测试。
+7. 真机测试(桌面 Chrome 为主)。
 
 8. 更新 PROGRESS.md。
 ```
@@ -1003,11 +1017,17 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 **【复制给 Claude Code 的指令】**
 
 ```
+参考布局:docs/wireframes/admin/06-csv-import.png
+参考数据:docs/pages-data.md A6 小节
+
 请基于 PRD v1.7 §4.1.4「CSV 批量导入流程」实现:
 
 1. CSV 模板下载按钮 → 触发下载一个 UTF-8 with BOM 的 CSV 模板文件
    - 表头:学科、难度、年龄段、题型、题干、选项A、选项B、选项C、选项D、正确答案、提示、解析
    - 1-2 行示例数据
+   - 模板「正确答案」列填字母(A/B/C/D;判断题填 A/B 代表 对/错), 与 M09 题库的 correctAnswer 字母格式一致
+  
+   
 
 2. CSV 导入页面(在题库页弹窗或新页面):
    - 大字提示框(显著位置):
@@ -1024,10 +1044,11 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
    - 如果预览显示乱码(中文变 ??? 或锟斤拷):提示「文件不是 UTF-8 编码,请按上面教学重新保存」
    - 「确认导入」按钮:
      - 逐行解析为 Question 对象
-     - generateId("q") 生成 ID,usedCount = 0
+     - generateId("q") 生成 ID(不用再写 usedCount,引用数由系统实时计算)
      - 写入 questions 表
      - 单行错误不影响其他行(catch 错误,记录失败原因)
      - 显示「成功 X 道,失败 Y 道(行号 + 原因)」
+     - 导入解析时,正确答案按字母存,与现有题目格式统一
 
 3. **不引入 jschardet 等编码检测库**(v1.7 明确禁止)
 
@@ -1177,6 +1198,9 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 **【复制给 Claude Code 的指令】**
 
 ```
+参考布局:docs/wireframes/admin/07-json-io.png
+参考数据:docs/pages-data.md A7 小节(包括校验逻辑和二次确认弹窗文案)
+
 请基于 PRD v1.7 §4.1.6 + 已实现的 shared/utils/json-io.js,实现编辑端的 JSON 整库导入导出:
 
 1. admin/pages/import-export.html
@@ -1235,6 +1259,9 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 **【复制给 Claude Code 的指令】**
 
 ```
+参考布局:docs/wireframes/admin/04-l3-list.png(拒绝弹窗在题库页)
+参考数据:docs/pages-data.md A4 小节中「删除」操作说明
+
 请基于 PRD v1.7 §4.1.7 完善删除引用保护:
 
 1. shared/utils/reference-check.js
@@ -1446,6 +1473,9 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 **【复制给 Claude Code 的指令】**
 
 ```
+参考布局:docs/wireframes/play/01-launch.png(启动页) + docs/wireframes/play/02-select-level.png(探险选择页,含续玩横幅) + docs/wireframes/play/10-settings.png(设置页)
+参考数据:docs/pages-data.md P1、P2、P10 小节(字段名和操作逻辑以此为准)
+
 请基于 PRD v1.7 §4.2.1 + §4.2.9 实现游戏端的前三个页面:
 
 1. play/index.html(启动页)
@@ -1510,6 +1540,9 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 **【复制给 Claude Code 的指令】**
 
 ```
+参考布局:docs/wireframes/play/10-settings.png
+参考数据:docs/pages-data.md P10 小节(导入流程和二次确认逻辑以此为准)
+
 请基于 PRD v1.7 §4.1.6 + §4.2.9 + §7.4 实现游戏端的 JSON 导入:
 
 1. 在设置页的「📥 完整覆盖导入」按钮接入逻辑:
@@ -1565,6 +1598,10 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 **【复制给 Claude Code 的指令】**
 
 ```
+参考布局:docs/wireframes/play/03-start-and-hint.png(含「开始冒险」和「提示」两屏)
+参考数据:docs/pages-data.md P3 小节
+注意:提示页显示的是当前 Point 的 locationHint 字段(历史名 nextHint 已弃用,不要用)
+
 请基于 PRD v1.7 §4.2.2 + §4.2.3 实现游戏主流程的前两个页面:
 
 1. play/pages/start-level.html?levelId=xxx(开始冒险页)
@@ -1620,6 +1657,9 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 **【复制给 Claude Code 的指令】**
 
 ```
+参考布局:docs/wireframes/play/04-scan.png(扫码主界面) + docs/wireframes/play/05-code-input.png(状态C/D=扫到错码的toast)
+参考数据:docs/pages-data.md P4、P5 小节
+
 请基于 PRD v1.7 §4.2.3 实现扫码:
 
 1. 在 play/index.html 加载 html5-qrcode CDN:
@@ -1687,6 +1727,9 @@ html5-qrcode 已在 M16 的 index.html 里加载,这里不用重复加载。
 **【复制给 Claude Code 的指令】**
 
 ```
+参考布局:docs/wireframes/play/05-code-input.png 状态A(输数字码弹窗) + 状态B(找不到?家长语境弹窗)
+参考数据:docs/pages-data.md P5 小节(A/B两状态的文案和行为以此为准)
+
 请基于 PRD v1.7 §4.2.3 实现两个数字码输入按钮:
 
 1. 「⌨️ 输入数字码」按钮点击:
@@ -1749,6 +1792,9 @@ html5-qrcode 已在 M16 的 index.html 里加载,这里不用重复加载。
 **【复制给 Claude Code 的指令】**
 
 ```
+参考布局:docs/wireframes/play/06-question.png(含「开始挑战」和「答题」两屏)
+参考数据:docs/pages-data.md P6 小节(session字段读写和计分规则以此为准)
+
 请基于 PRD v1.7 §4.2.3 step 4-5 实现多题连答:
 
 1. play/pages/quiz.html?sessionId=xxx&pointIndex=0&questionIndex=0(答题页)
@@ -1805,6 +1851,9 @@ html5-qrcode 已在 M16 的 index.html 里加载,这里不用重复加载。
 **【复制给 Claude Code 的指令】**
 
 ```
+参考布局:docs/wireframes/play/07-answer-feedback.png(4状态:答对/答错/求助确认/求助用完)
+参考数据:docs/pages-data.md P7 小节(计分规则和 session 写入以此为准)
+
 请基于 PRD v1.7 §4.2.3 step 5 + §4.2.4 + §4.2.5 实现答题反馈:
 
 1. 在 play/scripts/quiz-logic.js 实现:
@@ -1883,6 +1932,9 @@ html5-qrcode 已在 M16 的 index.html 里加载,这里不用重复加载。
 **【复制给 Claude Code 的指令】**
 
 ```
+参考布局:docs/wireframes/play/08-photo-capture.png(3状态:拍照选择/拍后预览/继续扫码触发页)
+参考数据:docs/pages-data.md P8 小节(photos表写入和摄像头不自动启动的约束以此为准)
+
 请基于 PRD v1.7 §4.2.3 step 6-7 实现拍合影 + 拍后回扫码:
 
 1. L2 内所有题答完后,跳转到 play/pages/photo.html?sessionId=xxx&pointIndex=0
@@ -1958,6 +2010,9 @@ html5-qrcode 已在 M16 的 index.html 里加载,这里不用重复加载。
 **【复制给 Claude Code 的指令】**
 
 ```
+参考布局:docs/wireframes/play/09-victory.png
+参考数据:docs/pages-data.md P9 小节(总分计算和合影读取以此为准)
+
 请基于 PRD v1.7 §4.2.6 实现极简通关庆典页:
 
 1. play/pages/finish.html?sessionId=xxx
@@ -2018,6 +2073,9 @@ html5-qrcode 已在 M16 的 index.html 里加载,这里不用重复加载。
 **【复制给 Claude Code 的指令】**
 
 ```
+参考布局:docs/wireframes/play/02-select-level.png(续玩横幅)
+参考数据:docs/pages-data.md P2 小节中「续玩横幅」部分 + 游戏端备注第1条(续玩恢复粒度=题级,用 currentQuestionIndex)
+
 请基于 PRD v1.7 §4.2.7 实现自动保存 + 续玩:
 
 1. 自动保存(应该已经在 M19-M25 各关键节点实现了):

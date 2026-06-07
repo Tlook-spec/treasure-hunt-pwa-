@@ -52,7 +52,7 @@
 - 点位行「编辑」→ 进入 A3 L2 编辑页（携带 pointId）
 - 点位行「上移/下移」→ swap 相邻 Point 的 order，刷新
 - 点位行「复制」→ 深拷贝该 Point，新 ID，新 6 位码
-- 点位行「移除」→ 二次确认删除该 Point（关联题目 usedCount 不减）
+- 点位行「移除」→ 二次确认删除该 Point（题目引用数实时计算，无需维护）
 - 点位行「保存二维码」→ 单张二维码生成 PNG
 - （添加点位入口：通常在点位列表区顶部「➕ 添加点位」→ A3 空表单）
 
@@ -84,9 +84,9 @@
 - 填表 + 保存 → 写入/更新 points 表，返回 A2
 - 新建 L2 时：`generateId('pt')` + 关联 levelId + `generateSixDigitCode()`（与 points 表所有 code 查重）+ 默认 order = 当前 L1 内 max+1
 - 「保存二维码」→ 单张二维码 PNG
-- 「从题库添加题目」→ 弹题库选择面板（含学科/难度筛选，勾选确认），追加到 questionIds，被选题目 `usedCount += 1`
+- 「从题库添加题目」→ 弹题库选择面板（含学科/难度筛选，勾选确认），追加到 questionIds（题目引用数实时计算，无需维护）
 - 题目「上移/下移」→ 调整 questionIds 数组顺序（决定答题顺序）
-- 题目「移除」→ 从 questionIds 删除，`usedCount` **不减**（消耗式）
+- 题目「移除」→ 从 questionIds 删除（引用数实时计算，无需维护）
 
 **需要的数据**：
 - 单个 Point → `db.points.get(pointId)`
@@ -105,7 +105,7 @@
 **显示**：
 - 顶部按钮：「➕ 新建题目」「📥 CSV导入」「📤 题库CSV导出」
 - 筛选条：学科 / 难度（★ ★★ ★★★）/ 年龄段（4-6 / 7-9 / 10-12）/ 使用次数（0 / 1 / 2+）
-- 题目列表，每行：题干、[学科 难度星 年龄段]、usedCount 次、编辑/删除/复制
+- 题目列表，每行：题干、[学科 难度星 年龄段]、实时引用数（🔵0次/🟡1次/🟠N次）、编辑/删除/复制
 
 **操作**：
 - 「新建题目」→ A5 题目表单（空）
@@ -113,14 +113,14 @@
 - 「题库CSV导出」→ 全部题目导出为 CSV（PapaParse.unparse）
 - 筛选条点击 → 前端过滤列表（含 usedCount 维度）
 - 行「编辑」→ A5 题目表单（携带 questionId）
-- 行「复制」→ 深拷贝，新 ID，`usedCount` 重置为 0
+- 行「复制」→ 深拷贝，新 ID（引用数自动为 0，因无点位引用新 ID）
 - 行「删除」→ 引用保护检查（扫描所有 Point 的 questionIds）
   - 有引用 → 弹拒绝对话框（提示被哪些 L2 引用，先去解除）
   - 无引用 → 二次确认 → 删除
 
 **需要的数据**：
-- 所有 Question → `db.questions.orderBy('usedCount').toArray()`（默认 usedCount 升序，未用过的优先）
-  - 用到字段：`id`、`subject`、`difficulty`、`ageGroup`、`text`、`usedCount`
+- 所有 Question + 所有 Point → `Promise.all([db.questions.toArray(), db.points.toArray()])`，实时计算引用数 Map，按引用数升序排列
+  - 用到字段：`id`、`subject`、`difficulty`、`ageGroup`、`text`
 - 删除前引用检查 → 扫描 `db.points` 所有 questionIds 是否含该 id
 
 ---
@@ -144,11 +144,11 @@
 
 **操作**：
 - 保存 → 写入/更新 questions 表
-- 新建用 `generateId('q')`，`usedCount` 初始 0
+- 新建用 `generateId('q')`（无需设置 usedCount，引用数从 0 自然开始）
 
 **需要的数据**：
 - 单个 Question → `db.questions.get(questionId)`
-  - 用到字段：`id`、`subject`、`difficulty`、`ageGroup`、`type`、`text`、`options`、`correctAnswer`、`hint`、`explanation`、`usedCount`
+  - 用到字段：`id`、`subject`、`difficulty`、`ageGroup`、`type`、`text`、`options`、`correctAnswer`、`hint`、`explanation`
   - ⚠️ **不显示**：`imagePath`、`textImagePath`（V1，默认 null）
 - 注意：截图里选项是固定 A/B/C/D 四圆圈；PRD §6.3 `options` 是动态数组（单选 2-4 个、判断题 2 个）。**开发时以 PRD 的动态行为准**，线框图仅示意（见文末「编辑端备注」）
 
@@ -168,7 +168,7 @@
 **操作**：
 - 「下载模板」→ 生成模板 CSV（列：学科/难度/年龄段/题型/题干/选项A-D/正确答案/提示/解析，UTF-8 with BOM）
 - 「选择文件」→ PapaParse 解析，显示前 5 行预览
-- 「确认导入」→ 逐行校验写入 questions 表，每道新题 `generateId('q')` + `usedCount=0`，显示成功/失败统计
+- 「确认导入」→ 逐行校验写入 questions 表，每道新题 `generateId('q')`（usedCount 字段可留 0 但不作为统计来源），显示成功/失败统计
 - 预览乱码 → 提示文件非 UTF-8，按教学重新保存
 
 **需要的数据**：
@@ -444,3 +444,11 @@
 2. **locationHint 语义 = 找到本站**：第 N 个 Point 的 locationHint 就是去找第 N 站的提示（含第 1 站）。字段名已从历史的 nextHint 改为 locationHint，避免理解反。
 3. **「找不到二维码」= 家长输码后进入本站答题**，不是跳过（MVP 不做真跳过，应急通关裁判模式在 V2）。线框图 05 状态 B 已修订一致。
 4. **摄像头不自动启动**：所有需要开摄像头的场景（P4 扫码、P8 状态 3）都必须等用户点按钮才调 getUserMedia。
+
+---
+
+## 更新记录
+
+| 时间 | 修改内容 |
+|------|---------|
+| MVP M09 后 | A3 题目绑定/移除、A4 题库列表、A5 题目表单：usedCount 由存储累计值改为实时计算的当前引用数（扫描 Point.questionIds），消除列表与删除提示不一致 |

@@ -2,7 +2,7 @@
 
 > 这个文件是给 Claude Code 看的「项目说明书」。每次启动新对话时 Claude Code 会自动读取这个文件,了解项目背景和约定。**不要删除这个文件**。
 >
-> **当前版本:v1.7**(详见文末更新记录)
+> **当前版本:v1.7.2**(详见文末更新记录)
 
 ---
 
@@ -71,6 +71,11 @@ L1 探险(Level)              一次完整的户外活动
 - 之后所有访问(包括飞行模式):SW 从缓存读 → 完全离线工作 ✅
 
 **版本号固定**:必须用 `@3.2.4` 这种固定版本号,不要用 `@latest`,避免版本漂移导致离线缓存失效。
+**ES 模块怎么用这些 CDN 库**:这 5 个库都用普通 <script> 加载,名字挂在全局上
+(Dexie、Papa、Html5Qrcode、qrcode、eruda)。我们自己写的 .js 是 ES 模块(import/export),
+里面要【直接用这些全局名】(如 new Dexie(...)、qrcode(0,'M')),
+【不要写 import Dexie from 'dexie' 这种】——项目没有打包工具,这样写会直接报错。
+HTML 里务必把库的 <script> 放在自己的 <script type="module"> 之前。
 
 **编辑端**:普通网页,**不做 PWA**,浏览器直接打开使用
 **游戏端**:完整 PWA + Service Worker(动态缓存策略),iPad Safari 安装到主屏幕
@@ -327,7 +332,7 @@ self.addEventListener('fetch', (event) => {
 
 - **Level (L1)**:探险,**v1.5 起无 password 字段**,points 通过外键 levelId 关联
 - **Point (L2)**:点位,包含 questionIds 数组(多题)、code(6 位数字)
-- **Question (L3)**:题目,含 usedCount 数字
+- **Question (L3)**:题目(usedCount 字段已遗留,使用次数改为实时引用数计算)
 - **Player**:玩家(V1 多人)
 - **GameSession**:游戏会话,含 pointRecords(每 L2 内多 questionResults)
 - **PhotoBlob**:照片存储(仅头像 + L2 通关合影两类)
@@ -337,7 +342,7 @@ self.addEventListener('fetch', (event) => {
 
 - 短 ID(不用 UUID v4,生成方式见 §4)
 - 每 L2 一张通关合影(不是每题都拍)
-- usedCount 简单数字(不维护引用列表),**导入合并时取较大值**(v1.7 新增)
+- 使用次数实时计算(扫描所有 Point.questionIds),不存储,不随导入更新
 - **不做 snapshot 机制**——session 直接引用当前 L1 数据
 - **导入数据保护**:导入前检查未完成游戏并二次确认
 - **JSON 版本检查**:MVP 只检查 schemaVersion === "1.0",简单 OK
@@ -363,7 +368,7 @@ self.addEventListener('fetch', (event) => {
 11. **连续答对计数**(V1):「独占被选」时才 +1
 12. **颁奖流程**(V1):先全员投票 → 一起颁奖
 13. **保底奖**(V1):无奖玩家自动获保底
-14. **题库 usedCount**:题目被绑定到 L2 时 +1,移除时不减;**JSON 导入合并时取「现有值」和「JSON 值」的较大值**(v1.7 新增)
+14. **题库使用次数**:实时计算当前被多少个点位引用,不存储,不随绑定/移除/导入维护
 15. **删除引用保护**:删除题目时检查引用,有引用则拒绝并提示先解除引用;删除 L1 时连同其 L2 一起删(不影响题库)
 16. **MVP 不做主动暂停按钮**:只做自动保存 + 启动时续玩检查,孩子要"暂停"就直接退出 App
 17. **导入数据保护**:游戏端导入 JSON 前检查未完成游戏 + schemaVersion === "1.0"
@@ -556,6 +561,7 @@ self.addEventListener('fetch', (event) => {
 | 阶段 1 中 | v1.6 | 用户 + Claude | V1 探险地图功能完整设计 |
 | 阶段 1 末 | v1.7 | 用户 + 3 AI Reviewer + Claude | **基于多方 review 整合修订**:① MVP 阶段 CDN 引入第三方库 + 动态缓存 SW ② 删除手写 FILES_TO_CACHE 列表要求 ③ 短 ID 生成方式明确为时间戳+随机 ④ IndexedDB 物理隔离强化为「常量 + 运行时拦截」⑤ 拍照后回扫码改按钮触发 ⑥ usedCount 导入取较大值 ⑦ 应急通关裁判模式从 V1 推到 V2 ⑧ 应急小抄打印功能 ⑨ MVP 编辑端完全隐藏地图 UI ⑩ 删除 zip 包、JSON 智能合并、朗读、完整 PDF、退出玩家重加、头像贴纸、回收站、密码保护、拖拽排序、CSV 编码自动检测 ⑪ 添加测试策略章节(强制写手动测试 checklist + iPad 三态覆盖)⑫ ES Module 全局约定 ⑬ MVP 只做整库覆盖,L1 单导入/单导出推 V1 |
 | MVP M01 中 | v1.7.1 | 用户 + Claude | 二维码库由 qrcode@1.5.3 换为 qrcode-generator@2.0.4，原 node-qrcode 浏览器构建无法作为普通脚本暴露全局变量 |
+| MVP M09 后 | v1.7.2 | 用户 + Claude | usedCount 由存储累计值改为实时计算的当前引用数，消除列表与删除提示不一致；§6 和规则 14 同步更新 |
 
 ---
 

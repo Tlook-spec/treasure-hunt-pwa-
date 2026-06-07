@@ -1,7 +1,264 @@
-<!-- admin/pages/levels.html — L1 探险管理（M07 实现）-->
-<div class="placeholder-page">
-  <div class="placeholder-icon">📝</div>
-  <h2>探险管理</h2>
-  <p>这里将显示所有探险（L1）列表，支持新建、编辑、删除。</p>
-  <p style="margin-top:8px;font-size:13px;color:#aaa">M07 开发中…</p>
+<!-- admin/pages/levels.html — L1/L2 管理（M07 + M08 实现）-->
+
+<!-- ── Panel 1: L1 列表 ─────────────────────────────────── -->
+<div id="levels-list-panel">
+  <div class="page-header">
+    <h1 class="page-title">📝 探险管理</h1>
+    <button id="btn-create-level" class="btn btn-primary">➕ 新建探险</button>
+  </div>
+  <div id="levels-container">
+    <div class="empty-state"><div class="empty-icon">⏳</div><p>加载中…</p></div>
+  </div>
 </div>
+
+<!-- ── Panel 2: L1 详情（含 L2 列表）──────────────────── -->
+<div id="levels-detail-panel" style="display:none">
+  <div class="detail-header">
+    <button id="btn-back-to-list" class="btn btn-secondary btn-sm">← 返回列表</button>
+    <h2 id="detail-level-name" class="detail-title">探险名称</h2>
+    <div class="detail-actions">
+      <button id="detail-btn-edit"   class="btn btn-secondary btn-sm">✏️ 编辑</button>
+      <button id="detail-btn-copy"   class="btn btn-secondary btn-sm">📋 复制</button>
+      <button id="detail-btn-delete" class="btn btn-danger btn-sm">🗑️ 删除</button>
+    </div>
+  </div>
+
+  <div class="detail-section">
+    <div class="detail-section-title">📋 基本信息</div>
+    <p id="detail-desc-text"
+       style="font-size:14px;color:var(--color-text-muted);margin-bottom:var(--space-sm);line-height:1.7"></p>
+    <div id="detail-info-grid" class="detail-meta-grid"><!-- JS 填入 --></div>
+  </div>
+
+  <div class="detail-section">
+    <div class="page-header" style="margin-bottom:var(--space-sm)">
+      <div class="detail-section-title" style="margin:0">📍 点位列表</div>
+      <button id="btn-add-point" class="btn btn-primary btn-sm">➕ 添加点位</button>
+    </div>
+    <div id="point-list-container">
+      <p style="text-align:center;color:var(--color-text-muted);padding:var(--space-md)">加载中…</p>
+    </div>
+  </div>
+
+  <div class="detail-section">
+    <div class="detail-section-title">🖨️ 打印工具</div>
+    <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap">
+      <button class="btn btn-secondary" disabled title="M11 开发中">🔲 打印二维码</button>
+      <button class="btn btn-secondary" disabled title="M12 开发中">📋 打印应急小抄</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Panel 3: L2 点位编辑表单 ─────────────────────────── -->
+<div id="levels-point-panel" style="display:none">
+  <div class="detail-header">
+    <button id="btn-point-back" class="btn btn-secondary btn-sm">← 返回详情</button>
+    <h2 id="point-panel-title" class="detail-title">点位编辑</h2>
+    <div class="detail-actions">
+      <button class="btn btn-secondary btn-sm" disabled title="M11 开发中">🔲 保存二维码</button>
+    </div>
+  </div>
+
+  <div class="detail-section">
+    <div class="detail-section-title">📋 基本信息（仅家长可见）</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">点位序号</label>
+        <input id="point-order-display" class="form-input" type="text" readonly
+               style="background:var(--color-bg-card);color:var(--color-text-muted);cursor:default">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="input-point-name">
+          点位名称<span class="required">*</span>
+        </label>
+        <input id="input-point-name" class="form-input" type="text"
+               placeholder="如「小区凉亭」" maxlength="30">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="input-point-parent-note">家长备忘</label>
+      <textarea id="input-point-parent-note" class="form-textarea"
+                placeholder="如「贴在凉亭东侧第三根柱子上」" maxlength="200"></textarea>
+    </div>
+  </div>
+
+  <div class="detail-section">
+    <div class="detail-section-title">💬 本站扫码成功提示（孩子可见）</div>
+    <div class="form-group">
+      <textarea id="input-discovery-text" class="form-textarea"
+                placeholder="如「恭喜找到第二站！请回答本轮的题目吧！」" maxlength="200"></textarea>
+    </div>
+  </div>
+
+  <div class="detail-section">
+    <div class="detail-section-title">🗺️ 下一点提示（孩子可见）</div>
+    <div class="form-group">
+      <textarea id="input-location-hint" class="form-textarea"
+                placeholder="如「找到#5号楼邮递员传递信息的地方！」" maxlength="200"></textarea>
+    </div>
+  </div>
+
+  <div class="detail-section">
+    <div class="page-header" style="margin-bottom:var(--space-sm)">
+      <div class="detail-section-title" style="margin:0">
+        🎯 本站包含的题目
+        <span style="font-size:12px;font-weight:400;color:var(--color-text-muted);margin-left:6px">
+          （多道题按顺序作答）
+        </span>
+      </div>
+      <button id="btn-add-question" class="btn btn-primary btn-sm">➕ 从题库添加题目</button>
+    </div>
+    <div id="question-list-container"><!-- JS 填入 --></div>
+    <div style="margin-top:var(--space-sm)">
+      <button class="btn btn-secondary btn-sm" disabled title="V1 功能">🎲 随机抽题（V1）</button>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:flex-end;gap:var(--space-sm);margin-top:var(--space-md)">
+    <button id="btn-point-cancel" class="btn btn-secondary">取消</button>
+    <button id="btn-point-save"   class="btn btn-primary">保存点位</button>
+  </div>
+</div>
+
+<!-- ── L1 新建/编辑弹窗 ──────────────────────────────────── -->
+<div id="level-form-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span id="modal-form-title" class="modal-title">新建探险</span>
+      <button id="btn-modal-close" class="modal-close" title="关闭">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label" for="input-level-name">
+          探险名称<span class="required">*</span>
+        </label>
+        <input id="input-level-name" class="form-input" type="text"
+               placeholder="如「小区大冒险」" maxlength="30" />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="input-level-desc">简介</label>
+        <textarea id="input-level-desc" class="form-textarea"
+                  placeholder="可选，给家长看的备注（如「适合雨天室内」）"
+                  maxlength="200"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="select-player-count">推荐人数</label>
+          <select id="select-player-count" class="form-select">
+            <option value="1">1 人</option>
+            <option value="2">2 人</option>
+            <option value="3">3 人</option>
+            <option value="4">4 人</option>
+            <option value="5">5 人</option>
+            <option value="6">6 人</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="select-age-group">推荐年龄段</label>
+          <select id="select-age-group" class="form-select">
+            <option value="4-6">4–6 岁</option>
+            <option value="7-9" selected>7–9 岁</option>
+            <option value="10-12">10–12 岁</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">主题色</label>
+        <div id="color-swatches" class="color-swatches"><!-- JS 生成 --></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button id="btn-form-cancel" class="btn btn-secondary">取消</button>
+      <button id="btn-form-save"   class="btn btn-primary">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── L1 删除确认弹窗 ─────────────────────────────────── -->
+<div id="confirm-modal" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:380px">
+    <div class="modal-header">
+      <span class="modal-title">⚠️ 确认删除</span>
+      <button id="btn-confirm-close" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirm-message"
+         style="font-size:15px;line-height:1.7;color:var(--color-text)"></p>
+    </div>
+    <div class="modal-footer">
+      <button id="btn-confirm-cancel" class="btn btn-secondary">取消</button>
+      <button id="btn-confirm-ok"     class="btn btn-danger">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 题库选择面板（弹窗）──────────────────────────────── -->
+<div id="question-picker-modal" class="modal-overlay hidden">
+  <div class="modal-box" style="width:600px">
+    <div class="modal-header">
+      <span class="modal-title">📚 从题库添加题目</span>
+      <button id="btn-picker-close" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body" style="padding-bottom:0">
+      <div class="picker-filters">
+        <select id="picker-filter-subject" class="form-select">
+          <option value="">全部学科</option>
+          <option value="math">数学</option>
+          <option value="chinese">语文</option>
+          <option value="english">英语</option>
+          <option value="science">自然/科学</option>
+          <option value="common">常识</option>
+        </select>
+        <select id="picker-filter-difficulty" class="form-select">
+          <option value="">全部难度</option>
+          <option value="1">★ 简单</option>
+          <option value="2">★★ 中等</option>
+          <option value="3">★★★ 困难</option>
+        </select>
+        <input id="picker-filter-search" class="form-input" type="text"
+               placeholder="🔍 搜索题干..." style="flex:1;min-width:120px">
+      </div>
+      <div id="picker-question-list" style="max-height:380px;overflow-y:auto">
+        <!-- JS 填入 -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span id="picker-selected-count"
+            style="flex:1;font-size:13px;color:var(--color-text-muted);align-self:center">
+        已选 0 道题
+      </span>
+      <button id="btn-picker-cancel"  class="btn btn-secondary">取消</button>
+      <button id="btn-picker-confirm" class="btn btn-primary">确认添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── 单张二维码预览弹窗 ──────────────────────────────── -->
+<div id="qr-modal" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:320px">
+    <div class="modal-header">
+      <span class="modal-title">🔲 点位二维码</span>
+      <button id="btn-qr-close" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;align-items:center;gap:var(--space-sm);text-align:center">
+      <div id="qr-point-name"
+           style="font-weight:700;font-size:16px;color:var(--color-text)"></div>
+      <div id="qr-code-display"></div>
+      <div id="qr-code-number"
+           style="font-size:26px;font-weight:800;letter-spacing:6px;
+                  color:var(--color-text);font-family:monospace"></div>
+      <p style="font-size:12px;color:var(--color-text-muted);margin-top:-4px">
+        孩子扫码或手动输入以上数字
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button id="btn-qr-close2" class="btn btn-secondary">关闭</button>
+      <a id="btn-qr-download" class="btn btn-primary" download>💾 下载 PNG</a>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initLevelsPage } from './scripts/level-form.js';
+  initLevelsPage();
+</script>

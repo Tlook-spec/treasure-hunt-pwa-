@@ -46,10 +46,12 @@ async function navigate() {
   mainContent.innerHTML = `<div class="placeholder-page"><div class="placeholder-icon">⏳</div><p>加载中...</p></div>`;
 
   try {
-    const response = await fetch(pagePath);
+    const response = await fetch(pagePath, { cache: 'no-store' });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const html = await response.text();
     mainContent.innerHTML = html;
+    // innerHTML 注入的 <script> 不会自动执行，需要手动替换触发
+    executeFragmentScripts(mainContent);
   } catch (err) {
     mainContent.innerHTML = `
       <div class="placeholder-page">
@@ -70,6 +72,25 @@ function updateActiveNav(currentHash) {
   document.querySelectorAll('.nav-item a').forEach(link => {
     const linkHash = new URL(link.href, location.href).hash.replace('#', '');
     link.classList.toggle('active', linkHash === currentHash);
+  });
+}
+
+// ── Fragment 脚本重新执行 ─────────────────────────────────
+
+/**
+ * innerHTML 设置后，里面的 <script> 不会自动执行。
+ * 这里把每个 <script> 换成新节点，触发浏览器执行。
+ */
+function executeFragmentScripts(container) {
+  container.querySelectorAll('script').forEach(oldScript => {
+    const newScript = document.createElement('script');
+    if (oldScript.type) newScript.type = oldScript.type;
+    if (oldScript.src) {
+      newScript.src = oldScript.src;
+    } else {
+      newScript.textContent = oldScript.textContent;
+    }
+    oldScript.replaceWith(newScript);
   });
 }
 
