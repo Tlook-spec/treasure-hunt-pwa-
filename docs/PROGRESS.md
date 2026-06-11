@@ -10,7 +10,7 @@
 
 **阶段**：MVP 开发阶段 B（编辑端）进行中
 
-**下一个任务**：M18 — JSON 整库导入（游戏端）
+**下一个任务**：M19 — 游戏主流程框架
 
 ---
 
@@ -65,7 +65,7 @@
 
 - **M16** ✅ 游戏端 PWA 框架（动态缓存 SW）
 - **M17** ✅ 启动页 + 探险选择页 + 设置页（play/index.html、play/pages/select-level.html、play/pages/settings.html）
-- [ ] M18 JSON 整库导入（游戏端）
+- **M18** ✅ JSON 整库导入（游戏端）：validateJson + importFull + sessions 清空 + localStorage 时间戳
 - [ ] M19 游戏主流程框架
 - [ ] M20 扫码功能集成
 - [ ] M21 数字码输入 + 「找不到?」按钮

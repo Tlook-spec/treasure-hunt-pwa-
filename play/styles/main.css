@@ -332,6 +332,89 @@ body {
   padding: var(--space-xs) 0;
 }
 
+/* ======== 模态弹窗 ======== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: var(--space-sm);
+}
+.modal-box {
+  background: #fff;
+  border-radius: var(--radius-card);
+  padding: var(--space-md) var(--space-sm);
+  max-width: 380px;
+  width: 100%;
+  box-shadow: var(--shadow-float);
+}
+.modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: var(--space-xs);
+}
+.modal-message {
+  font-size: 15px;
+  color: var(--color-text);
+  line-height: 1.6;
+  margin-bottom: var(--space-md);
+  white-space: pre-line;
+}
+.modal-actions {
+  display: flex;
+  gap: var(--space-xs);
+  justify-content: flex-end;
+}
+.modal-btn {
+  min-height: 48px;
+  padding: 0 var(--space-sm);
+  border: none;
+  border-radius: var(--radius-btn);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.1s;
+}
+.modal-btn:active { opacity: 0.75; }
+.modal-cancel {
+  background: var(--color-border);
+  color: var(--color-text);
+}
+.modal-ok {
+  background: var(--color-primary);
+  color: #fff;
+}
+.modal-ok-danger {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+/* ======== 导入成功卡片 ======== */
+.import-success-card {
+  background: #F0FFF4;
+  border: 1.5px solid #7ED321;
+  border-radius: var(--radius-card);
+  padding: var(--space-sm);
+  text-align: center;
+  margin-bottom: var(--space-sm);
+}
+.import-success-icon { font-size: 40px; margin-bottom: 8px; }
+.import-success-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2D7A2D;
+  margin-bottom: 6px;
+}
+.import-success-detail {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-sm);
+}
+
 /* ======== 横屏小屏适配 ======== */
 @media (orientation: landscape) and (max-height: 480px) {
   .page-header { min-height: 44px; }

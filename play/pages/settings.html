@@ -19,7 +19,7 @@
 
   <main class="page-content">
 
-    <!-- ====== 区块 A：当前数据状态 ====== -->
+    <!-- ====== 区块 A：当前数据状态（只读）====== -->
     <div class="stats-card">
       <div class="stats-section-title">当前数据</div>
       <div class="stats-row">
@@ -38,29 +38,48 @@
 
     <!-- ====== 区块 B：导入数据 ====== -->
     <div class="import-section">
+
+      <!-- 导入前显示的警示说明 -->
       <div class="import-warning-box">
         <span>⚠️</span>
         <span>导入会<strong>完整替换</strong>当前所有探险和题库。<br>
           如果正在游戏中，游戏进度也会被清除。</span>
       </div>
 
-      <!-- 文件选择器（隐藏），由按钮触发 -->
+      <!-- 导入成功后显示的卡片（默认隐藏）-->
+      <div class="import-success-card" id="import-success" style="display:none">
+        <div class="import-success-icon">🎉</div>
+        <div class="import-success-title">导入成功！</div>
+        <div class="import-success-detail" id="import-success-detail"></div>
+        <a href="../index.html" class="btn-primary" style="max-width:200px;margin:0 auto">
+          🏠 返回首页
+        </a>
+      </div>
+
+      <!-- 文件选择器（隐藏，由按钮触发）-->
       <input type="file" id="file-input" accept=".json"
              style="display:none" aria-label="选择 JSON 文件">
 
-      <!-- 警示色按钮：点击触发文件选择器 -->
+      <!-- 导入按钮 -->
       <button class="btn-primary btn-warning" id="btn-import">
         📥 完整覆盖导入
       </button>
-      <p class="import-note">用 JSON 备份文件完整替换当前数据（M18 实现导入逻辑）</p>
+
+      <!-- 简明三步说明 -->
+      <p class="import-note">
+        ① 电脑端导出 JSON &nbsp;→&nbsp;
+        ② AirDrop / 邮件传到 iPad &nbsp;→&nbsp;
+        ③ 在这里选择文件
+      </p>
+
     </div>
 
-    <!-- ====== 同步教学 ====== -->
+    <!-- ====== 同步传输教学 ====== -->
     <div class="tutorial-card">
-      <div class="tutorial-title">📱 怎么把电脑上的 JSON 文件传到 iPad？</div>
+      <div class="tutorial-title">📱 怎么把 JSON 文件传到 iPad？</div>
       <div class="tutorial-step">
         <div class="tutorial-num">1</div>
-        <div><strong>AirDrop</strong>（最方便）：Mac 导出 JSON → 直接 AirDrop 到 iPad → iPad「文件」App 里找到 → 点击分享 → 用 Safari 打开</div>
+        <div><strong>AirDrop</strong>（最快）：Mac 导出 JSON → AirDrop 到 iPad → iPad「文件」App → 分享 → 用 Safari 打开</div>
       </div>
       <div class="tutorial-step">
         <div class="tutorial-num">2</div>
@@ -68,7 +87,7 @@
       </div>
       <div class="tutorial-step">
         <div class="tutorial-num">3</div>
-        <div><strong>iCloud Drive</strong>：把 JSON 放进 iCloud → iPad「文件」App 找到 → 点击分享 → 用 Safari 打开</div>
+        <div><strong>iCloud Drive</strong>：把 JSON 放进 iCloud → iPad「文件」App 找到 → 分享 → 用 Safari 打开</div>
       </div>
     </div>
 
@@ -89,47 +108,203 @@
     }
   </script>
 
-  <!-- ES Module：加载 db，显示统计数据；导入逻辑 M18 实现 -->
+  <!-- ES Module：统计显示 + 完整导入逻辑 -->
   <script type="module">
     import db from '../../shared/db/play-db.js';
+    import { validateJson, importFull } from '../../shared/utils/json-io.js';
+
+    // ====== 工具函数 ======
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function formatTs(ts) {
+      const d = new Date(Number(ts));
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ` +
+             `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    // 读取文件内容为字符串（UTF-8）
+    function readFile(file) {
+      return new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload  = e => resolve(e.target.result);
+        r.onerror = () => reject(new Error('文件读取失败'));
+        r.readAsText(file, 'utf-8');
+      });
+    }
+
+    // ====== 模态弹窗 ======
+
+    // 单按钮提示（错误/信息）
+    function showAlert(message) {
+      return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+          <div class="modal-box">
+            <p class="modal-message">${escHtml(message)}</p>
+            <div class="modal-actions">
+              <button class="modal-btn modal-ok" id="_modal_ok">好的</button>
+            </div>
+          </div>`;
+        document.body.appendChild(overlay);
+        overlay.querySelector('#_modal_ok').addEventListener('click', () => {
+          overlay.remove();
+          resolve();
+        });
+      });
+    }
+
+    // 取消 / 确定（危险操作）
+    function showConfirm(message, confirmLabel = '确定', danger = false) {
+      return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+          <div class="modal-box">
+            <p class="modal-message">${escHtml(message)}</p>
+            <div class="modal-actions">
+              <button class="modal-btn modal-cancel" id="_modal_cancel">取消</button>
+              <button class="modal-btn ${danger ? 'modal-ok-danger' : 'modal-ok'}" id="_modal_confirm">
+                ${escHtml(confirmLabel)}
+              </button>
+            </div>
+          </div>`;
+        document.body.appendChild(overlay);
+        overlay.querySelector('#_modal_cancel').addEventListener('click', () => {
+          overlay.remove(); resolve(false);
+        });
+        overlay.querySelector('#_modal_confirm').addEventListener('click', () => {
+          overlay.remove(); resolve(true);
+        });
+      });
+    }
+
+    // XSS 防护
+    function escHtml(str) {
+      return String(str).replace(/[&<>"']/g, c =>
+        ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])
+      );
+    }
+
+    // ====== 统计数据渲染 ======
 
     async function renderStats() {
-      const [levelCount, pointCount, questionCount] = await Promise.all([
+      const [lc, pc, qc] = await Promise.all([
         db.levels.count(),
         db.points.count(),
         db.questions.count(),
       ]);
-      document.getElementById('stat-levels').textContent    = levelCount;
-      document.getElementById('stat-points').textContent    = pointCount;
-      document.getElementById('stat-questions').textContent = questionCount;
+      document.getElementById('stat-levels').textContent    = lc;
+      document.getElementById('stat-points').textContent    = pc;
+      document.getElementById('stat-questions').textContent = qc;
 
-      // 上次导入时间：M18 导入时会写入 localStorage
-      const importTime = localStorage.getItem('play_lastImportTime');
-      if (importTime) {
-        const d = new Date(Number(importTime));
-        document.getElementById('stat-import-time').textContent =
-          `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ` +
-          `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-      }
+      const ts = localStorage.getItem('lastImportAt');
+      document.getElementById('stat-import-time').textContent =
+        ts ? formatTs(ts) : '尚未导入';
     }
 
-    function pad(n) { return String(n).padStart(2, '0'); }
+    // ====== 导入按钮：控制忙碌状态 ======
 
-    // 导入按钮：目前只打开文件选择器，M18 接入实际逻辑
+    const btnImport = document.getElementById('btn-import');
+
+    function setBusy(busy) {
+      btnImport.disabled = busy;
+      btnImport.textContent = busy ? '⏳ 导入中…' : '📥 完整覆盖导入';
+    }
+
+    // ====== 显示导入成功 ======
+
+    function showSuccess(levelCount, questionCount) {
+      // 隐藏按钮和警示
+      document.querySelector('.import-warning-box').style.display = 'none';
+      btnImport.style.display = 'none';
+      document.querySelector('.import-note').style.display = 'none';
+
+      // 显示成功卡片
+      const card = document.getElementById('import-success');
+      document.getElementById('import-success-detail').textContent =
+        `成功导入 ${levelCount} 个探险、${questionCount} 道题目`;
+      card.style.display = 'block';
+
+      // 刷新统计数字
+      renderStats();
+    }
+
+    // ====== 完整导入流程 ======
+
     document.getElementById('btn-import').addEventListener('click', () => {
       document.getElementById('file-input').click();
     });
 
-    // 文件选中后：M18 在这里实现真正的导入逻辑
-    document.getElementById('file-input').addEventListener('change', (e) => {
+    document.getElementById('file-input').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      console.log('[设置] 选择了文件：', file.name, '—— M18 将实现导入逻辑');
-      // 重置 input，允许重复选同一文件
-      e.target.value = '';
+      e.target.value = ''; // 重置，允许重复选同一文件
+
+      // ── 步骤 1：读取文件 ──
+      let text;
+      try {
+        text = await readFile(file);
+      } catch (err) {
+        await showAlert('读取文件失败：' + err.message);
+        return;
+      }
+
+      // ── 步骤 2：校验 JSON 格式 ──
+      const result = validateJson(text);
+      if (!result.ok) {
+        await showAlert('文件校验失败\n\n' + result.error);
+        return;
+      }
+      const { data } = result;
+
+      // ── 步骤 3：检查未完成游戏（PRD §7.4 游戏端专项检查）──
+      const inProgress = await db.sessions.where('status').equals('in_progress').toArray();
+      if (inProgress.length > 0) {
+        const go = await showConfirm(
+          '检测到正在进行中的游戏，导入会清除进度，确定吗？',
+          '确定清除',
+          true
+        );
+        if (!go) return;
+      }
+
+      // ── 步骤 4：二次确认导入数量 ──
+      const confirmed = await showConfirm(
+        `将导入 ${data.levels.length} 个探险、${data.points.length} 个点位、` +
+        `${data.questions.length} 道题目，并替换当前所有数据。\n\n这个操作无法撤销，确定吗？`,
+        '确定导入',
+        true
+      );
+      if (!confirmed) return;
+
+      // ── 步骤 5-6：执行导入 ──
+      setBusy(true);
+      try {
+        // 单独清空 sessions（importFull 只处理 levels/points/questions）
+        await db.sessions.clear();
+
+        // 整库覆盖（内部原子事务，失败自动回滚）
+        await importFull(db, data);
+
+        // ── 步骤 7：记录导入时间 ──
+        localStorage.setItem('lastImportAt', String(Date.now()));
+
+        // ── 步骤 8：显示成功 ──
+        showSuccess(data.levels.length, data.questions.length);
+
+      } catch (err) {
+        console.error('[设置] 导入失败', err);
+        await showAlert('导入失败，请重试\n\n' + err.message);
+      } finally {
+        setBusy(false);
+      }
     });
 
+    // 页面初始化：显示统计数据
     renderStats().catch(err => console.error('[设置] 加载统计失败', err));
+
   </script>
 
 </body>
