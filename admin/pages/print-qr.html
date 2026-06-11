@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>打印二维码</title>
+
+  <!-- CDN：必须在 type="module" 之前 -->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, 'Microsoft YaHei', '苹方', sans-serif;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    /* ── 顶部工具栏 ── */
+    .toolbar {
+      background: #fff;
+      border-bottom: 1px solid #ddd;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .toolbar-title {
+      flex: 1;
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-secondary { background: #f0f0f0; color: #333; }
+    .btn-primary   { background: #4A90E2; color: #fff; }
+
+    /* ── iPad 警告横幅 ── */
+    .ipad-warning {
+      background: #fff8e1;
+      border: 1px solid #f9a825;
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin: 12px 20px;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #5d4000;
+    }
+
+    /* ── 内容区 ── */
+    .content {
+      padding: 20px;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    .level-title {
+      font-size: 20px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    /* ── QR 网格：屏幕上 2 列 ── */
+    .qr-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    /* ── 单张 QR 卡片 ── */
+    .qr-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 20px 16px 16px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* SVG 容器：固定尺寸让 SVG 缩放填满 */
+    .qr-image {
+      width: 180px;
+      height: 180px;
+    }
+
+    .qr-image svg {
+      width: 180px !important;
+      height: 180px !important;
+    }
+
+    .qr-station {
+      font-size: 20px;
+      font-weight: 800;
+      margin-top: 4px;
+    }
+
+    .qr-name {
+      font-size: 14px;
+      color: #555;
+    }
+
+    .qr-code {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: 6px;
+      font-family: 'Courier New', monospace;
+    }
+
+    .qr-note {
+      font-size: 11px;
+      color: #888;
+      font-style: italic;
+      line-height: 1.4;
+      max-width: 220px;
+    }
+
+    /* 加载 / 错误提示 */
+    .status-msg {
+      text-align: center;
+      padding: 60px 0;
+      color: #888;
+      font-size: 15px;
+      grid-column: 1 / -1;
+    }
+
+    /* ════════════════════════════════
+       打印专用样式
+    ════════════════════════════════ */
+    @media print {
+      /* 工具栏和警告不打印 */
+      .toolbar,
+      .ipad-warning { display: none !important; }
+
+      body { background: #fff; }
+
+      @page { size: A4 portrait; margin: 12mm; }
+
+      .content {
+        padding: 0;
+        max-width: none;
+      }
+
+      .level-title {
+        font-size: 16px;
+        margin-bottom: 10px;
+      }
+
+      .qr-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10mm;
+      }
+
+      .qr-card {
+        border: 1px solid #aaa;
+        border-radius: 6px;
+        padding: 10px 8px 12px;
+        gap: 4px;
+        /* 卡片内禁止分页 */
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      /* 每 4 张后强制换页 */
+      .qr-card:nth-child(4n) {
+        break-after: page;
+        page-break-after: always;
+      }
+      .qr-card:last-child {
+        break-after: auto;
+        page-break-after: auto;
+      }
+
+      .qr-image       { width: 150px; height: 150px; }
+      .qr-image svg   { width: 150px !important; height: 150px !important; }
+      .qr-station     { font-size: 16px; }
+      .qr-name        { font-size: 12px; }
+      .qr-code        { font-size: 20px; letter-spacing: 4px; }
+      .qr-note        { font-size: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 工具栏（打印时隐藏）-->
+<div class="toolbar">
+  <button class="btn btn-secondary" onclick="history.back()">← 返回</button>
+  <span class="toolbar-title" id="toolbar-title">打印二维码</span>
+  <button class="btn btn-primary" onclick="window.print()">🖨️ 立即打印</button>
+</div>
+
+<!-- iPad 打印警告（打印时隐藏）-->
+<div class="ipad-warning">
+  ⚠️ 建议在电脑浏览器上完成打印。iPad Safari 的打印对话框 CSS 支持有限，可能导致排版混乱。如果在 iPad 上，建议先「另存为 PDF」再打印。
+</div>
+
+<!-- 打印内容区 -->
+<div class="content">
+  <div class="level-title" id="level-title">加载中…</div>
+  <div class="qr-grid" id="qr-grid">
+    <div class="status-msg">正在生成二维码…</div>
+  </div>
+</div>
+
+<script type="module">
+  import db from '../../shared/db/admin-db.js';
+
+  const params  = new URLSearchParams(location.search);
+  const levelId = params.get('levelId');
+
+  if (!levelId) {
+    showError('缺少 levelId 参数，请从探险详情页「打印二维码」按钮进入。');
+  } else {
+    try {
+      const [level, points] = await Promise.all([
+        db.levels.get(levelId),
+        db.points.where('levelId').equals(levelId).sortBy('order'),
+      ]);
+
+      if (!level) {
+        showError('找不到该探险，请返回重试。');
+      } else if (points.length === 0) {
+        showError('该探险还没有点位，请先在编辑端添加点位后再打印。');
+      } else {
+        document.title = `${level.name} · 打印二维码`;
+        document.getElementById('toolbar-title').textContent = `${level.name} · 打印二维码`;
+        document.getElementById('level-title').textContent   = `${level.name} · 二维码`;
+
+        const grid = document.getElementById('qr-grid');
+        grid.innerHTML = '';
+
+        for (const pt of points) {
+          // 用全局 qrcode 函数生成 SVG（打印最清晰）
+          const qr = qrcode(0, 'M');
+          qr.addData(pt.code);
+          qr.make();
+
+          const card = document.createElement('div');
+          card.className = 'qr-card';
+          card.innerHTML = `
+            <div class="qr-image">${qr.createSvgTag(5, 8)}</div>
+            <div class="qr-station">第 ${pt.order} 站</div>
+            <div class="qr-name">${escapeHtml(pt.name)}</div>
+            <div class="qr-code">${pt.code}</div>
+            ${pt.parentNote
+              ? `<div class="qr-note">${escapeHtml(pt.parentNote)}</div>`
+              : ''}
+          `;
+          grid.appendChild(card);
+        }
+      }
+    } catch (err) {
+      showError('加载数据时出错：' + err.message);
+    }
+  }
+
+  function showError(msg) {
+    document.getElementById('level-title').textContent = '出错了';
+    document.getElementById('qr-grid').innerHTML =
+      `<div class="status-msg">⚠️ ${msg}</div>`;
+  }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+</script>
+
+</body>
+</html>

@@ -564,6 +564,12 @@ button { cursor: pointer; font-family: inherit; }
 .picker-row:last-child { border-bottom: none; }
 .picker-row:hover      { background: rgba(74,144,226,0.05); }
 
+/* 同探险内其他点位已占用的题目行：灰掉、不可点击 */
+.picker-row-occupied              { cursor: default; background: var(--color-bg-card); opacity: 0.7; }
+.picker-row-occupied:hover        { background: var(--color-bg-card); }
+.picker-row-occupied .picker-checkbox { cursor: not-allowed; }
+.picker-occupied-hint             { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
+
 .picker-checkbox {
   margin-top: 3px;
   width: 18px;

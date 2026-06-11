@@ -1094,15 +1094,16 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
        qr.make();
        容器.innerHTML = qr.createImgTag(5, 8);   // 参数:格子大小、外边距
    - 弹窗显示二维码图片
-   - 「保存图片」按钮 → 下载(文件名:L1名_第N站_点位名)。
-     说明:这个库原生输出是 GIF(二维码黑白,GIF 完全够用,扫码不受影响)。
-     如果你坚持要 PNG,就把二维码画到 <canvas> 再 canvas.toDataURL('image/png')导出。
+   - 「保存图片」按钮 → 下载 GIF(文件名:L1名_第N站_点位名_码xxxxxx)。
+     说明:qrcode-generator 原生输出 GIF,二维码黑白,扫码完全不受影响,不用转 PNG。
 
 2. 全部二维码生成 + 打印:
    - L1 详情页加「🖨️ 打印二维码」按钮
    - 点击进入打印预览页 admin/pages/print-qr.html?levelId=xxx
    - 用 qrcode-generator 渲染所有 L2 的二维码(每页 2-4 个,CSS Grid 控制)。
-     打印建议优先用 qr.createSvgTag(5, 8) 输出 SVG —— 放大打印最清晰,不会糊。
+     打印优先用 qr.createSvgTag(5, 8) 输出 SVG —— 放大打印最清晰,不会糊。
+     若实测某浏览器打印 SVG 出现空白或模糊,退回用 createImgTag(GIF)也可接受,
+     以实际打印效果为准。
    - 每个二维码下方显示:大字「第 X 站」、中字点位名称、大字 6 位短码、小字家长备忘
    - CSS @media print:隐藏导航和按钮、每 2-4 个一页(@page A4)、二维码黑白清晰
    - 「🖨️ 立即打印」按钮 → window.print()
@@ -1112,7 +1113,7 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
     可能导致排版混乱。如果在 iPad 上,建议先「另存为 PDF」再打印。"
 
 4. 写测试 checklist:docs/test-checklists/MVP-admin-二维码打印.md
-   - 单张 PNG 下载工作
+   - 单张图片下载工作
    - 打印预览页布局正确
    - 桌面 Chrome 打印 → 排版正确
    - 桌面 Chrome「另存为 PDF」→ PDF 排版正确

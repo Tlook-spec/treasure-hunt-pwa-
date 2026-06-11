@@ -222,6 +222,7 @@ admin 端引用 `ADMIN_DB_NAME`,play 端引用 `PLAY_DB_NAME`,**在每次打开 
 - 多种方案先列选项让用户选
 - Windows 环境用 PowerShell 语法
 - git commit 消息用单行英文（PowerShell 下多行中文 commit message 会乱码）
+- **始终用中文回复**（含解释、报错指引、注释；偶尔飘到其他语言时用户会提醒，请立即切回中文）
 
 ### 5.3 范围控制
 
@@ -562,6 +563,7 @@ self.addEventListener('fetch', (event) => {
 | 阶段 1 末 | v1.7 | 用户 + 3 AI Reviewer + Claude | **基于多方 review 整合修订**:① MVP 阶段 CDN 引入第三方库 + 动态缓存 SW ② 删除手写 FILES_TO_CACHE 列表要求 ③ 短 ID 生成方式明确为时间戳+随机 ④ IndexedDB 物理隔离强化为「常量 + 运行时拦截」⑤ 拍照后回扫码改按钮触发 ⑥ usedCount 导入取较大值 ⑦ 应急通关裁判模式从 V1 推到 V2 ⑧ 应急小抄打印功能 ⑨ MVP 编辑端完全隐藏地图 UI ⑩ 删除 zip 包、JSON 智能合并、朗读、完整 PDF、退出玩家重加、头像贴纸、回收站、密码保护、拖拽排序、CSV 编码自动检测 ⑪ 添加测试策略章节(强制写手动测试 checklist + iPad 三态覆盖)⑫ ES Module 全局约定 ⑬ MVP 只做整库覆盖,L1 单导入/单导出推 V1 |
 | MVP M01 中 | v1.7.1 | 用户 + Claude | 二维码库由 qrcode@1.5.3 换为 qrcode-generator@2.0.4，原 node-qrcode 浏览器构建无法作为普通脚本暴露全局变量 |
 | MVP M09 后 | v1.7.2 | 用户 + Claude | usedCount 由存储累计值改为实时计算的当前引用数，消除列表与删除提示不一致；§6 和规则 14 同步更新 |
+| MVP M14 后 | v1.7.3 | 用户 + Claude | §5.2 增加「始终用中文回复」约定，防止 Claude Code 偶发飘到其他语言 |
 
 ---
 

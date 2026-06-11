@@ -43,8 +43,8 @@
   <div class="detail-section">
     <div class="detail-section-title">🖨️ 打印工具</div>
     <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap">
-      <button class="btn btn-secondary" disabled title="M11 开发中">🔲 打印二维码</button>
-      <button class="btn btn-secondary" disabled title="M12 开发中">📋 打印应急小抄</button>
+      <button id="btn-print-qr" class="btn btn-secondary">🖨️ 打印二维码</button>
+      <button id="btn-print-cheatsheet" class="btn btn-secondary">📋 打印应急小抄</button>
     </div>
   </div>
 </div>
@@ -55,7 +55,7 @@
     <button id="btn-point-back" class="btn btn-secondary btn-sm">← 返回详情</button>
     <h2 id="point-panel-title" class="detail-title">点位编辑</h2>
     <div class="detail-actions">
-      <button class="btn btn-secondary btn-sm" disabled title="M11 开发中">🔲 保存二维码</button>
+      <button id="btn-preview-qr" class="btn btn-secondary btn-sm" disabled>🔲 预览二维码</button>
     </div>
   </div>
 
@@ -253,7 +253,7 @@
     </div>
     <div class="modal-footer">
       <button id="btn-qr-close2" class="btn btn-secondary">关闭</button>
-      <a id="btn-qr-download" class="btn btn-primary" download>💾 下载 PNG</a>
+      <a id="btn-qr-download" class="btn btn-primary" download>💾 下载图片</a>
     </div>
   </div>
 </div>

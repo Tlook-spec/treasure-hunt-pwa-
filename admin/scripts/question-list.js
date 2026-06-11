@@ -8,6 +8,7 @@ import { generateId } from '../../shared/utils/id.js';
 import { showQuestionForm, initQuestionForm } from './question-form.js';
 import { showCsvImportPanel } from './csv-import.js';
 import { matchesQuestionFilter } from './question-filter.js';
+import { findQuestionReferences } from '../../shared/utils/reference-check.js';
 
 // ── 学科显示名映射 ────────────────────────────────────────
 const SUBJECT_LABELS = {
@@ -232,38 +233,39 @@ function usedBadge(count) {
 
 // ── 删除（引用保护）───────────────────────────────────────
 async function handleDeleteQuestion(q) {
-  const allPoints = await db.points.toArray();
-  const refs      = allPoints.filter(pt => (pt.questionIds || []).includes(q.id));
+  const refs = await findQuestionReferences(db, q.id);
 
-  const modal    = document.getElementById('question-delete-modal');
-  const titleEl  = document.getElementById('q-delete-modal-title');
-  const msgEl    = document.getElementById('q-delete-message');
+  const modal      = document.getElementById('question-delete-modal');
+  const titleEl    = document.getElementById('q-delete-modal-title');
+  const msgEl      = document.getElementById('q-delete-message');
   const confirmBtn = document.getElementById('btn-q-delete-confirm');
+  const cancelBtn  = document.getElementById('btn-q-delete-cancel');
+  const shortText  = escapeHtml((q.text || '').slice(0, 20)) +
+                     ((q.text || '').length > 20 ? '…' : '');
 
   if (refs.length > 0) {
-    // 有引用 → 拒绝，只显示「取消」
-    const levelIds = [...new Set(refs.map(pt => pt.levelId))];
-    const levels   = await db.levels.bulkGet(levelIds);
-    const levelMap = Object.fromEntries(
-      levels.filter(Boolean).map(l => [l.id, l.name])
-    );
-    const lines = refs.map(pt => {
-      const lvName = levelMap[pt.levelId] || '未知探险';
-      return `  · 「${lvName}」→「${pt.name}」`;
-    });
+    // 有引用 → 拒绝，仅显示「我知道了」
+    const bullets = refs
+      .map(r =>
+        `<li>${escapeHtml(r.levelName)} · 第 ${r.pointOrder} 站「${escapeHtml(r.pointName)}」</li>`
+      )
+      .join('');
 
-    titleEl.textContent = '⚠️ 无法删除';
-    msgEl.textContent   =
-      `这道题目正被以下 ${refs.length} 个点位使用，\n请先去那些点位里解除引用，再回来删除：\n\n${lines.join('\n')}`;
+    titleEl.textContent  = '❌ 无法删除';
+    msgEl.innerHTML      =
+      `这道题正在被以下 <strong>${refs.length} 个点位</strong> 使用：
+       <ul style="margin:10px 0 12px 18px;line-height:2.2">${bullets}</ul>
+       请先去这些点位中移除引用，再回来删除。`;
     confirmBtn.style.display = 'none';
+    cancelBtn.textContent    = '我知道了';
     pendingDeleteId = null;
   } else {
     // 无引用 → 二次确认
-    const shortText = (q.text || '').slice(0, 25);
-    titleEl.textContent = '🗑️ 确认删除';
-    msgEl.textContent   =
-      `确定要删除题目「${shortText}${(q.text || '').length > 25 ? '…' : ''}」吗？\n\n此操作无法撤销。`;
+    titleEl.textContent      = '🗑️ 确认删除';
+    msgEl.innerHTML          =
+      `确定删除题目「<strong>${shortText}</strong>」吗？<br><br>此操作无法撤销。`;
     confirmBtn.style.display = '';
+    cancelBtn.textContent    = '取消';
     pendingDeleteId = q.id;
   }
 

@@ -1,7 +1,284 @@
-<!-- admin/pages/import-export.html — 导入导出（M13 实现）-->
-<div class="placeholder-page">
-  <div class="placeholder-icon">🔄</div>
-  <h2>导入导出</h2>
-  <p>这里将支持整库 JSON 导出（传到 iPad）和整库 JSON 导入（覆盖当前数据）。</p>
-  <p style="margin-top:8px;font-size:13px;color:#aaa">M13 开发中…</p>
+<!-- admin/pages/import-export.html — JSON 整库导入导出（M13）-->
+
+<div class="page-header">
+  <h1 class="page-title">🔄 导入 / 导出 JSON</h1>
 </div>
+
+<!-- ── 区块 A：整库导出 ───────────────────────────────── -->
+<div class="detail-section">
+  <div class="detail-section-title">📤 整库导出</div>
+  <p style="font-size:14px;color:var(--color-text-muted);margin-bottom:var(--space-sm);line-height:1.7">
+    下载所有探险 + 全部题库的备份文件，可用于备份或跨设备同步。<br>
+    文件名格式：<code>treasure-hunt-backup-YYYY-MM-DD.json</code>
+  </p>
+  <button id="btn-export" class="btn btn-primary">📥 立即导出</button>
+  <div id="export-status" style="margin-top:var(--space-sm)"></div>
+</div>
+
+<!-- ── 区块 B：整库覆盖导入 ──────────────────────────── -->
+<div class="detail-section">
+  <div class="detail-section-title">📥 整库覆盖导入</div>
+
+  <!-- 警告横幅 -->
+  <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:10px;
+              padding:12px 16px;margin-bottom:var(--space-sm);
+              font-size:14px;color:#664d00;line-height:1.7">
+    ⚠️ <strong>这会替换当前所有数据！</strong>导入前请先做好备份（使用上方「立即导出」）。
+  </div>
+
+  <!-- 步骤 1：选择文件 -->
+  <div style="margin-bottom:var(--space-sm)">
+    <div style="font-size:13px;font-weight:600;color:var(--color-text-muted);
+                margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">
+      步骤 1 · 选择备份文件
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <button id="btn-select-file" class="btn btn-secondary">📂 选择 JSON 文件</button>
+      <span id="file-name-display"
+            style="font-size:13px;color:var(--color-text-muted)">未选择文件</span>
+    </div>
+    <input id="file-input" type="file" accept=".json" hidden>
+  </div>
+
+  <!-- 错误提示（文件无效时显示）-->
+  <div id="import-error" class="hidden"
+       style="background:#fdecea;border:1px solid #f5c6cb;border-radius:10px;
+              padding:12px 16px;font-size:14px;color:#721c24;line-height:1.6;
+              margin-bottom:var(--space-sm)">
+  </div>
+
+  <!-- 步骤 2：文件预览（校验通过后显示）-->
+  <div id="import-preview" class="hidden"
+       style="margin-bottom:var(--space-sm)">
+    <div style="font-size:13px;font-weight:600;color:var(--color-text-muted);
+                margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">
+      步骤 2 · 文件信息
+    </div>
+    <div style="background:#f0f7ff;border:1px solid #b3d4f7;border-radius:10px;
+                padding:14px 16px;font-size:14px;line-height:1.9">
+      <div>🕐 <strong>导出时间：</strong><span id="preview-export-date">—</span></div>
+      <div>📦 <strong>文件包含：</strong><span id="preview-counts">—</span></div>
+    </div>
+    <button id="btn-confirm-import"
+            class="btn btn-primary"
+            style="margin-top:var(--space-sm)">
+      ✅ 确认导入
+    </button>
+  </div>
+
+  <!-- 成功提示（导入完成后显示）-->
+  <div id="import-success" class="hidden"
+       style="background:#eafaf1;border:1px solid #a9dfbf;border-radius:10px;
+              padding:14px 16px;font-size:14px;color:#1a5c38;line-height:1.7;
+              margin-bottom:var(--space-sm)">
+  </div>
+</div>
+
+<!-- ── 确认替换弹窗 ───────────────────────────────────── -->
+<div id="import-confirm-modal" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title">⚠️ 确认替换所有数据</span>
+      <button id="btn-io-modal-close" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="modal-body-content"
+           style="font-size:14px;line-height:1.9;color:var(--color-text)">
+      </div>
+      <p style="margin-top:12px;font-size:13px;color:#e74c3c;font-weight:600">
+        ⚠️ 此操作无法撤销。
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button id="btn-io-modal-cancel" class="btn btn-secondary">取消</button>
+      <button id="btn-io-modal-confirm" class="btn btn-danger">确定替换</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import db           from '../../shared/db/admin-db.js';
+  import { exportFull, validateJson, importFull } from '../../shared/utils/json-io.js';
+
+  // 校验通过后暂存，等用户二次确认后再写入
+  let pendingData     = null;
+  let pendingFileName = '';
+
+  // ── 导出 ─────────────────────────────────────────────────
+
+  document.getElementById('btn-export').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-export');
+    btn.disabled = true;
+    btn.textContent = '导出中…';
+    try {
+      const json     = await exportFull(db);
+      const dateStr  = new Date().toISOString().slice(0, 10);
+      const fileName = `treasure-hunt-backup-${dateStr}.json`;
+
+      const blob = new Blob([json], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      showExportStatus(`✅ 已导出 ${fileName}`, false);
+    } catch (err) {
+      showExportStatus('❌ 导出失败：' + err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '📥 立即导出';
+    }
+  });
+
+  function showExportStatus(msg, isError) {
+    const el = document.getElementById('export-status');
+    el.textContent = msg;
+    el.style.color    = isError ? '#e74c3c' : '#27ae60';
+    el.style.fontSize = '14px';
+  }
+
+  // ── 文件选择 ─────────────────────────────────────────────
+
+  document.getElementById('btn-select-file').addEventListener('click', () => {
+    document.getElementById('file-input').click();
+  });
+
+  document.getElementById('file-input').addEventListener('change', async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // 重置上次状态
+    pendingData = null;
+    hideEl('import-preview');
+    hideEl('import-success');
+    hideEl('import-error');
+
+    pendingFileName = file.name;
+    document.getElementById('file-name-display').textContent = file.name;
+
+    let text;
+    try {
+      text = await file.text();
+    } catch {
+      showImportError('无法读取文件，请重试。');
+      return;
+    }
+
+    const result = validateJson(text);
+    if (!result.ok) {
+      showImportError(result.error);
+      return;
+    }
+
+    pendingData = result.data;
+
+    // 显示文件信息（步骤 2）
+    const { levels, points, questions } = result.data;
+    let exportedAt = null;
+    try { exportedAt = JSON.parse(text).exportedAt; } catch {}
+    const exportDate = exportedAt
+      ? new Date(exportedAt).toLocaleString('zh-CN')
+      : '未知';
+
+    document.getElementById('preview-export-date').textContent = exportDate;
+    document.getElementById('preview-counts').textContent =
+      `${levels.length} 个探险、${points.length} 个点位、${questions.length} 道题目`;
+
+    showEl('import-preview');
+  });
+
+  // ── 确认导入（打开弹窗）─────────────────────────────────
+
+  document.getElementById('btn-confirm-import').addEventListener('click', async () => {
+    if (!pendingData) return;
+
+    // 读当前 DB 数量，填入弹窗
+    const [curLevels, curPoints, curQuestions] = await Promise.all([
+      db.levels.count(),
+      db.points.count(),
+      db.questions.count(),
+    ]);
+    const { levels, points, questions } = pendingData;
+
+    document.getElementById('modal-body-content').innerHTML = `
+      <p style="margin-bottom:8px">即将替换当前数据库：</p>
+      <div style="background:var(--color-bg-card);border-radius:8px;padding:10px 14px;
+                  margin-bottom:12px;font-size:13px;color:var(--color-text-muted)">
+        当前：${curLevels} 个探险、${curPoints} 个点位、${curQuestions} 道题目
+      </div>
+      <p style="margin-bottom:8px">
+        写入新数据（来自 <strong>${escapeHtml(pendingFileName)}</strong>）：
+      </p>
+      <div style="background:#eaf4ff;border-radius:8px;padding:10px 14px;font-size:13px">
+        ${levels.length} 个探险、${points.length} 个点位、${questions.length} 道题目
+      </div>
+    `;
+
+    document.getElementById('import-confirm-modal').classList.remove('hidden');
+  });
+
+  // ── 弹窗：取消 / 关闭 ────────────────────────────────────
+
+  const closeModal = () =>
+    document.getElementById('import-confirm-modal').classList.add('hidden');
+
+  document.getElementById('btn-io-modal-close').addEventListener('click',  closeModal);
+  document.getElementById('btn-io-modal-cancel').addEventListener('click', closeModal);
+  document.getElementById('import-confirm-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  // ── 弹窗：确定替换 ────────────────────────────────────────
+
+  document.getElementById('btn-io-modal-confirm').addEventListener('click', async () => {
+    if (!pendingData) return;
+    closeModal();
+
+    const btn = document.getElementById('btn-confirm-import');
+    btn.disabled = true;
+    btn.textContent = '导入中…';
+
+    try {
+      const result = await importFull(db, pendingData);
+
+      hideEl('import-preview');
+      hideEl('import-error');
+      document.getElementById('import-success').innerHTML =
+        `✅ 导入成功！已写入 <strong>${result.levels} 个探险</strong>、` +
+        `<strong>${result.points} 个点位</strong>、` +
+        `<strong>${result.questions} 道题目</strong>。<br>` +
+        `<span style="font-size:13px">现在可以前往「探险管理」查看数据。</span>`;
+      showEl('import-success');
+
+      // 重置文件输入和暂存数据
+      document.getElementById('file-input').value = '';
+      document.getElementById('file-name-display').textContent = '未选择文件';
+      pendingData = null;
+      pendingFileName = '';
+    } catch (err) {
+      showImportError('导入失败：' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '✅ 确认导入';
+    }
+  });
+
+  // ── 工具函数 ──────────────────────────────────────────────
+
+  function showImportError(msg) {
+    const el = document.getElementById('import-error');
+    el.textContent = '❌ ' + msg;
+    showEl('import-error');
+  }
+
+  function showEl(id) { document.getElementById(id).classList.remove('hidden'); }
+  function hideEl(id) { document.getElementById(id).classList.add('hidden');    }
+
+  function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+</script>

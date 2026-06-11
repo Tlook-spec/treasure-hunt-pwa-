@@ -14,6 +14,19 @@ import { initPointList, renderPointList } from './point-list.js';
 export function initLevelDetail() {
   document.getElementById('btn-back-to-list')
     .addEventListener('click', hideLevelDetail);
+
+  // 打印二维码：在新标签页打开打印预览页
+  document.getElementById('btn-print-qr').addEventListener('click', () => {
+    const levelId = document.getElementById('levels-detail-panel').dataset.levelId;
+    if (levelId) window.open(`pages/print-qr.html?levelId=${levelId}`, '_blank');
+  });
+
+  // 打印应急小抄：在新标签页打开应急小抄页
+  document.getElementById('btn-print-cheatsheet').addEventListener('click', () => {
+    const levelId = document.getElementById('levels-detail-panel').dataset.levelId;
+    if (levelId) window.open(`pages/print-cheatsheet.html?levelId=${levelId}`, '_blank');
+  });
+
   initPointList();
 }
 
