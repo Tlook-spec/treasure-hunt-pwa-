@@ -120,7 +120,7 @@ treasure-hunt/
 
 ## 🎯 阶段 1:产品设计
 
-### [ ] T09. 阅读 PRD v1.7
+### [√] T09. 阅读 PRD v1.7
 
 **前置**:T08 完成
 **预计时间**:30-60 分钟阅读
@@ -164,7 +164,7 @@ treasure-hunt/
 
 ---
 
-### [ ] T10. 画核心页面线框图
+### [√] T10. 画核心页面线框图
 
 **前置**:T09
 **预计时间**:6-10 小时(分散到 4-5 天通勤完成)
@@ -239,7 +239,7 @@ treasure-hunt/
 
 ---
 
-### [ ] T11. 整理每个页面的数据清单
+### [√] T11. 整理每个页面的数据清单
 
 **前置**:T10 至少完成 50%
 **预计时间**:2-3 小时
@@ -326,7 +326,7 @@ treasure-hunt/
 
 ---
 
-### [ ] T12. 选定视觉风格
+### [√] T12. 选定视觉风格
 
 **前置**:T11
 **预计时间**:1-2 小时
@@ -427,7 +427,7 @@ treasure-hunt/
 
 ---
 
-### [ ] T13. 阶段 0-1 总结里程碑
+### [√] T13. 阶段 0-1 总结里程碑
 
 **前置**:T12
 **预计时间**:30 分钟
@@ -493,7 +493,7 @@ treasure-hunt/
 
 ---
 
-### [ ] M01. 安装第三方库的 CDN 链接 + 验证
+### [√] M01. 安装第三方库的 CDN 链接 + 验证
 
 **前置**:T13
 **预计时间**:1-2 小时
@@ -546,7 +546,7 @@ treasure-hunt/
 
 ---
 
-### [ ] M02. 定义数据模型 + 短 ID 生成工具
+### [√] M02. 定义数据模型 + 短 ID 生成工具
 
 **前置**:M01
 **预计时间**:2-3 小时
@@ -595,7 +595,7 @@ treasure-hunt/
 
 ---
 
-### [ ] M03. IndexedDB 封装(Dexie + 运行时拦截)
+### [√] M03. IndexedDB 封装(Dexie + 运行时拦截)
 
 注意:admin-db.js / play-db.js 里直接用全局 Dexie(new Dexie(...)),不要 import dexie。
 test-db.html 里 Dexie 用普通 <script> 标签加载。
@@ -655,7 +655,7 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 
 ---
 
-### [ ] M04. JSON 导入导出工具(基础)
+### [√] M04. JSON 导入导出工具(基础)
 
 **前置**:M03
 **预计时间**:3-4 小时
@@ -720,7 +720,7 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 
 ---
 
-### [ ] M05. 6 位数字码工具(已在 M02 一并完成)
+### [√] M05. 6 位数字码工具(已在 M02 一并完成)
 
 > 此任务已合并入 M02。无需单独执行,跳过即可。
 
@@ -736,7 +736,7 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 
 ---
 
-### [ ] M06. 编辑端项目骨架 + 路由 + 导航
+### [√] M06. 编辑端项目骨架 + 路由 + 导航
 
 **前置**:M04
 **预计时间**:2-3 天
@@ -795,7 +795,7 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 
 ---
 
-### [ ] M07. L1 探险 CRUD
+### [√] M07. L1 探险 CRUD
 
 **前置**:M06
 **预计时间**:2-3 天
@@ -860,7 +860,7 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 
 ---
 
-### [ ] M08. L2 点位 CRUD + 上移下移 + 题目绑定
+### [√] M08. L2 点位 CRUD + 上移下移 + 题目绑定
 
 **前置**:M07
 **预计时间**:4-5 天
@@ -934,7 +934,7 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 
 ---
 
-### [ ] M09. L3 题库 CRUD + 筛选(含 usedCount 维度)
+### [√] M09. L3 题库 CRUD + 筛选(含 usedCount 维度)
 
 **前置**:M08
 **预计时间**:2-3 天
@@ -1008,7 +1008,7 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 
 ---
 
-### [ ] M10. CSV 批量导入题目
+### [√] M10. CSV 批量导入题目
 
 **前置**:M09
 **预计时间**:2-3 天
@@ -1074,7 +1074,7 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 
 ---
 
-### [ ] M11. 单张二维码生成 + 打印
+### [√] M11. 单张二维码生成 + 打印
 
 **前置**:M10
 **预计时间**:2-3 天
@@ -1135,7 +1135,7 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 
 ---
 
-### [ ] M12. 应急小抄打印(v1.7 新增功能)
+### [√] M12. 应急小抄打印(v1.7 新增功能)
 
 **前置**:M11
 **预计时间**:1 天
@@ -1190,7 +1190,7 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 
 ---
 
-### [ ] M13. JSON 整库导入导出
+### [√] M13. JSON 整库导入导出
 
 **前置**:M12
 **预计时间**:2-3 天
@@ -1251,7 +1251,7 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 
 ---
 
-### [ ] M14. 删除引用保护
+### [√] M14. 删除引用保护
 
 **前置**:M13
 **预计时间**:1-2 天
@@ -1313,7 +1313,7 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 
 ---
 
-### [ ] M15. 编辑端联调测试
+### [√] M15. 编辑端联调测试
 
 **前置**:M14
 **预计时间**:1-2 天
@@ -1404,52 +1404,61 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 **【复制给 Claude Code 的指令】**
 
 ```
-开始 MVP 阶段 C:游戏端开发。第一步搭 PWA 框架。
+开始 MVP 阶段 C：游戏端开发。第一步搭 PWA 框架。
 
-请基于 PRD v1.7 §7.6 + CLAUDE.md §5.5 重做 play/ 的 PWA 框架:
+请基于 PRD v1.7 §7.6 + CLAUDE.md §5.5 重做 play/ 的 PWA 框架。
+注意：本步骤只搭框架骨架，不写页面内容（M17 做）、不引入扫码库（M20 做）。
 
 1. play/manifest.json
-   - 检查并修正路径:
-     * start_url: "/treasure-hunt/play/" 或 "./"
-     * scope: "/treasure-hunt/play/" 或 "./"
-     * icons: 路径正确
-   - 名称「寻宝游戏」
+   - 路径统一用相对路径（不要绝对路径，免得仓库路径再变就崩）：
+     * start_url: "./"
+     * scope: "./"
+   - icons：检查路径指向 play/ 下真实存在的图标文件（T08 改过目录，确认没失效）
+   - name / short_name：「寻宝游戏」
    - display: "standalone"
-   - background_color、theme_color 用 design-tokens 的色值
+   - background_color、theme_color 用 docs/design-tokens.md 的色值（主色 #4A90E2）
 
-2. play/service-worker.js
-   - **完全改用动态缓存策略**,删除原 T04 的 FILES_TO_CACHE 数组
-   - 用 PRD v1.7 §7.6 的伪代码实现:
-     * install 时 skipWaiting
-     * activate 时 clients.claim
-     * fetch 时优先用缓存,后台更新,网络失败用缓存
+2. play/service-worker.js（替换掉 T07 遗留的静态 FILES_TO_CACHE 版本）
+   - 完全改用动态缓存策略（stale-while-revalidate），删除 FILES_TO_CACHE 数组
+   - 按 CLAUDE.md §5.5 伪代码实现：
+     * install → self.skipWaiting()
+     * activate → clients.claim()
+     * fetch → 优先返回缓存，后台 fetch 更新，网络失败回退缓存
    - CACHE_VERSION = "treasure-hunt-runtime-v1"
    - 跳过非 GET 请求
+   - 【重要】缓存 CDN 资源时，对跨域响应也要能存进缓存：不要因为 response 是
+     opaque / response.ok 为 false 就跳过 jsdelivr 域名的资源，否则飞行模式下
+     Dexie 会加载不出来导致白屏。请确保 CDN 库能被正常缓存。
 
-3. play/index.html
-   - 加载 manifest.json
+3. play/index.html（只做启动页骨架，空内容，M17 再填）
+   - 引用 manifest.json
    - 注册 service-worker.js
-   - 加载 shared/ 依赖
-   - 加载 CDN 的 Dexie、Eruda(?debug=1 时)
-   - **MVP 不引入 html5-qrcode 和 qrcode**(扫码时再加载)
-   - 显示「寻宝游戏」启动页骨架(空内容,后续 M17 填充)
+   - 设好移动端 viewport
+   - 用普通 <script>（带固定版本号）加载：
+     * Dexie@3.2.4
+     * Eruda@3.0.1 —— 仅在 URL 带 ?debug=1 时加载
+   - 加载 shared/ 依赖（我们自己写的 .js 用 <script type="module">，
+     务必放在库的 <script> 之后）
+   - 【本步骤不要引入 html5-qrcode 和 qrcode-generator】，扫码库等 M20 再加
+   - 页面只显示「寻宝游戏」启动页骨架（标题占位即可，无功能按钮）
 
-4. 调整原 test-scan.html(T07 的):
-   - 保留但移到 play/test/test-scan.html
-   - 或直接删除(我们 M20 会重做扫码)
+4. test-scan.html（T07 遗留）：移动到 play/test/test-scan.html 保留，
+   不要删除（M20 重做扫码时当能跑的参照物）
 
-5. iPad 上的旧 PWA 图标说明:
-   - 由于 T08 路径变化 + manifest 更新,iPad 上原来的图标可能失效
-   - 提醒我:删除旧图标 → 在 iPad Safari 重新访问 GitHub Pages 网址 → 重新「添加到主屏幕」
+5. iPad 旧图标处理：在回复里提醒我——T08 改路径 + manifest 更新后，
+   iPad 上旧 PWA 图标可能失效。给我具体操作步骤：
+   长按删除旧图标 → Safari 重新打开 GitHub Pages 的 play/ 网址 → 重新「添加到主屏幕」
 
-6. 写测试 checklist:docs/test-checklists/MVP-play-PWA框架.md
-   - 桌面 Chrome:F12 应用面板看 manifest 字段正确、SW 注册成功
-   - iPad Safari(有网):访问 play/ → 「添加到主屏幕」→ 从图标启动
-   - **iPad 飞行模式**:从主屏幕图标启动 → 页面正常打开(SW 缓存生效)
+6. 写测试 checklist：docs/test-checklists/MVP-play-PWA框架.md，至少包含：
+   - 桌面 Chrome：F12 → Application 面板看 manifest 字段正确、SW 已注册
+   - iPad Safari（有网）：访问 play/ → 添加到主屏幕 → 从图标启动
+   - iPad 飞行模式（关键）：先联网完整打开一次 → 关飞行模式 →
+   
+     从主屏图标重启 → 页面正常打开（证明 SW 缓存生效）
 
-7. 真机测试(三态覆盖)。
+7. 完成后用单行英文 git commit + push（避免中文多行 commit 在 PowerShell 乱码）。
 
-8. 更新 PROGRESS.md。
+8. 更新 PROGRESS.md：M16 标记完成，并把「注意事项」里 SW 那条遗留问题划掉。
 ```
 
 **验证清单**:

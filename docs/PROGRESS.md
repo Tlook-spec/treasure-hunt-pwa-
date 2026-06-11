@@ -10,7 +10,7 @@
 
 **阶段**：MVP 开发阶段 B（编辑端）进行中
 
-**下一个任务**：M16 — 游戏端 PWA 框架（动态缓存 SW）
+**下一个任务**：M17 — 启动页 + 探险选择页 + 设置页
 
 ---
 
@@ -63,7 +63,7 @@
 
 ### 阶段 C：游戏端
 
-- [ ] M16 游戏端 PWA 框架（动态缓存 SW）
+- **M16** ✅ 游戏端 PWA 框架（动态缓存 SW）
 - [ ] M17 启动页 + 探险选择页 + 设置页
 - [ ] M18 JSON 整库导入（游戏端）
 - [ ] M19 游戏主流程框架
@@ -86,6 +86,6 @@
 
 ## 注意事项
 
-- **Service Worker**：`play/service-worker.js` 目前仍是静态 FILES_TO_CACHE 策略（T07 遗留），M16 时替换为动态缓存策略
+- **Service Worker**：~~`play/service-worker.js` 目前仍是静态 FILES_TO_CACHE 策略（T07 遗留），M16 时替换为动态缓存策略~~ → ✅ M16 已替换为动态缓存（stale-while-revalidate）
 - **admin/ index.html**：占位页，M06 时开始正式开发
 - **shared/**：目录骨架已建好，M02/M03 时填充代码

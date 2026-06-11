@@ -222,14 +222,14 @@
                 // 先停止扫码，回调里再跳转
                 qrScanner.stop()
                     .then(function () {
-                        window.location.href = './index.html';
+                        window.location.href = '../index.html';
                     })
                     .catch(function () {
                         // 即使停止失败，也要跳转走
-                        window.location.href = './index.html';
+                        window.location.href = '../index.html';
                     });
             } else {
-                window.location.href = './index.html';
+                window.location.href = '../index.html';
             }
         }
 
