@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#4A90E2">
+  <link rel="stylesheet" href="../styles/main.css">
+  <title>选择探险 - 寻宝游戏</title>
+  <!-- CDN 库（普通 script，必须在 type="module" 之前）-->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+</head>
+<body>
+
+  <!-- 顶部返回栏 -->
+  <header class="page-header">
+    <a href="../index.html" class="btn-back">← 返回</a>
+    <h1 class="page-title">选择探险</h1>
+  </header>
+
+  <!-- ====== 续玩横幅位置（M26 实现）====== -->
+  <!-- M26 会在此处插入 div.resume-banner，M17 阶段不显示 -->
+
+  <!-- 主内容 -->
+  <main class="page-content">
+    <!-- 探险数量标签（JS 填入）-->
+    <p class="section-label" id="level-count-label">正在加载…</p>
+    <!-- 探险卡片列表 / 空状态（JS 填入）-->
+    <div id="level-list"></div>
+  </main>
+
+  <!-- Eruda 调试 -->
+  <script>
+    if (new URLSearchParams(location.search).get('debug') === '1') {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/eruda@3.0.1/eruda.min.js';
+      s.onload = () => eruda.init();
+      document.head.appendChild(s);
+    }
+  </script>
+
+  <!-- ES Module：加载 db 并渲染探险列表 -->
+  <script type="module">
+    import db from '../../shared/db/play-db.js';
+
+    // 轮换图标，按探险在列表中的顺序分配
+    const ICONS = ['🗺️', '🌲', '🔍', '🏆', '⭐', '🎯', '🧩', '🏃'];
+
+    async function renderLevels() {
+      const levels = await db.levels.orderBy('name').toArray();
+      const label  = document.getElementById('level-count-label');
+      const list   = document.getElementById('level-list');
+
+      // ====== 空状态 ======
+      if (levels.length === 0) {
+        label.textContent = '';
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <p class="empty-title">还没有探险</p>
+            <p class="empty-hint">请去电脑端编辑探险数据，<br>然后到设置页导入 JSON 文件</p>
+            <a href="settings.html" class="btn-goto-settings">⚙️ 去设置页导入</a>
+          </div>`;
+        return;
+      }
+
+      label.textContent = `选择今天的探险吧！（${levels.length} 个）`;
+
+      // 并行查询每个探险的点位数和最近会话
+      const cards = await Promise.all(levels.map(async (level, idx) => {
+        const pointCount = await db.points.where('levelId').equals(level.id).count();
+
+        // 上次游玩时间：查该 levelId 的所有 session，取最新 startedAt
+        const sessions   = await db.sessions.where('levelId').equals(level.id).toArray();
+        let lastPlayText = '从未游玩';
+        if (sessions.length > 0) {
+          const latest = sessions.reduce((a, b) => a.startedAt > b.startedAt ? a : b);
+          lastPlayText  = formatDate(latest.startedAt);
+        }
+
+        return { level, pointCount, lastPlayText, icon: ICONS[idx % ICONS.length] };
+      }));
+
+      list.innerHTML = cards.map(({ level, pointCount, lastPlayText, icon }) => `
+        <div class="level-card">
+          <div class="level-icon">${icon}</div>
+          <div class="level-body">
+            <div class="level-name">${esc(level.name)}</div>
+            ${level.description ? `<div class="level-desc">${esc(level.description)}</div>` : ''}
+            <div class="level-meta">
+              📍 ${pointCount} 个点位 &nbsp;·&nbsp; 上次游玩：${lastPlayText}
+            </div>
+          </div>
+          <a href="start-adventure.html?levelId=${encodeURIComponent(level.id)}"
+             class="btn-start-level">开始 ▶</a>
+        </div>`).join('');
+    }
+
+    // 格式化时间戳为 YYYY-MM-DD
+    function formatDate(ts) {
+      const d = new Date(ts);
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    // XSS 防护：转义 HTML 特殊字符
+    function esc(str) {
+      return String(str).replace(/[&<>"']/g, c =>
+        ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])
+      );
+    }
+
+    renderLevels().catch(err => {
+      console.error('[选择探险] 加载失败', err);
+      document.getElementById('level-count-label').textContent = '';
+      document.getElementById('level-list').innerHTML =
+        '<p style="color:#FF9F89;padding:24px 0;text-align:center">加载失败，请刷新页面重试</p>';
+    });
+  </script>
+
+</body>
+</html>

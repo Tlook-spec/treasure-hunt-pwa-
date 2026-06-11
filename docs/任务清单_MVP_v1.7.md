@@ -1395,7 +1395,7 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 
 ---
 
-### [ ] M16. 游戏端 PWA 框架(动态缓存 SW)
+### [√] M16. 游戏端 PWA 框架(动态缓存 SW)
 
 **前置**:M15
 **预计时间**:1-2 天
@@ -1453,7 +1453,7 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
    - 桌面 Chrome：F12 → Application 面板看 manifest 字段正确、SW 已注册
    - iPad Safari（有网）：访问 play/ → 添加到主屏幕 → 从图标启动
    - iPad 飞行模式（关键）：先联网完整打开一次 → 关飞行模式 →
-   
+
      从主屏图标重启 → 页面正常打开（证明 SW 缓存生效）
 
 7. 完成后用单行英文 git commit + push（避免中文多行 commit 在 PowerShell 乱码）。
@@ -1483,51 +1483,75 @@ test-db.html 里 Dexie 用普通 <script> 标签加载。
 **【复制给 Claude Code 的指令】**
 
 ```
-参考布局:docs/wireframes/play/01-launch.png(启动页) + docs/wireframes/play/02-select-level.png(探险选择页,含续玩横幅) + docs/wireframes/play/10-settings.png(设置页)
-参考数据:docs/pages-data.md P1、P2、P10 小节(字段名和操作逻辑以此为准)
+参考布局：docs/wireframes/play/01-launch.png（启动页）
+         + docs/wireframes/play/02-select-level.png（探险选择页）
+         + docs/wireframes/play/10-settings.png（设置页）
+参考数据：docs/pages-data.md P1、P2、P10 小节（字段名和操作逻辑严格以此为准）
+视觉规范：docs/design-tokens.md（按钮尺寸、颜色、圆角统一用这里的令牌，主色 #4A90E2）
 
-请基于 PRD v1.7 §4.2.1 + §4.2.9 实现游戏端的前三个页面:
+请基于 PRD v1.7 §4.2.1 + §4.2.9 实现游戏端的前三个页面。
 
-1. play/index.html(启动页)
+【本步骤重要前提】
+JSON 导入是 M18 才做，所以现在 play 端数据库是空的（没有探险、没有题目）。
+这三个页面必须能在「数据库为空」的情况下正常显示，不能假设有数据、不能报错。
+本步骤只做页面 UI + 跳转 + 读取已有数据，导入逻辑（M18）和续玩逻辑（M26）都不做。
+
+1. play/index.html（启动页）
    - 大字「寻宝游戏」+ App 图标
    - 大按钮「🎮 开始游戏」→ 跳转探险选择页
-   - 角落小字「⚙️ 设置」→ 跳转设置页
-   - **MVP 不读 openingStory**,跳过故事背景页设计
+   - 右下角小字「⚙️ 设置」→ 跳转设置页
+   - MVP 不读 openingStory，不做故事背景页
 
-2. play/pages/select-level.html(探险选择页)
+2. play/pages/select-level.html（探险选择页）
    - 顶部「← 返回」
-   - 卡片列表显示所有探险(从 playDb.levels 读)
-   - 每张卡片:
-     * 探险名(大字)
-     * L2 点位数
-     * 上次游玩时间(查 sessions 表最新完成时间)
-   - 点击卡片 → 进入开始游戏页(M19 实现),携带 levelId
+   - 探险卡片列表（从 playDb.levels 读），每张卡片显示（字段对齐 pages-data P2）：
+     * 图标 + 探险名（大字）
+     * 简介（description）
+     * 点位数（db.points.where('levelId').equals(levelId).count()）
+     * 上次游玩时间 —— 查 sessions 表；【M17 阶段没有任何 session，所以一律显示「从未游玩」】
+     * 「开始 ▶」按钮 → 进入开始游戏页（M19 实现），携带 levelId
+   - 【空状态】数据库无探险时，不显示空白卡片列表，改显示提示文案：
+     「还没有探险，请去电脑端编辑后导入」（指引去设置页导入）
+   - 【续玩横幅：M26 再做，本步骤不实现】线框图上画了续玩横幅，但那是 M26 的范围，
+     这一步不要做任何续玩相关逻辑，把版面位置留着即可
 
-3. play/pages/settings.html(设置页)
+3. play/pages/settings.html（设置页）
    - 顶部「← 返回」
-   - 区块 A:当前数据状态(只读卡片):
-     * 探险数量:N 个
-     * 题目数量:M 道
-     * 上次导入时间:YYYY-MM-DD HH:MM
-   - 区块 B:导入数据
+   - 区块 A：当前数据状态（只读卡片，字段对齐 pages-data P10）：
+     * N 个探险（共 M 个点位）—— db.levels.count() / db.points.count()
+     * X 道题目 —— db.questions.count()
+     * 上次导入时间 —— 【M17 阶段还没有导入记录，显示「尚未导入」占位；
+       真正的导入时间记录逻辑 M18 接入，本步骤不要自己造字段】
+   - 区块 B：导入数据
      * 警示色按钮「📥 完整覆盖导入」
-     * 说明「用 JSON 备份完整替换当前数据」
-     * 文件选择器
-     * (导入逻辑 M18 实现)
-   - **MVP 不显示「追加导入单 L1」按钮**(v1.7 推到 V1)
-   - **MVP 不显示「清除所有数据」**(V1 才做)
+     * 说明文字「用 JSON 备份完整替换当前数据」
+     * 文件选择器（仅放上去，导入逻辑 M18 实现，本步骤点击可以暂时无反应或提示「M18 实现」）
+   - 【不显示】「导入单个 L1 探险」按钮（V1 才做）
+   - 【不显示】「清除所有数据」按钮（V1 才做）
 
-4. 路由:简单 hash 路由或多 HTML 文件均可,你判断哪个简单选哪个。
+4. 路由：用多 HTML 文件方案（跟上面已命名的 select-level.html / settings.html 一致），
+   不要用 hash 路由，保持简单统一。页面间用普通链接跳转。
 
-5. 写测试 checklist:docs/test-checklists/MVP-play-启动页.md
+5. 三个页面都按 M16 的方式加载依赖：
+   - 普通 <script> 加载 Dexie@3.2.4（带固定版本号）
+   - 我们自己写的 .js 用 <script type="module">，放在库的 <script> 之后
+   - 不引入扫码库（M20 再加）
 
-6. 真机测试(三态覆盖):
-   - 桌面 Chrome
-   - iPad Safari
-   - iPad PWA 主屏幕图标(含飞行模式)
+6. 写测试 checklist：docs/test-checklists/MVP-play-启动页.md
+   按 CLAUDE.md §5.7 的模板格式写，至少包含：
+   - 桌面 Chrome：三个页面互相跳转正常、空数据库下显示空状态文案、F12 无红色错误
+   - iPad Safari（有网）：同上
+   - iPad PWA 主屏幕图标 + 飞行模式（关键）：
+     【测试顺序写死】先联网从图标启动 → 把首页、探险选择页、设置页都点一遍
+     （让动态缓存把三个页面都缓存住）→ 再开飞行模式 → 从图标重启 →
+     三个页面都能正常打开、互相跳转。
+     ⚠️ 如果不先联网把每个页面都访问一遍，飞行模式下没缓存过的子页面会打不开。
 
-7. 更新 PROGRESS.md。
-```
+7. 真机测试（三态覆盖：桌面 Chrome / iPad Safari / iPad PWA 含飞行模式）。
+
+8. 完成后用单行英文 git commit + push。
+
+9. 更新 PROGRESS.md：M17 标记完成。
 
 **验证清单**:
 

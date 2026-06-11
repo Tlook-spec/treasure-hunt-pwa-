@@ -1,0 +1,340 @@
+/* play/styles/main.css
+   游戏端公用样式 — 来自 docs/design-tokens.md */
+
+/* ======== 设计令牌 ======== */
+:root {
+  --color-primary:       #4A90E2;
+  --color-primary-dark:  #3A7BC8;
+  --color-primary-light: #7BB0EE;
+  --color-accent:        #F5A623;   /* 橙：提示/求助/家长语境 */
+  --color-success:       #7ED321;   /* 绿：答对/前进 */
+  --color-error:         #FF9F89;   /* 粉橙：出错 */
+  --color-bg-game:       #FFF9E6;   /* 游戏端暖底 */
+  --color-bg-card:       #FFFFFF;
+  --color-text:          #2C3E50;
+  --color-text-muted:    #6C757D;
+  --color-border:        #E9ECEF;
+  --radius-btn:          12px;
+  --radius-card:         16px;
+  --shadow-card:         0 2px 8px rgba(0,0,0,0.10);
+  --shadow-float:        0 4px 12px rgba(0,0,0,0.15);
+  --space-xs: 8px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 32px;
+}
+
+/* ======== 基础重置 ======== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { height: 100%; }
+
+body {
+  background: var(--color-bg-game);
+  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: -apple-system, "PingFang SC", "Hiragino Sans GB",
+               "Microsoft YaHei", sans-serif;
+  color: var(--color-text);
+  /* 游戏页面禁止文字选择和双击缩放 */
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+/* ======== 页面顶栏 ======== */
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #fff;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: 10px var(--space-sm);
+  min-height: 56px;
+}
+
+.btn-back {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: var(--radius-btn);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.btn-back:active { background: var(--color-border); }
+
+.page-title {
+  font-size: 20px;
+  font-weight: 700;
+  flex: 1;
+}
+
+/* ======== 主内容区 ======== */
+.page-content {
+  padding: var(--space-md) var(--space-sm);
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+/* ======== 通用大按钮 ======== */
+.btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 64px;
+  padding: 0 var(--space-md);
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-btn);
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.1s ease, background 0.1s ease;
+  box-shadow: var(--shadow-float);
+}
+.btn-primary:active {
+  transform: scale(0.97);
+  background: var(--color-primary-dark);
+}
+
+.btn-warning {
+  background: var(--color-accent);
+  color: #fff;
+}
+.btn-warning:active { background: #e09516; }
+
+/* ======== 通用卡片 ======== */
+.card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+/* ======== 区块标签 ======== */
+.section-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  margin-bottom: var(--space-sm);
+}
+
+/* ======== 探险卡片 ======== */
+.level-card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: 12px;
+}
+
+.level-icon {
+  font-size: 40px;
+  flex-shrink: 0;
+  width: 52px;
+  text-align: center;
+  line-height: 1;
+}
+
+.level-body { flex: 1; min-width: 0; }
+
+.level-name {
+  font-size: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.level-desc {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.level-meta {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+}
+
+.btn-start-level {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 76px;
+  min-height: 60px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-btn);
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  padding: 0 14px;
+  transition: transform 0.1s ease;
+}
+.btn-start-level:active { transform: scale(0.95); }
+
+/* ======== 空状态 ======== */
+.empty-state {
+  text-align: center;
+  padding: 56px var(--space-sm) var(--space-lg);
+}
+.empty-icon { font-size: 72px; margin-bottom: var(--space-sm); }
+.empty-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.empty-hint {
+  font-size: 16px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin-bottom: var(--space-md);
+}
+.btn-goto-settings {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 14px 28px;
+  border-radius: var(--radius-btn);
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* ======== 设置页：统计卡片 ======== */
+.stats-card {
+  background: #EBF4FF;
+  border: 1px solid #C5DCF5;
+  border-radius: var(--radius-card);
+  padding: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+.stats-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 0;
+  flex-direction: column;
+}
+.stats-item {
+  font-size: 16px;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+.stats-item-muted { color: var(--color-text-muted); font-size: 14px; }
+
+/* ======== 设置页：导入区 ======== */
+.import-section { margin-bottom: var(--space-md); }
+.import-note {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 8px;
+  line-height: 1.6;
+}
+.import-warning-box {
+  background: #FFF3CD;
+  border: 1px solid #FFCA28;
+  border-radius: var(--radius-btn);
+  padding: 12px var(--space-sm);
+  font-size: 14px;
+  color: #7D5A00;
+  margin-bottom: var(--space-sm);
+  line-height: 1.6;
+  display: flex;
+  gap: 8px;
+}
+
+/* ======== 设置页：教学区 ======== */
+.tutorial-card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+.tutorial-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.tutorial-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--color-text);
+  line-height: 1.6;
+}
+.tutorial-num {
+  flex-shrink: 0;
+  background: var(--color-primary);
+  color: #fff;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* ======== 设置页：其他区块 ======== */
+.other-card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+.version-text {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: var(--space-xs) 0;
+}
+
+/* ======== 横屏小屏适配 ======== */
+@media (orientation: landscape) and (max-height: 480px) {
+  .page-header { min-height: 44px; }
+  .empty-state { padding: 24px var(--space-sm) var(--space-sm); }
+  .empty-icon  { font-size: 48px; }
+}
