@@ -75,7 +75,7 @@
  * @property {string}      text           - 题干文本
  * @property {string|null} textImagePath  - 题干截图路径（V1）默认 null
  * @property {string[]}    options        - 选项列表
- * @property {number}      correctAnswer  - 正确答案在 options 中的索引（从 0 开始）
+ * @property {string}      correctAnswer  - 正确答案字母 "A"/"B"/"C"/"D"（A 对应 options[0]）
  *
  * @property {string}      hint           - 答错后提示，可为空字符串
  * @property {string}      explanation    - 答对后解析，可为空字符串
