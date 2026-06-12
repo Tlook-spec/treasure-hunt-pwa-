@@ -102,7 +102,8 @@ export async function submitAnswer(sessionId, selectedIndex) {
   const questionId = currentPoint.questionIds[currentQuestionIndex];
   const question = await db.questions.get(questionId);
 
-  const isCorrect = (selectedIndex === question.correctAnswer);
+  // correctAnswer 可能因 CSV 导入而存为字符串，用 Number() 统一类型再比较
+  const isCorrect = (selectedIndex === Number(question.correctAnswer));
 
   if (!isCorrect) {
     // M22 placeholder：答错只告知前端，不写入任何记录

@@ -627,35 +627,46 @@ body {
 }
 .option-btn {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
+  gap: 10px;
   min-height: 80px;
-  padding: 12px 8px;
+  padding: 12px;
   background: var(--color-bg-card);
   border: 2px solid var(--color-border);
   border-radius: var(--radius-card);
   cursor: pointer;
   box-shadow: var(--shadow-card);
+  text-align: left;
   transition: transform 0.1s ease, border-color 0.15s ease;
 }
 .option-btn:active:not(:disabled) { transform: scale(0.96); }
 .option-btn:disabled { opacity: 0.6; cursor: default; }
 
+/* ABCD 标签：小圆圈，起引导作用 */
 .option-label {
-  font-size: 24px;
-  font-weight: 900;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #EBF4FF;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
   color: var(--color-primary);
   line-height: 1;
 }
+
+/* 答案内容：大字号突出 */
 .option-text {
-  font-size: 15px;
-  font-weight: 600;
+  flex: 1;
+  font-size: 20px;
+  font-weight: 700;
   color: var(--color-text);
-  text-align: center;
   line-height: 1.3;
-  word-break: break-all;
+  word-break: break-word;
 }
 
 /* 选项状态：答对 / 答错 */
@@ -663,10 +674,10 @@ body {
   border-color: var(--color-success) !important;
   background: #F0FFF4 !important;
 }
-.option-correct .option-label { color: var(--color-success); }
+.option-correct .option-label { background: #C6F6D5; color: #2D7A2D; }
 
 .option-wrong {
   border-color: var(--color-error) !important;
   background: #FFF5F5 !important;
 }
-.option-wrong .option-label { color: var(--color-error); }
+.option-wrong .option-label { background: #FECACA; color: #9B1C1C; }
