@@ -93,7 +93,8 @@
 
     <!-- ====== 其他 ====== -->
     <div class="other-card">
-      <p class="version-text">寻宝游戏 · MVP v1.0</p>
+      <p class="version-text" id="version-text">寻宝游戏 · 加载中…</p>
+      <p class="version-text" id="build-text" style="margin-top:2px;font-size:12px"></p>
     </div>
 
   </main>
@@ -112,6 +113,11 @@
   <script type="module">
     import db from '../../shared/db/play-db.js';
     import { validateJson, importFull } from '../../shared/utils/json-io.js';
+    import { APP_VERSION, BUILD_TAG } from '../../shared/version.js';
+
+    // 显示版本标识（PWA 图标显示的可能是缓存的旧版，可据此判断是否需刷新）
+    document.getElementById('version-text').textContent = `寻宝游戏 · ${APP_VERSION}`;
+    document.getElementById('build-text').textContent   = `更新到 · ${BUILD_TAG}`;
 
     // ====== 工具函数 ======
 

@@ -6,7 +6,7 @@
 //
 // 好处：无需每次新增/重命名文件后改 SW；CDN 资源自动缓存
 
-const CACHE_VERSION = 'treasure-hunt-runtime-v1';
+const CACHE_VERSION = 'treasure-hunt-runtime-v1.1';
 
 // ====== 安装：直接跳过等待，立刻激活 ======
 self.addEventListener('install', event => {
