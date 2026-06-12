@@ -332,6 +332,129 @@ body {
   padding: var(--space-xs) 0;
 }
 
+/* ======== 站点进度横幅 ======== */
+.station-banner {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 10px var(--space-sm);
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hint-section-title {
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--color-text);
+  margin-bottom: 20px;
+  line-height: 1.3;
+}
+.station-banner-dot {
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ======== 提示卡片（locationHint 展示）======== */
+.hint-card {
+  background: #FFFBEA;
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-card);
+  padding: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+.hint-card-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-accent);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.hint-card-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+.hint-card-fallback {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-top: 8px;
+}
+
+/* ======== 底部固定按钮区 ======== */
+.bottom-action {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--space-sm);
+  background: linear-gradient(transparent, var(--color-bg-game) 30%);
+}
+.bottom-action .btn-primary {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+/* 底部按钮存在时的内容区内边距，防止内容被遮住 */
+.has-bottom-action {
+  padding-bottom: 96px;
+}
+
+/* 绿色（前进/成功操作）按钮 */
+.btn-success {
+  background: var(--color-success);
+  color: #fff;
+}
+.btn-success:active { background: #6abd1a; }
+
+/* ======== 探险概览卡片（开始冒险页）======== */
+.level-overview {
+  text-align: center;
+  padding: var(--space-lg) var(--space-sm) var(--space-md);
+}
+.level-overview-icon {
+  font-size: 72px;
+  line-height: 1;
+  margin-bottom: var(--space-sm);
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+}
+.level-overview-name {
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--color-text);
+  margin-bottom: var(--space-sm);
+  line-height: 1.2;
+}
+.level-overview-desc {
+  background: #fff;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-sm);
+  font-size: 16px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  text-align: left;
+  margin-bottom: var(--space-md);
+}
+.level-overview-desc-empty {
+  color: var(--color-border);
+  font-style: italic;
+}
+
 /* ======== 模态弹窗 ======== */
 .modal-overlay {
   position: fixed;

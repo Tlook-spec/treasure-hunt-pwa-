@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#4A90E2">
+  <link rel="stylesheet" href="../styles/main.css">
+  <title>开始冒险 - 寻宝游戏</title>
+  <!-- CDN 库（普通 script，必须在 type="module" 之前）-->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+</head>
+<body>
+
+  <!-- 顶部返回栏 -->
+  <header class="page-header">
+    <a href="select-level.html" class="btn-back">← 返回</a>
+  </header>
+
+  <!-- 主内容 -->
+  <main class="page-content has-bottom-action">
+    <div class="level-overview">
+      <!-- 探险图标（JS 根据 ID 哈希选 emoji，保证同一探险图标稳定）-->
+      <div class="level-overview-icon" id="level-icon">🗺️</div>
+      <h1 class="level-overview-name" id="level-name">加载中…</h1>
+      <!-- 探险简介卡片 -->
+      <div class="level-overview-desc" id="level-desc"></div>
+    </div>
+  </main>
+
+  <!-- 底部固定：开始按钮（加载完成前禁用）-->
+  <div class="bottom-action">
+    <button class="btn-primary" id="btn-start" disabled>⏳ 加载中…</button>
+  </div>
+
+  <!-- Eruda 调试 -->
+  <script>
+    if (new URLSearchParams(location.search).get('debug') === '1') {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/eruda@3.0.1/eruda.min.js';
+      s.onload = () => eruda.init();
+      document.head.appendChild(s);
+    }
+  </script>
+
+  <!-- ES Module：加载探险信息 + 创建 GameSession 并跳转 -->
+  <script type="module">
+    import db from '../../shared/db/play-db.js';
+    import { generateId } from '../../shared/utils/id.js';
+
+    // 轮换图标，同一探险 ID 永远映射到同一个图标
+    const ICONS = ['🗺️', '🌲', '🔍', '🏆', '⭐', '🎯', '🧩', '🏃'];
+    function pickIcon(id) {
+      let hash = 0;
+      for (const ch of String(id)) hash = (hash * 31 + ch.charCodeAt(0)) & 0xFFFFFFFF;
+      return ICONS[Math.abs(hash) % ICONS.length];
+    }
+
+    // 从 URL 获取 levelId
+    const levelId = new URLSearchParams(location.search).get('levelId');
+    if (!levelId) {
+      location.href = 'select-level.html';
+    }
+
+    async function init() {
+      const level = await db.levels.get(levelId);
+      if (!level) {
+        // 找不到探险（可能被删除了），退回选择页
+        location.href = 'select-level.html';
+        return;
+      }
+
+      // 渲染探险信息
+      document.getElementById('level-icon').textContent = pickIcon(level.id);
+      document.getElementById('level-name').textContent = level.name;
+
+      const descEl = document.getElementById('level-desc');
+      if (level.description) {
+        descEl.textContent = level.description;
+      } else {
+        descEl.innerHTML = '<span class="level-overview-desc-empty">（暂无简介）</span>';
+      }
+
+      // 激活开始按钮
+      const btn = document.getElementById('btn-start');
+      btn.textContent = '🚀 开始冒险！';
+      btn.disabled = false;
+    }
+
+    // 点击「开始冒险！」：创建 GameSession，跳转到提示页
+    document.getElementById('btn-start').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-start');
+      btn.disabled = true;
+      btn.textContent = '⏳ 出发中…';
+
+      try {
+        const session = {
+          id:                   generateId('sn'),
+          levelId,
+          startedAt:            Date.now(),
+          endedAt:              null,
+          status:               'in_progress',
+          currentPointIndex:    0,
+          currentQuestionIndex: 0,
+          helpUsedCount:        0,
+          maxHelpCount:         3,
+          pointRecords:         [],
+        };
+        await db.sessions.add(session);
+        // 用 sessionId 跳转，session 是游戏进度的唯一数据源
+        location.href = `hint.html?sessionId=${encodeURIComponent(session.id)}`;
+      } catch (err) {
+        console.error('[开始冒险] 创建会话失败', err);
+        btn.disabled = false;
+        btn.textContent = '🚀 开始冒险！';
+        alert('出错了，请刷新页面重试\n\n' + err.message);
+      }
+    });
+
+    init().catch(err => {
+      console.error('[开始冒险] 页面初始化失败', err);
+    });
+  </script>
+
+</body>
+</html>

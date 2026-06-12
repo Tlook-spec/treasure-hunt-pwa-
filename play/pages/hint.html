@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#4A90E2">
+  <link rel="stylesheet" href="../styles/main.css">
+  <title>找下一站 - 寻宝游戏</title>
+  <!-- CDN 库（普通 script，必须在 type="module" 之前）-->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+</head>
+<body>
+
+  <!-- 站点进度横幅：sticky 顶部，蓝色背景（JS 渲染完成后才显示）-->
+  <div class="station-banner" id="station-banner" style="display:none">
+    <div class="station-banner-dot"></div>
+    <span id="station-text">加载中…</span>
+  </div>
+
+  <!-- 主内容 -->
+  <main class="page-content has-bottom-action">
+
+    <!-- 标题 -->
+    <h2 class="hint-section-title">下一站在哪里？</h2>
+
+    <!-- 提示卡片（locationHint），JS 渲染完成后才显示 -->
+    <div class="hint-card" id="hint-card" style="display:none">
+      <div class="hint-card-label">💡 提示</div>
+      <p class="hint-card-text" id="hint-text"></p>
+      <p class="hint-card-fallback">（仔细看二维码贴在哪里）</p>
+    </div>
+
+    <!-- 数据加载失败时显示（默认隐藏）-->
+    <div id="error-state" style="display:none;padding:32px 0;text-align:center;color:#FF9F89;font-size:17px;line-height:1.8">
+      数据加载失败<br>
+      <a href="select-level.html" style="color:var(--color-primary);font-weight:700;font-size:16px">
+        ← 返回选择探险
+      </a>
+    </div>
+
+  </main>
+
+  <!-- 底部固定：找到了，去扫码（绿色，JS 渲染完成后才显示）-->
+  <div class="bottom-action">
+    <button class="btn-primary btn-success" id="btn-scan" style="display:none">
+      📷 我找到了！扫码！
+    </button>
+  </div>
+
+  <!-- Eruda 调试 -->
+  <script>
+    if (new URLSearchParams(location.search).get('debug') === '1') {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/eruda@3.0.1/eruda.min.js';
+      s.onload = () => eruda.init();
+      document.head.appendChild(s);
+    }
+  </script>
+
+  <!-- ES Module：以 session 为唯一数据源，展示当前点位提示 -->
+  <script type="module">
+    import db from '../../shared/db/play-db.js';
+
+    // 从 URL 获取 sessionId（session 是游戏进度的唯一数据源）
+    const sessionId = new URLSearchParams(location.search).get('sessionId');
+    if (!sessionId) {
+      location.href = 'select-level.html';
+    }
+
+    async function init() {
+      // 读取会话
+      const session = await db.sessions.get(sessionId);
+      if (!session) {
+        // session 不存在（可能已被清除），退回探险选择
+        location.href = 'select-level.html';
+        return;
+      }
+
+      const { levelId, currentPointIndex } = session;
+
+      // 读取该探险所有点位，按 order 升序（sortBy 做内存排序）
+      const allPoints = await db.points
+        .where('levelId').equals(levelId)
+        .sortBy('order');
+
+      const totalStations = allPoints.length;
+      const currentPoint  = allPoints[currentPointIndex];
+
+      if (!currentPoint) {
+        // 点位数据异常
+        console.error('[提示页] 找不到点位，currentPointIndex=', currentPointIndex,
+                      'allPoints.length=', totalStations);
+        showError();
+        return;
+      }
+
+      // ── 渲染进度横幅 ──
+      const stationNum = currentPointIndex + 1;
+      document.getElementById('station-text').textContent =
+        `第 ${stationNum} 站 · ${totalStations} 站中的第 ${stationNum} 站`;
+      document.getElementById('station-banner').style.display = 'flex';
+
+      // ── 渲染提示卡片 ──
+      // locationHint 为空时显示通用提示文案
+      document.getElementById('hint-text').textContent =
+        currentPoint.locationHint || '仔细看二维码贴在哪里';
+      document.getElementById('hint-card').style.display = 'block';
+
+      // ── 显示扫码按钮 ──
+      const btnScan = document.getElementById('btn-scan');
+      btnScan.style.display = 'flex';
+      btnScan.addEventListener('click', () => {
+        // M20 实现 scan.html；现在点击会 404（正常，M20 修复）
+        location.href = `scan.html?sessionId=${encodeURIComponent(sessionId)}`;
+      });
+    }
+
+    function showError() {
+      document.getElementById('hint-card').style.display   = 'none';
+      document.getElementById('btn-scan').style.display    = 'none';
+      document.getElementById('error-state').style.display = 'block';
+    }
+
+    init().catch(err => {
+      console.error('[提示页] 初始化失败', err);
+      showError();
+    });
+  </script>
+
+</body>
+</html>
