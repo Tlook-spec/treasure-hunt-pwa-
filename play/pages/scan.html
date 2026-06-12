@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0E1628">
   <title>扫码 - 寻宝游戏</title>
-  <!-- 深色独立样式，不加载 main.css（深色主题与游戏主色不同）-->
+  <!-- 深色独立样式，不加载 main.css -->
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     html { height: 100%; }
@@ -15,11 +15,9 @@
       font-family: -apple-system, "PingFang SC", "Hiragino Sans GB",
                    "Microsoft YaHei", sans-serif;
       color: #fff;
-      display: flex;
-      flex-direction: column;
+      display: flex; flex-direction: column;
       overflow: hidden;
-      user-select: none;
-      -webkit-user-select: none;
+      user-select: none; -webkit-user-select: none;
       touch-action: manipulation;
     }
 
@@ -36,10 +34,7 @@
     }
     #btn-back:active { background: rgba(255,255,255,0.15); }
     .scan-title { font-size: 17px; font-weight: 700; }
-    #station-label {
-      font-size: 14px; color: rgba(255,255,255,0.55);
-      min-width: 72px; text-align: right;
-    }
+    #station-label { font-size: 14px; color: rgba(255,255,255,0.55); min-width: 72px; text-align: right; }
 
     /* ====== 摄像头主区域 ====== */
     .scan-camera-section {
@@ -49,21 +44,15 @@
     }
     .camera-wrapper {
       position: relative;
-      width: min(88vw, 420px);
-      height: min(88vw, 420px);
-      border-radius: 16px;
-      overflow: hidden;
-      background: #060D1C;
+      width: min(88vw, 420px); height: min(88vw, 420px);
+      border-radius: 16px; overflow: hidden; background: #060D1C;
     }
-
-    /* 启动状态覆盖层（默认可见，camera 激活后隐藏）*/
     #start-overlay {
       position: absolute; inset: 0; z-index: 10;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       gap: 20px; padding: 24px;
-      border: 2px solid rgba(255,255,255,0.08);
-      border-radius: 16px;
+      border: 2px solid rgba(255,255,255,0.08); border-radius: 16px;
     }
     .start-icon { font-size: 60px; line-height: 1; opacity: 0.75; }
     #btn-start-scan {
@@ -74,8 +63,6 @@
     }
     #btn-start-scan:active { background: #3A7BC8; }
     #btn-start-scan:disabled { opacity: 0.5; }
-
-    /* 错误状态（摄像头权限被拒时显示）*/
     #error-content {
       display: none; flex-direction: column;
       align-items: center; gap: 14px; text-align: center;
@@ -83,78 +70,117 @@
     .error-icon { font-size: 48px; }
     .error-text { font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.7; }
     #btn-retry-scan {
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.25);
-      color: #fff; border-radius: 10px;
-      padding: 10px 24px; font-size: 15px; font-weight: 600;
-      cursor: pointer; min-height: 44px;
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+      color: #fff; border-radius: 10px; padding: 10px 24px;
+      font-size: 15px; font-weight: 600; cursor: pointer; min-height: 44px;
     }
     #btn-retry-scan:active { background: rgba(255,255,255,0.22); }
+    #reader { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 16px; }
+    #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+    #scan-hint { font-size: 15px; color: rgba(255,255,255,0.5); text-align: center; line-height: 1.5; max-width: min(88vw, 420px); }
 
-    /* html5-qrcode 摄像头注入目标 */
-    #reader {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%;
-      border-radius: 16px;
-    }
-    /* 强制摄像头视频填满容器（覆盖 html5-qrcode 默认内联样式）*/
-    #reader video {
-      width: 100% !important;
-      height: 100% !important;
-      object-fit: cover !important;
-    }
-
-    /* 摄像头下方提示文字 */
-    #scan-hint {
-      font-size: 15px; color: rgba(255,255,255,0.5);
-      text-align: center; line-height: 1.5;
-      max-width: min(88vw, 420px);
-    }
-
-    /* ====== 底部两个备选按钮 ====== */
-    .scan-footer {
-      display: flex; gap: 12px;
-      padding: 12px 16px 20px; flex-shrink: 0;
-    }
+    /* ====== 底部备选按钮 ====== */
+    .scan-footer { display: flex; gap: 12px; padding: 12px 16px 20px; flex-shrink: 0; }
     .btn-fallback {
       flex: 1; min-height: 56px;
-      background: rgba(255,255,255,0.09);
-      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.16);
       color: rgba(255,255,255,0.80); border-radius: 12px;
       font-size: 13px; font-weight: 600; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       gap: 5px; padding: 0 10px; text-align: center; line-height: 1.4;
     }
     .btn-fallback:active { background: rgba(255,255,255,0.18); }
-    .btn-fallback-warn {
-      border-color: rgba(245,166,35,0.4);
-      color: rgba(245,194,107,0.9);
-    }
+    .btn-fallback-warn { border-color: rgba(245,166,35,0.4); color: rgba(245,194,107,0.9); }
 
-    /* ====== 扫码结果覆层（错码提示，2 秒后自动消失）====== */
+    /* ====== 扫码结果覆层（错码 toast）====== */
     #result-overlay {
       position: fixed; inset: 0; z-index: 100;
       background: rgba(0,0,0,0.72);
-      display: flex; align-items: center; justify-content: center;
-      padding: 24px;
+      display: flex; align-items: center; justify-content: center; padding: 24px;
     }
-    .result-card {
-      background: #fff; border-radius: 20px;
-      padding: 28px 24px 24px;
-      max-width: 340px; width: 100%;
-      text-align: center;
-    }
+    .result-card { background: #fff; border-radius: 20px; padding: 28px 24px 24px; max-width: 340px; width: 100%; text-align: center; }
     .result-card-wrong   { background: #FFF5E6; }
     .result-card-invalid { background: #FFF0F0; }
     .result-emoji { font-size: 52px; display: block; margin-bottom: 12px; }
-    .result-main  {
-      font-size: 17px; font-weight: 700;
-      color: #2C3E50; line-height: 1.5; margin-bottom: 8px;
+    .result-main  { font-size: 17px; font-weight: 700; color: #2C3E50; line-height: 1.5; margin-bottom: 8px; }
+    .result-sub   { font-size: 14px; color: #6C757D; line-height: 1.5; }
+
+    /* ====== 数字码输入弹窗 ====== */
+    .code-modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.75);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
     }
-    .result-sub { font-size: 14px; color: #6C757D; line-height: 1.5; }
+    .code-modal-box {
+      background: #fff; border-radius: 20px;
+      width: 100%; max-width: 380px;
+      overflow: hidden;
+      max-height: 92vh; overflow-y: auto;
+    }
+    /* 顶部彩色标题栏（颜色由 JS 动态设置）*/
+    .code-modal-header {
+      padding: 16px 20px;
+      color: #fff;
+    }
+    .code-modal-title { font-size: 18px; font-weight: 700; }
+    /* 家长模式正文说明 */
+    .code-modal-body { padding: 12px 20px 0; }
+    .code-modal-desc  { font-size: 15px; color: #2C3E50; line-height: 1.6; margin-bottom: 4px; }
+    .code-modal-small { font-size: 13px; color: #6C757D; line-height: 1.5; }
+    /* 6 格数字显示 */
+    .code-digits {
+      display: flex; gap: 8px; justify-content: center;
+      padding: 16px 16px 4px;
+    }
+    .digit-box {
+      flex: 1; min-width: 36px; max-width: 52px; height: 58px;
+      border: 2px solid #D0D5DD; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; font-weight: 800; color: #2C3E50;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    /* 验证错误提示 */
+    .code-error {
+      font-size: 14px; font-weight: 600; color: #E57373;
+      text-align: center; padding: 6px 16px 0; min-height: 24px;
+    }
+    /* 自定义数字键盘 */
+    .code-numpad {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; padding: 12px 16px 8px;
+    }
+    .numpad-btn {
+      min-height: 64px; background: #F5F6FA; border: none;
+      border-radius: 12px; font-size: 26px; font-weight: 600;
+      color: #2C3E50; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.1s, transform 0.1s;
+    }
+    .numpad-btn:active { background: #E0E4EF; transform: scale(0.94); }
+    .numpad-del { font-size: 20px; background: #FFF3E0; color: #E67E22; }
+    .numpad-del:active { background: #FFE0B2; }
+    .numpad-placeholder { min-height: 64px; } /* 空位占位 */
+    /* 弹窗底部操作按钮 */
+    .code-modal-actions {
+      display: flex; gap: 12px; padding: 8px 16px 20px;
+    }
+    .code-btn-cancel {
+      flex: 1; min-height: 52px;
+      background: #F0F0F0; border: none;
+      border-radius: 12px; font-size: 16px; font-weight: 600;
+      color: #6C757D; cursor: pointer;
+    }
+    .code-btn-cancel:active { background: #E0E0E0; }
+    .code-btn-confirm {
+      flex: 2; min-height: 52px;
+      color: #fff; border: none;
+      border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer;
+      /* background 由 JS 动态设置（蓝/橙）*/
+    }
+    .code-btn-confirm:active  { opacity: 0.85; }
+    .code-btn-confirm:disabled { opacity: 0.5; }
   </style>
 
-  <!-- CDN 库（普通 script，必须在 type="module" 之前）-->
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
@@ -170,41 +196,30 @@
   <!-- 摄像头主区域 -->
   <div class="scan-camera-section">
     <div class="camera-wrapper">
-
-      <!-- 启动覆盖层：idle（点击启动）或 error（权限被拒）-->
       <div id="start-overlay">
-        <!-- 默认 idle：大图标 + 开始按钮 -->
         <div id="idle-content"
              style="display:flex;flex-direction:column;align-items:center;gap:20px;width:100%">
           <div class="start-icon">📷</div>
           <button id="btn-start-scan">点击开始扫码</button>
         </div>
-        <!-- 错误：权限被拒 / 摄像头不可用 -->
         <div id="error-content">
           <div class="error-icon">⚠️</div>
           <p class="error-text" id="error-msg"></p>
           <button id="btn-retry-scan">再试一次</button>
         </div>
       </div>
-
-      <!-- html5-qrcode 摄像头注入区（lib 会把 video 放进这里）-->
       <div id="reader"></div>
     </div>
-
     <p id="scan-hint">把二维码放进框里就行啦～</p>
   </div>
 
-  <!-- 底部备选按钮（弹窗在 M21 实现）-->
+  <!-- 底部备选按钮 -->
   <div class="scan-footer">
-    <button class="btn-fallback" id="btn-manual-input">
-      ⌨️ 扫不出？<br>可以输入数字码
-    </button>
-    <button class="btn-fallback btn-fallback-warn" id="btn-cant-find">
-      ❓ 找不到<br>二维码？
-    </button>
+    <button class="btn-fallback" id="btn-manual-input">⌨️ 扫不出？<br>可以输入数字码</button>
+    <button class="btn-fallback btn-fallback-warn" id="btn-cant-find">❓ 找不到<br>二维码？</button>
   </div>
 
-  <!-- 扫码结果覆层（扫到错码时弹出，2 秒后自动消失）-->
+  <!-- 扫码结果覆层（错码 toast，2 秒自动消失）-->
   <div id="result-overlay" style="display:none">
     <div id="result-card" class="result-card">
       <span id="result-emoji" class="result-emoji"></span>
@@ -213,7 +228,60 @@
     </div>
   </div>
 
-  <!-- Eruda 调试（?debug=1 时加载）-->
+  <!-- ====== 数字码输入弹窗（孩子语境 / 家长语境共用）====== -->
+  <div id="code-modal" class="code-modal-overlay" style="display:none">
+    <div class="code-modal-box">
+
+      <!-- 彩色标题栏（颜色由 JS 设置）-->
+      <div class="code-modal-header" id="code-modal-header">
+        <p class="code-modal-title" id="code-modal-title"></p>
+      </div>
+
+      <!-- 家长模式的说明文字（默认隐藏）-->
+      <div class="code-modal-body" id="code-modal-body" style="display:none">
+        <p class="code-modal-desc">二维码找不到了？请爸爸妈妈输入这一站的 6 位数字码</p>
+        <p class="code-modal-small">在打印的应急小抄、或电脑端 L1 详情页可以查到</p>
+      </div>
+
+      <!-- 6 格数字显示 -->
+      <div class="code-digits">
+        <div class="digit-box" id="d0"></div>
+        <div class="digit-box" id="d1"></div>
+        <div class="digit-box" id="d2"></div>
+        <div class="digit-box" id="d3"></div>
+        <div class="digit-box" id="d4"></div>
+        <div class="digit-box" id="d5"></div>
+      </div>
+
+      <!-- 验证错误提示（默认隐藏）-->
+      <p class="code-error" id="code-error" style="visibility:hidden"> </p>
+
+      <!-- 自定义数字键盘 -->
+      <div class="code-numpad">
+        <button class="numpad-btn" data-n="1">1</button>
+        <button class="numpad-btn" data-n="2">2</button>
+        <button class="numpad-btn" data-n="3">3</button>
+        <button class="numpad-btn" data-n="4">4</button>
+        <button class="numpad-btn" data-n="5">5</button>
+        <button class="numpad-btn" data-n="6">6</button>
+        <button class="numpad-btn" data-n="7">7</button>
+        <button class="numpad-btn" data-n="8">8</button>
+        <button class="numpad-btn" data-n="9">9</button>
+        <button class="numpad-btn numpad-del" data-n="del">⌫</button>
+        <button class="numpad-btn" data-n="0">0</button>
+        <div class="numpad-placeholder"></div>
+      </div>
+
+      <!-- 底部取消 / 确定 -->
+      <div class="code-modal-actions">
+        <button class="code-btn-cancel" id="code-cancel">取消</button>
+        <button class="code-btn-confirm" id="code-confirm">确定</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Eruda 调试 -->
   <script>
     if (new URLSearchParams(location.search).get('debug') === '1') {
       const s = document.createElement('script');
@@ -223,25 +291,20 @@
     }
   </script>
 
-  <!-- ES Module：扫码主逻辑 -->
   <script type="module">
     import db from '../../shared/db/play-db.js';
-    import { verifyCode } from '../scripts/scan-verify.js';
+    import { resolveCode, goToChallenge } from '../scripts/scan-verify.js';
 
-    // ── 初始化 ──────────────────────────────────────────
+    // ── 初始化 ──────────────────────────────────────────────────────
     const params    = new URLSearchParams(location.search);
     const sessionId = params.get('sessionId');
     if (!sessionId) { location.href = 'select-level.html'; }
 
-    let html5Qr    = null;  // html5-qrcode 实例（每次启动重建）
-    let isScanning  = false; // 摄像头是否正在运行
-    let isVerifying = false; // 正在验证扫码结果（防止重复处理）
+    let html5Qr    = null;
+    let isScanning  = false;
+    let isVerifying = false; // 扫码验证中（防重复触发）
 
-    const startOverlay = document.getElementById('start-overlay');
-    const idleContent  = document.getElementById('idle-content');
-    const errorContent = document.getElementById('error-content');
-
-    // ── 加载站点编号显示 ──
+    // ── 加载站点编号 ──
     async function loadStation() {
       const session = await db.sessions.get(sessionId);
       if (!session) { location.href = 'select-level.html'; return; }
@@ -249,42 +312,35 @@
         `第 ${session.currentPointIndex + 1} 站`;
     }
 
-    // ── 状态：idle（点击启动）──
+    // ── 扫码页面状态管理 ──
+
     function showIdleState() {
-      idleContent.style.display  = 'flex';
-      errorContent.style.display = 'none';
-      startOverlay.style.display = 'flex';
+      document.getElementById('idle-content').style.display  = 'flex';
+      document.getElementById('error-content').style.display = 'none';
+      document.getElementById('start-overlay').style.display = 'flex';
       document.getElementById('btn-start-scan').disabled = false;
-      const hint = document.getElementById('scan-hint');
-      hint.textContent = '把二维码放进框里就行啦～';
-      hint.style.color = '';
+      document.getElementById('scan-hint').textContent = '把二维码放进框里就行啦～';
+      document.getElementById('scan-hint').style.color = '';
     }
 
-    // ── 状态：摄像头权限错误 ──
     function showCameraError(msg) {
-      idleContent.style.display  = 'none';
-      errorContent.style.display = 'flex';
+      document.getElementById('idle-content').style.display  = 'none';
+      document.getElementById('error-content').style.display = 'flex';
       document.getElementById('error-msg').innerHTML = msg;
-      startOverlay.style.display = 'flex';
+      document.getElementById('start-overlay').style.display = 'flex';
     }
 
-    // ── 启动摄像头 ──
     async function startScan() {
       if (isScanning || isVerifying) return;
-
-      // 每次启动前清空 #reader 并重建实例（保证重试状态干净）
       document.getElementById('reader').innerHTML = '';
-      html5Qr = new Html5Qrcode('reader'); // Html5Qrcode 来自 CDN 全局变量
-
-      // 隐藏启动层，让 #reader 完整显示
-      startOverlay.style.display = 'none';
-
+      html5Qr = new Html5Qrcode('reader');
+      document.getElementById('start-overlay').style.display = 'none';
       try {
         await html5Qr.start(
-          { facingMode: 'environment' },        // 后置摄像头
+          { facingMode: 'environment' },
           { fps: 10, qrbox: { width: 260, height: 260 } },
-          handleScanResult,                     // 识别成功回调
-          () => {}                              // 每帧未识别 QR，忽略
+          handleScanResult,
+          () => {}
         );
         isScanning = true;
       } catch (err) {
@@ -297,52 +353,38 @@
       }
     }
 
-    // ── 停止摄像头 ──
     async function stopCamera() {
       if (!isScanning || !html5Qr) return;
-      try {
-        await html5Qr.stop();
-      } catch (e) {
+      try { await html5Qr.stop(); } catch (e) {
         console.warn('[扫码] 停止摄像头时出错', e);
       }
       isScanning = false;
     }
 
-    // ── 扫到 QR 后的处理流程 ──
+    // ── 扫到 QR 码的处理 ──
     async function handleScanResult(decodedText) {
-      if (isVerifying) return; // 防止同一帧多次触发
+      if (isVerifying) return;
       isVerifying = true;
-
       await stopCamera();
-
       const code = decodedText.trim();
       console.log('[扫码] 识别内容：', code);
-
       try {
-        const res = await verifyCode(code, sessionId);
-
-        if (res.result === 'correct') {
-          // 叮咚音效（M23 放音频文件，现在占位，失败不报错）
+        const res = await resolveCode(code, sessionId);
+        if (res.status === 'correct') {
           new Audio('../assets/sounds/ding.mp3').play().catch(() => {});
-          // 跳转本站开始挑战页（M22 实现，现在会 404）
-          location.href = `challenge.html?sessionId=${encodeURIComponent(sessionId)}`;
+          goToChallenge(sessionId);
           return; // 导航中，不走 finally
-
-        } else if (res.result === 'wrong_station') {
+        } else if (res.status === 'wrong-point') {
           showResultCard('wrong',
             '这不是你现在要找的点哦！',
-            `现在要找第 ${res.stationNum} 站，再看看提示～`
+            `现在要找第 ${res.currentStationNumber} 站，再看看提示～`
           );
-        } else if (res.result === 'invalid') {
+        } else {
           showResultCard('invalid',
             '这不是寻宝游戏的码哦',
             '可能是别的二维码不小心扫到了～'
           );
-        } else {
-          // result === 'error'
-          showResultCard('invalid', '出现了一个错误', res.message || '请重试');
         }
-
       } catch (err) {
         console.error('[扫码] 验证失败', err);
         showResultCard('invalid', '验证时出错了', '请重试一次');
@@ -351,7 +393,7 @@
       }
     }
 
-    // ── 显示错误码结果卡片，2 秒后自动回到 idle ──
+    // 扫码错误 toast：2 秒后自动回到 idle
     function showResultCard(type, main, sub) {
       document.getElementById('result-emoji').textContent = type === 'wrong' ? '🤔' : '❓';
       document.getElementById('result-main').textContent  = main;
@@ -359,50 +401,181 @@
       document.getElementById('result-card').className =
         type === 'wrong' ? 'result-card result-card-wrong' : 'result-card result-card-invalid';
       document.getElementById('result-overlay').style.display = 'flex';
-
       setTimeout(() => {
         document.getElementById('result-overlay').style.display = 'none';
         showIdleState();
       }, 2000);
     }
 
-    // ── 按钮事件绑定 ────────────────────────────────────
-
-    // 返回提示页（先停摄像头再跳转）
+    // ── 扫码页按钮 ──
     document.getElementById('btn-back').addEventListener('click', async () => {
       await stopCamera();
       location.href = `hint.html?sessionId=${encodeURIComponent(sessionId)}`;
     });
-
-    // 点击「开始扫码」
     document.getElementById('btn-start-scan').addEventListener('click', startScan);
-
-    // 权限被拒后「再试一次」
     document.getElementById('btn-retry-scan').addEventListener('click', () => {
       showIdleState();
       startScan();
     });
-
-    // M21 占位：底部两个备选按钮（弹窗逻辑 M21 实现）
-    document.getElementById('btn-manual-input').addEventListener('click', () => {
-      console.log('[扫码] M21 占位：数字码输入弹窗');
+    // 底部两个按钮：停摄像头 → 打开对应弹窗
+    document.getElementById('btn-manual-input').addEventListener('click', async () => {
+      await stopCamera();
+      openCodeModal('child');
     });
-    document.getElementById('btn-cant-find').addEventListener('click', () => {
-      console.log('[扫码] M21 占位：找不到二维码弹窗');
+    document.getElementById('btn-cant-find').addEventListener('click', async () => {
+      await stopCamera();
+      openCodeModal('parent');
     });
 
-    // ── 切后台处理（避免 iOS Safari 摄像头黑屏）──
+    // 切后台：停摄像头；回前台：恢复 idle（不自动重启，防 iPad 黑屏）
     document.addEventListener('visibilitychange', async () => {
       if (document.visibilityState === 'hidden') {
-        // 切到后台：立即停摄像头，回来后必须手动重启（防黑屏）
         await stopCamera();
       } else if (!isScanning && !isVerifying) {
-        // 回到前台且摄像头已停：恢复「点击开始扫码」状态
         showIdleState();
       }
     });
 
-    // ── 页面初始化 ──
+    // ── 数字码输入弹窗 ─────────────────────────────────────────────
+
+    // 弹窗颜色主题（子/家长模式）
+    const MODAL_COLOR = { child: '#4A90E2', parent: '#F5A623' };
+    const ERROR_TEXT  = {
+      child:  '码不对哦，再看看二维码下面的数字',
+      parent: '家长再仔细看下数字',
+    };
+
+    let currentMode   = 'child'; // 当前弹窗模式
+    let currentInput  = '';      // 已输入的数字（最多 6 位）
+    let isSubmitting  = false;   // 防止重复提交
+
+    function openCodeModal(mode) {
+      currentMode  = mode;
+      currentInput = '';
+      isSubmitting = false;
+      const color = MODAL_COLOR[mode];
+
+      // 配置标题栏颜色 + 标题文字
+      document.getElementById('code-modal-header').style.background = color;
+      document.getElementById('code-modal-title').textContent =
+        mode === 'parent' ? '请家长输入' : '输入这一站的 6 位数字码';
+
+      // 家长模式才显示说明文字
+      document.getElementById('code-modal-body').style.display =
+        mode === 'parent' ? 'block' : 'none';
+
+      // 确定按钮颜色
+      document.getElementById('code-confirm').style.background = color;
+      document.getElementById('code-confirm').disabled = false;
+      document.getElementById('code-confirm').textContent = '确定';
+
+      // 清空错误 + 重置输入框
+      document.getElementById('code-error').style.visibility = 'hidden';
+      updateDigitDisplay();
+
+      document.getElementById('code-modal').style.display = 'flex';
+    }
+
+    // 更新 6 格数字显示 + 激活框高亮
+    function updateDigitDisplay() {
+      const color = MODAL_COLOR[currentMode];
+      for (let i = 0; i < 6; i++) {
+        const box = document.getElementById(`d${i}`);
+        box.textContent = currentInput[i] || '';
+        if (i === currentInput.length) {
+          // 当前将要输入的格：高亮
+          box.style.borderColor = color;
+          box.style.background  = currentMode === 'parent' ? '#FFF8EE' : '#F0F7FF';
+        } else if (currentInput[i]) {
+          // 已填入的格
+          box.style.borderColor = '#7BB0EE';
+          box.style.background  = '';
+        } else {
+          // 未填的格
+          box.style.borderColor = '#D0D5DD';
+          box.style.background  = '';
+        }
+      }
+    }
+
+    // 处理键盘按钮
+    function handleNumpadInput(n) {
+      if (n === 'del') {
+        currentInput = currentInput.slice(0, -1);
+        // 删除时隐藏错误
+        document.getElementById('code-error').style.visibility = 'hidden';
+        updateDigitDisplay();
+        return;
+      }
+      if (currentInput.length >= 6) return;
+      // 首次输入时清除错误
+      document.getElementById('code-error').style.visibility = 'hidden';
+      currentInput += n;
+      updateDigitDisplay();
+      // 6 位输满：300ms 后自动提交（给用户看清最后一位）
+      if (currentInput.length === 6) {
+        setTimeout(submitCode, 300);
+      }
+    }
+
+    // 提交验证
+    async function submitCode() {
+      if (currentInput.length < 6 || isSubmitting) return;
+      isSubmitting = true;
+
+      const confirmBtn = document.getElementById('code-confirm');
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = '⏳';
+
+      try {
+        const res = await resolveCode(currentInput, sessionId);
+
+        if (res.status === 'correct') {
+          // 正确：关弹窗 → 音效 → 跳转
+          document.getElementById('code-modal').style.display = 'none';
+          new Audio('../assets/sounds/ding.mp3').play().catch(() => {});
+          goToChallenge(sessionId);
+          return; // 不走 finally（页面正在跳转）
+
+        } else {
+          // 不对：停在弹窗 + 显示提示 + 清空重输
+          const errEl = document.getElementById('code-error');
+          errEl.textContent = ERROR_TEXT[currentMode];
+          errEl.style.visibility = 'visible';
+          currentInput = '';
+          updateDigitDisplay();
+        }
+
+      } catch (err) {
+        console.error('[数字码] 验证失败', err);
+        const errEl = document.getElementById('code-error');
+        errEl.textContent = '验证出错，请重试';
+        errEl.style.visibility = 'visible';
+        currentInput = '';
+        updateDigitDisplay();
+      } finally {
+        isSubmitting = false;
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '确定';
+      }
+    }
+
+    // 键盘点击
+    document.querySelector('.code-numpad').addEventListener('click', e => {
+      const btn = e.target.closest('[data-n]');
+      if (btn) handleNumpadInput(btn.dataset.n);
+    });
+
+    // 确定按钮（手动确认，也可用于 < 6 位时无操作）
+    document.getElementById('code-confirm').addEventListener('click', submitCode);
+
+    // 取消：关弹窗，回扫码 idle 状态
+    document.getElementById('code-cancel').addEventListener('click', () => {
+      document.getElementById('code-modal').style.display = 'none';
+      showIdleState();
+    });
+
+    // ── 初始化 ──
     loadStation().catch(err => console.error('[扫码] 加载站点信息失败', err));
   </script>
 
