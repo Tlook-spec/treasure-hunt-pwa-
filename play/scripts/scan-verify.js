@@ -53,5 +53,5 @@ export async function resolveCode(code, sessionId) {
  * 扫码成功和手动输码成功都调这个，避免两处硬编码 URL。
  */
 export function goToChallenge(sessionId) {
-  location.href = `challenge.html?sessionId=${encodeURIComponent(sessionId)}`;
+  location.href = `quiz.html?sessionId=${encodeURIComponent(sessionId)}`;
 }

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#4A90E2">
+  <link rel="stylesheet" href="../styles/main.css">
+  <title>答题 - 寻宝游戏</title>
+  <!-- Dexie 必须在 type="module" 脚本之前加载 -->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+</head>
+<body>
+
+  <!-- ── 顶部进度横幅（两屏共用）────────────────────────────── -->
+  <div class="station-banner" id="quiz-banner">
+    <!-- 屏1 内容：第 N 站 · 共 M 站 -->
+    <div id="banner-discovery" style="display:flex; align-items:center; gap:8px; width:100%">
+      <div class="station-banner-dot"></div>
+      <span id="discovery-station-text">加载中…</span>
+    </div>
+    <!-- 屏2 内容：第 N 站  第 X/M 题  💡求助 -->
+    <div id="banner-quiz" style="display:none; align-items:center; gap:8px; width:100%">
+      <div class="station-banner-dot"></div>
+      <span id="quiz-station-text">第 N 站</span>
+      <span class="banner-question-count" id="quiz-question-count">第 1/5 题</span>
+      <button class="btn-help-inline" id="btn-help">💡 求助 <span id="help-count">3</span></button>
+    </div>
+  </div>
+
+  <!-- ── 屏 1：发现站点（discoveryText + 开始挑战按钮）──────── -->
+  <div id="screen-discovery" style="display:none">
+    <main class="page-content has-bottom-action">
+      <div class="discovery-card">
+        <div class="discovery-card-icon">💡</div>
+        <p class="discovery-card-text" id="discovery-text">加载中…</p>
+      </div>
+    </main>
+    <div class="bottom-action">
+      <button class="btn-primary btn-success" id="btn-start-challenge">开始挑战！</button>
+    </div>
+  </div>
+
+  <!-- ── 屏 2：答题（题目卡 + 2×2 选项）────────────────────── -->
+  <div id="screen-quiz" style="display:none">
+    <main class="page-content">
+      <!-- 题目卡片 -->
+      <div class="question-card">
+        <div class="question-meta" id="question-meta"></div>
+        <p class="question-text" id="question-text"></p>
+      </div>
+      <!-- 答错反馈（visibility:hidden 保留占位，避免布局跳动）-->
+      <p class="wrong-feedback" id="wrong-feedback" style="visibility:hidden">再试试？🤔</p>
+      <!-- 选项 2×2 网格（JS 动态渲染）-->
+      <div class="options-grid" id="options-grid"></div>
+    </main>
+  </div>
+
+  <!-- ── 兜底：数据加载失败 ──────────────────────────────────── -->
+  <div id="error-state" style="display:none; padding:48px 24px; text-align:center;
+       color:var(--color-error); font-size:17px; line-height:2">
+    数据加载失败 😵<br>
+    <a href="select-level.html" style="color:var(--color-primary); font-weight:700">
+      ← 返回选择探险
+    </a>
+  </div>
+
+  <!-- Eruda 调试（?debug=1 时加载）-->
+  <script>
+    if (new URLSearchParams(location.search).get('debug') === '1') {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/eruda@3.0.1/eruda.min.js';
+      s.onload = () => eruda.init();
+      document.head.appendChild(s);
+    }
+  </script>
+
+  <script type="module">
+    import { loadCurrentQuizData, startChallenge, submitAnswer }
+      from '../scripts/quiz-logic.js';
+
+    const sessionId = new URLSearchParams(location.search).get('sessionId');
+    if (!sessionId) {
+      location.href = 'select-level.html';
+    }
+
+    // ── 初始化：加载数据并显示屏 1 ───────────────────────────
+    async function init() {
+      try {
+        const data = await loadCurrentQuizData(sessionId);
+        showDiscoveryScreen(data);
+      } catch (err) {
+        console.error('[答题页] 初始化失败', err);
+        showError();
+      }
+    }
+
+    // ── 屏 1 渲染 ─────────────────────────────────────────────
+    function showDiscoveryScreen(data) {
+      const { point, stationNumber, totalStations } = data;
+
+      document.getElementById('banner-discovery').style.display = 'flex';
+      document.getElementById('banner-quiz').style.display = 'none';
+      document.getElementById('discovery-station-text').textContent =
+        `第 ${stationNumber} 站 · 共 ${totalStations} 站`;
+
+      // discoveryText 为空时显示通用文案
+      document.getElementById('discovery-text').textContent =
+        point.discoveryText || `恭喜找到第 ${stationNumber} 站！请回答这里的题目吧！`;
+
+      document.getElementById('screen-discovery').style.display = 'block';
+      document.getElementById('screen-quiz').style.display = 'none';
+    }
+
+    // ── 「开始挑战！」按钮 ────────────────────────────────────
+    document.getElementById('btn-start-challenge').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-start-challenge');
+      btn.disabled = true;
+      btn.textContent = '⏳';
+      try {
+        await startChallenge(sessionId);
+        await loadAndShowQuizScreen();
+      } catch (err) {
+        console.error('[答题页] 开始挑战失败', err);
+        btn.disabled = false;
+        btn.textContent = '开始挑战！';
+      }
+    });
+
+    // ── 屏 2：从 DB 重新加载当前题，然后渲染 ─────────────────
+    async function loadAndShowQuizScreen() {
+      const data = await loadCurrentQuizData(sessionId);
+      showQuizScreen(data);
+    }
+
+    function showQuizScreen(data) {
+      const { session, question, stationNumber, questionNumber, totalQuestions } = data;
+      const remainingHelp = session.maxHelpCount - session.helpUsedCount;
+
+      // 横幅切到屏 2
+      document.getElementById('banner-discovery').style.display = 'none';
+      document.getElementById('banner-quiz').style.display = 'flex';
+      document.getElementById('quiz-station-text').textContent = `第 ${stationNumber} 站`;
+      document.getElementById('quiz-question-count').textContent =
+        `第 ${questionNumber}/${totalQuestions} 题`;
+      document.getElementById('help-count').textContent = remainingHelp;
+
+      // 题目元信息（学科 + 难度星）
+      const diff = Math.max(1, Math.min(3, question.difficulty || 1));
+      const stars = '★'.repeat(diff) + '☆'.repeat(3 - diff);
+      document.getElementById('question-meta').textContent =
+        `${question.subject || '综合'} · ${stars}`;
+
+      // 题干
+      document.getElementById('question-text').textContent = question.text;
+
+      // 选项 A/B/C/D（用 textContent 防止 XSS）
+      const grid = document.getElementById('options-grid');
+      grid.innerHTML = '';
+      const labels = ['A', 'B', 'C', 'D'];
+      (question.options || []).forEach((optText, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'option-label';
+        labelSpan.textContent = labels[idx];
+
+        const textSpan = document.createElement('span');
+        textSpan.className = 'option-text';
+        textSpan.textContent = optText;
+
+        btn.appendChild(labelSpan);
+        btn.appendChild(textSpan);
+        btn.addEventListener('click', () => onSelectOption(idx));
+        grid.appendChild(btn);
+      });
+
+      // 清空答错反馈
+      document.getElementById('wrong-feedback').style.visibility = 'hidden';
+
+      // 切换到屏 2
+      document.getElementById('screen-discovery').style.display = 'none';
+      document.getElementById('screen-quiz').style.display = 'block';
+    }
+
+    // ── 选项点击处理 ──────────────────────────────────────────
+    async function onSelectOption(selectedIndex) {
+      const optBtns = [...document.querySelectorAll('.option-btn')];
+      // 立即禁用所有选项，防止重复点击
+      optBtns.forEach(b => { b.disabled = true; });
+      document.getElementById('wrong-feedback').style.visibility = 'hidden';
+
+      try {
+        const { result, hasMoreQuestions } = await submitAnswer(sessionId, selectedIndex);
+
+        if (result === 'correct') {
+          optBtns[selectedIndex].classList.add('option-correct');
+          setTimeout(() => {
+            if (hasMoreQuestions) {
+              // 加载并显示下一题
+              loadAndShowQuizScreen().catch(err => {
+                console.error('[答题页] 加载下一题失败', err);
+                showError();
+              });
+            } else {
+              // 本站所有题答完 → 跳转到拍照页（M24 实现，现在 404 正常）
+              location.href = `photo.html?sessionId=${encodeURIComponent(sessionId)}`;
+            }
+          }, 800);
+        } else {
+          // 答错：高亮错误选项，0.6s 后恢复
+          optBtns[selectedIndex].classList.add('option-wrong');
+          document.getElementById('wrong-feedback').style.visibility = 'visible';
+          setTimeout(() => {
+            optBtns[selectedIndex].classList.remove('option-wrong');
+            optBtns.forEach(b => { b.disabled = false; });
+          }, 600);
+        }
+      } catch (err) {
+        console.error('[答题页] 提交答案失败', err);
+        optBtns.forEach(b => { b.disabled = false; });
+      }
+    }
+
+    // ── 求助按钮（M23 实现，此处仅占位）────────────────────
+    document.getElementById('btn-help').addEventListener('click', () => {
+      console.log('[M23] 求助功能待实现');
+    });
+
+    // ── 兜底错误 ──────────────────────────────────────────────
+    function showError() {
+      document.getElementById('quiz-banner').style.display = 'none';
+      document.getElementById('screen-discovery').style.display = 'none';
+      document.getElementById('screen-quiz').style.display = 'none';
+      document.getElementById('error-state').style.display = 'block';
+    }
+
+    init();
+  </script>
+
+</body>
+</html>

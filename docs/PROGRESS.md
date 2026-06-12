@@ -10,7 +10,7 @@
 
 **阶段**：MVP 开发阶段 B（编辑端）进行中
 
-**下一个任务**：M22 — L2 内多题连答主流程
+**下一个任务**：M23 — 答题反馈 + 3 次容错 + 求助按钮
 
 ---
 
@@ -69,7 +69,7 @@
 - **M19** ✅ 游戏主流程框架：start-level.html（创建 GameSession）+ hint.html（提示展示页）+ select-level.html 链接修正
 - **M20** ✅ 扫码功能集成：scan.html（深色摄像头界面，点击启动）+ scan-verify.js（3 步验证逻辑）+ index.html 预加载 html5-qrcode CDN
 - **M21** ✅ 数字码输入弹窗：resolveCode/goToChallenge 重构；孩子（蓝）+ 家长（橙）两种模式共用大键盘组件；输错停在弹窗重输，不回摄像头
-- [ ] M22 L2 内多题连答主流程
+- **M22** ✅ L2 内多题连答主流程：quiz.html 两屏（发现站点+答题）+ quiz-logic.js（startChallenge/submitAnswer placeholder：答对得10分，答错不记录）+ scan-verify 跳转改为 quiz.html
 - [ ] M23 答题反馈 + 3 次容错 + 求助按钮
 - [ ] M24 L2 通关拍合影 + 「继续扫码」按钮
 - [ ] M25 极简通关页
