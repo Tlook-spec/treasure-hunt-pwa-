@@ -11,8 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="寻宝游戏">
   <link rel="apple-touch-icon" href="assets/icons/icon-192.svg">
   <title>寻宝游戏</title>
-  <!-- Dexie CDN（普通 script，先加载以便 SW 缓存；启动页本身不调用 db） -->
+  <!-- CDN 库（普通 script，先加载以便 SW 缓存；启动页本身不调用这些库）-->
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+  <!-- html5-qrcode：扫码页用，这里预加载让 SW 提前缓存，保证离线可用 -->
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
     /* 变量从 main.css 复制，避免启动页依赖外部 CSS 文件（减少首屏等待） */

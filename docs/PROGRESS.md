@@ -10,7 +10,7 @@
 
 **阶段**：MVP 开发阶段 B（编辑端）进行中
 
-**下一个任务**：M20 — 扫码功能集成
+**下一个任务**：M21 — 数字码输入 + 「找不到?」按钮
 
 ---
 
@@ -67,7 +67,7 @@
 - **M17** ✅ 启动页 + 探险选择页 + 设置页（play/index.html、play/pages/select-level.html、play/pages/settings.html）
 - **M18** ✅ JSON 整库导入（游戏端）：validateJson + importFull + sessions 清空 + localStorage 时间戳
 - **M19** ✅ 游戏主流程框架：start-level.html（创建 GameSession）+ hint.html（提示展示页）+ select-level.html 链接修正
-- [ ] M20 扫码功能集成
+- **M20** ✅ 扫码功能集成：scan.html（深色摄像头界面，点击启动）+ scan-verify.js（3 步验证逻辑）+ index.html 预加载 html5-qrcode CDN
 - [ ] M21 数字码输入 + 「找不到?」按钮
 - [ ] M22 L2 内多题连答主流程
 - [ ] M23 答题反馈 + 3 次容错 + 求助按钮
