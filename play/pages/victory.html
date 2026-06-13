@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#4A90E2">
+  <link rel="stylesheet" href="../styles/main.css">
+  <title>通关啦！- 寻宝游戏</title>
+  <!-- Dexie 必须在 type="module" 之前加载 -->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+</head>
+<body>
+
+  <!-- 撒花容器（CSS 动画，pointer-events: none，不影响点击）-->
+  <div id="confetti-container" class="confetti-container"></div>
+
+  <!-- 主内容（init 完成后才显示，避免闪烁空页）-->
+  <main class="page-content has-bottom-action" id="main-content" style="display:none">
+
+    <!-- 通关大标题 -->
+    <div class="victory-hero">
+      <div class="victory-trophy">🏆</div>
+      <h1 class="victory-title">通关啦！</h1>
+      <p class="victory-level-name" id="victory-level-name"></p>
+    </div>
+
+    <!-- 成绩卡 -->
+    <div class="score-card">
+      <div class="score-row">
+        <span class="score-label">🌟 总分</span>
+        <span class="score-value" id="stat-score">—</span>
+      </div>
+      <div class="score-divider"></div>
+      <div class="score-row">
+        <span class="score-label">✅ 答对题数</span>
+        <span class="score-value score-value-sm" id="stat-correct">—</span>
+      </div>
+      <div class="score-divider"></div>
+      <div class="score-row">
+        <span class="score-label">⏱ 用时</span>
+        <span class="score-value score-value-sm" id="stat-time">—</span>
+      </div>
+    </div>
+
+    <!-- 合影区 -->
+    <div id="photo-section">
+      <h3 class="photo-section-title" id="photo-section-title">📷 这次的合影</h3>
+      <!-- 有照片时：横向滚动 -->
+      <div class="photo-gallery">
+        <div class="photo-gallery-scroll" id="photo-gallery-scroll"></div>
+      </div>
+      <!-- 没有照片时 -->
+      <div id="photo-empty" style="display:none" class="photo-empty-tip">
+        这次没有拍合影哦，下次记得拍！📸
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 返回首页（fixed bottom，init 完成后显示）-->
+  <div class="bottom-action" id="bottom-action" style="display:none">
+    <a href="../index.html" class="btn-primary btn-warning">🏠 返回首页</a>
+  </div>
+
+  <!-- 兜底：数据加载失败 -->
+  <div id="error-state" style="display:none; padding:48px 24px; text-align:center;
+       color:var(--color-error); font-size:17px; line-height:2">
+    数据加载失败 😵<br>
+    <a href="../index.html" style="color:var(--color-primary); font-weight:700">
+      ← 返回首页
+    </a>
+  </div>
+
+  <!-- Eruda 调试（?debug=1 时加载）-->
+  <script>
+    if (new URLSearchParams(location.search).get('debug') === '1') {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/eruda@3.0.1/eruda.min.js';
+      s.onload = () => eruda.init();
+      document.head.appendChild(s);
+    }
+  </script>
+
+  <script type="module">
+    import db from '../../shared/db/play-db.js';
+
+    const sessionId = new URLSearchParams(location.search).get('sessionId');
+    if (!sessionId) { location.href = '../index.html'; }
+
+    // ── 初始化入口 ───────────────────────────────────────────
+    async function init() {
+      try {
+        // ① 读 session
+        let session = await db.sessions.get(sessionId);
+        if (!session) { location.href = '../index.html'; return; }
+
+        // ② 结算（幂等：只在尚未 completed 时写一次；刷新页面不改变 endedAt）
+        if (session.status !== 'completed') {
+          const endedAt = Date.now();
+          await db.sessions.update(sessionId, { status: 'completed', endedAt });
+          session = { ...session, status: 'completed', endedAt };
+        }
+
+        // ③ 读探险名
+        const level     = await db.levels.get(session.levelId);
+        const levelName = level ? level.name : '精彩探险';
+        document.getElementById('victory-level-name').textContent = levelName;
+
+        // ④ 计算成绩（遍历全部站、全部题）
+        const pointRecords   = session.pointRecords || [];
+        let totalScore       = 0;
+        let totalQuestions   = 0;
+        let correctQuestions = 0;
+
+        for (const pr of pointRecords) {
+          for (const qr of (pr.questionResults || [])) {
+            totalScore += qr.score || 0;
+            totalQuestions++;
+            if ((qr.score || 0) > 0) correctQuestions++;
+          }
+        }
+
+        // ⑤ 用时（用结算后的 endedAt，不用读进来时可能为 null 的原始值）
+        const elapsed  = session.endedAt - session.startedAt;
+        const totalSec = Math.max(0, Math.floor(elapsed / 1000));
+        const mins     = Math.floor(totalSec / 60);
+        const secs     = totalSec % 60;
+        const timeStr  = mins > 0 ? `${mins} 分 ${secs} 秒` : `${secs} 秒`;
+
+        document.getElementById('stat-score').textContent   = `${totalScore} 分`;
+        document.getElementById('stat-correct').textContent = `${correctQuestions} / ${totalQuestions} 题`;
+        document.getElementById('stat-time').textContent    = timeStr;
+
+        // ⑥ 合影
+        await renderPhotos(session, pointRecords);
+
+        // ⑦ 显示页面 + 按钮
+        document.getElementById('main-content').style.display  = 'block';
+        document.getElementById('bottom-action').style.display = 'block';
+
+        // ⑧ 撒花！
+        launchConfetti();
+
+      } catch (err) {
+        console.error('[通关页] 初始化失败', err);
+        showError();
+      }
+    }
+
+    // ── 合影渲染 ─────────────────────────────────────────────
+    async function renderPhotos(session, pointRecords) {
+      // 收集有合影的 pointRecord（保留原始下标作站号）
+      const photoEntries = pointRecords
+        .map((pr, i) => ({ stationNum: i + 1, pointId: pr.pointId, photoId: pr.completionPhotoId }))
+        .filter((x) => x.photoId != null);
+
+      if (photoEntries.length === 0) {
+        document.getElementById('photo-gallery-scroll').style.display = 'none';
+        document.getElementById('photo-empty').style.display = 'block';
+        return;
+      }
+
+      // 一次性读取所有 photo blob + 所有点位名
+      const [photos, allPoints] = await Promise.all([
+        db.photos.bulkGet(photoEntries.map((x) => x.photoId)),
+        db.points.where('levelId').equals(session.levelId).toArray(),
+      ]);
+      const pointMap = Object.fromEntries(allPoints.map((p) => [p.id, p]));
+
+      const scroll  = document.getElementById('photo-gallery-scroll');
+      let rendered  = 0;
+
+      photos.forEach((photo, i) => {
+        if (!photo || !photo.blob) return; // 容错：photo 记录丢失时跳过
+
+        const { stationNum, pointId } = photoEntries[i];
+        const pointName = pointMap[pointId]?.name || `第 ${stationNum} 站`;
+
+        const thumb = document.createElement('div');
+        thumb.className = 'photo-thumb';
+
+        const img = document.createElement('img');
+        img.src       = URL.createObjectURL(photo.blob);
+        img.className = 'photo-thumb-img';
+        img.alt       = `第 ${stationNum} 站合影`;
+        img.addEventListener('click', () => openFullscreen(img.src));
+
+        const caption = document.createElement('p');
+        caption.className   = 'photo-thumb-caption';
+        caption.textContent = `第 ${stationNum} 站 · ${pointName}`;
+
+        thumb.appendChild(img);
+        thumb.appendChild(caption);
+        scroll.appendChild(thumb);
+        rendered++;
+      });
+
+      if (rendered === 0) {
+        scroll.style.display = 'none';
+        document.getElementById('photo-empty').style.display = 'block';
+      } else {
+        document.getElementById('photo-section-title').textContent =
+          `📷 这次的合影（${rendered} 张）`;
+      }
+    }
+
+    // ── 全屏查看 ─────────────────────────────────────────────
+    function openFullscreen(src) {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = [
+        'position:fixed', 'inset:0', 'background:rgba(0,0,0,0.92)',
+        'display:flex', 'flex-direction:column', 'align-items:center',
+        'justify-content:center', 'z-index:1000', 'padding:16px',
+      ].join(';');
+
+      const img = document.createElement('img');
+      img.src            = src;
+      img.style.cssText  = 'max-width:100%;max-height:80vh;object-fit:contain;border-radius:8px;';
+
+      const hint = document.createElement('p');
+      hint.textContent   = '💡 长按图片保存到相册　·　点击关闭';
+      hint.style.cssText = 'color:#aaa;margin-top:12px;font-size:13px;text-align:center;';
+
+      overlay.appendChild(img);
+      overlay.appendChild(hint);
+      overlay.addEventListener('click', () => overlay.remove());
+      document.body.appendChild(overlay);
+    }
+
+    // ── CSS emoji 撒花（无依赖库，3-5 秒后自动清理）────────────
+    function launchConfetti() {
+      const container = document.getElementById('confetti-container');
+      const emojis    = ['🎉', '🎊', '⭐', '🌟', '✨', '🎈', '🏆', '🎀', '🌈'];
+      const total     = 45;
+
+      for (let i = 0; i < total; i++) {
+        setTimeout(() => {
+          const el            = document.createElement('span');
+          el.className        = 'confetti-piece';
+          el.textContent      = emojis[Math.floor(Math.random() * emojis.length)];
+          el.style.left       = Math.random() * 100 + '%';
+          el.style.fontSize   = (14 + Math.random() * 22) + 'px';
+          el.style.animationDuration = (2.5 + Math.random() * 2.5) + 's';
+          container.appendChild(el);
+          // 动画结束后删除元素，避免 DOM 堆积
+          el.addEventListener('animationend', () => el.remove(), { once: true });
+        }, i * 100);
+      }
+    }
+
+    // ── 错误状态 ─────────────────────────────────────────────
+    function showError() {
+      document.getElementById('main-content').style.display  = 'none';
+      document.getElementById('bottom-action').style.display = 'none';
+      document.getElementById('error-state').style.display   = 'block';
+    }
+
+    init();
+  </script>
+
+</body>
+</html>

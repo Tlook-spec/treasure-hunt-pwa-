@@ -880,3 +880,151 @@ body {
 .offline-status-green  { background: #F0FFF4; border-color: #7ED321; color: #2D7A2D; }
 .offline-status-yellow { background: #FFF9E6; border-color: #F5A623; color: #7A5F04; }
 .offline-status-gray   { background: #F5F5F5; border-color: #C8C8C8; color: #666;    }
+
+/* ══════════════════════════════════════════════════════════
+   通关庆典页（victory.html）专用样式
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 撒花动画 ── */
+.confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 200;
+}
+
+@keyframes confetti-fall {
+  0%   { transform: translateY(-40px) rotate(0deg);   opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+.confetti-piece {
+  position: absolute;
+  top: 0;
+  line-height: 1;
+  animation: confetti-fall linear forwards;
+}
+
+/* ── 通关大标题区 ── */
+.victory-hero {
+  text-align: center;
+  padding: var(--space-lg) var(--space-md) var(--space-md);
+}
+
+@keyframes trophy-bounce {
+  0%   { transform: scale(0.2); opacity: 0; }
+  65%  { transform: scale(1.25); }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+.victory-trophy {
+  font-size: 88px;
+  line-height: 1.2;
+  margin-bottom: 8px;
+  animation: trophy-bounce 0.7s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+.victory-title {
+  font-size: 42px;
+  font-weight: 900;
+  color: var(--color-primary);
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+
+.victory-level-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+/* ── 成绩卡 ── */
+.score-card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 0 var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.score-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 4px;
+}
+
+.score-label {
+  font-size: 16px;
+  color: var(--color-text-muted);
+}
+
+.score-value {
+  font-size: 28px;
+  font-weight: 900;
+  color: var(--color-text);
+}
+
+.score-value-sm {
+  font-size: 22px;
+}
+
+.score-divider {
+  height: 1px;
+  background: #F0F0F0;
+  margin: 0 4px;
+}
+
+/* ── 合影区 ── */
+.photo-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  padding: 0 var(--space-sm);
+  color: var(--color-text);
+}
+
+.photo-gallery { margin-bottom: var(--space-sm); }
+
+.photo-gallery-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px var(--space-sm) 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.photo-gallery-scroll::-webkit-scrollbar { display: none; }
+
+.photo-thumb { flex-shrink: 0; width: 185px; }
+
+.photo-thumb-img {
+  display: block;
+  width: 185px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+}
+.photo-thumb-img:active { opacity: 0.85; }
+
+.photo-thumb-caption {
+  font-size: 12px;
+  text-align: center;
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.photo-empty-tip {
+  text-align: center;
+  padding: var(--space-md) var(--space-sm);
+  color: var(--color-text-muted);
+  font-size: 15px;
+  line-height: 1.8;
+}

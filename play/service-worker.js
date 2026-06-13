@@ -6,7 +6,7 @@
 //
 // CACHE_VERSION 改变时旧缓存全部清除，强制重新缓存。
 
-const CACHE_VERSION = 'treasure-hunt-runtime-v2.2';
+const CACHE_VERSION = 'treasure-hunt-runtime-v2.3';
 
 // ── 预缓存清单（只列真实存在的文件；CDN 库不列，由 fetch 事件动态处理）──
 // ⚠️ 每次增删页面或 JS 文件时更新这里，并递增 CACHE_VERSION
@@ -24,6 +24,7 @@ const PRECACHE_URLS = [
   './pages/scan.html',
   './pages/quiz.html',
   './pages/photo.html',
+  './pages/victory.html',
   './scripts/scan-verify.js',
   './scripts/quiz-logic.js',
   '../shared/db/db-config.js',
