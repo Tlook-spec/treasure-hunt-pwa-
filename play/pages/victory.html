@@ -45,6 +45,11 @@
     <!-- 合影区 -->
     <div id="photo-section">
       <h3 class="photo-section-title" id="photo-section-title">📷 这次的合影</h3>
+      <!-- 合影区标题下方：保存提醒横幅（有照片才显示，JS 控制）-->
+      <div class="save-tip-banner" id="save-tip-banner" style="display:none">
+        <span class="save-tip-icon">📌</span>
+        <span>想留住这些照片？<b>长按每张图片</b> → 选「存储到照片」，就能存进相册啦！</span>
+      </div>
       <!-- 有照片时：横向滚动 -->
       <div class="photo-gallery">
         <div class="photo-gallery-scroll" id="photo-gallery-scroll"></div>
@@ -201,6 +206,7 @@
       } else {
         document.getElementById('photo-section-title').textContent =
           `📷 这次的合影（${rendered} 张）`;
+        document.getElementById('save-tip-banner').style.display = 'flex';
       }
     }
 
@@ -218,11 +224,21 @@
       img.style.cssText  = 'max-width:100%;max-height:80vh;object-fit:contain;border-radius:8px;';
 
       const hint = document.createElement('p');
-      hint.textContent   = '💡 长按图片保存到相册　·　点击关闭';
-      hint.style.cssText = 'color:#aaa;margin-top:12px;font-size:13px;text-align:center;';
+      hint.textContent   = '👆 长按这张图片，选「存储到照片」即可保存';
+      hint.style.cssText = [
+        'margin-top:18px', 'padding:12px 22px',
+        'background:rgba(255,255,255,0.18)', 'color:#fff',
+        'font-size:16px', 'font-weight:600', 'text-align:center',
+        'border-radius:999px', 'animation:saveHintPulse 1.6s ease-in-out infinite',
+      ].join(';');
+
+      const closeTip = document.createElement('p');
+      closeTip.textContent   = '点击空白处关闭';
+      closeTip.style.cssText = 'color:#999;margin-top:10px;font-size:13px;';
 
       overlay.appendChild(img);
       overlay.appendChild(hint);
+      overlay.appendChild(closeTip);
       overlay.addEventListener('click', () => overlay.remove());
       document.body.appendChild(overlay);
     }
