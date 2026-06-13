@@ -10,7 +10,7 @@
 
 **阶段**：MVP 开发阶段 B（编辑端）进行中
 
-**下一个任务**：M23 — 答题反馈 + 3 次容错 + 求助按钮
+**下一个任务**：M24 — L2 通关拍合影 + 「继续扫码」按钮
 
 ---
 
@@ -70,7 +70,7 @@
 - **M20** ✅ 扫码功能集成：scan.html（深色摄像头界面，点击启动）+ scan-verify.js（3 步验证逻辑）+ index.html 预加载 html5-qrcode CDN
 - **M21** ✅ 数字码输入弹窗：resolveCode/goToChallenge 重构；孩子（蓝）+ 家长（橙）两种模式共用大键盘组件；输错停在弹窗重输，不回摄像头
 - **M22** ✅ L2 内多题连答主流程：quiz.html 两屏（发现站点+答题）+ quiz-logic.js（startChallenge/submitAnswer placeholder：答对得10分，答错不记录）+ scan-verify 跳转改为 quiz.html
-- [ ] M23 答题反馈 + 3 次容错 + 求助按钮
+- **M23** ✅ 答题反馈 + 3 次容错 + 求助按钮：quiz-logic.js 正式版（checkAnswer/computeScore/recordQuestionResult/advanceQuestionIndex/consumeHelp）+ quiz.html 完整答题逻辑（抖动动画/保底通关金色高亮/答对橙色卡/求助确认蓝色卡）+ iOS 音频解锁 + main.css 反馈区样式
 - [ ] M24 L2 通关拍合影 + 「继续扫码」按钮
 - [ ] M25 极简通关页
 - [ ] M26 自动保存 + 续玩

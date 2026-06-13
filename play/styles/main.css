@@ -681,3 +681,87 @@ body {
   background: #FFF5F5 !important;
 }
 .option-wrong .option-label { background: #FECACA; color: #9B1C1C; }
+
+/* ── 答题反馈：选项抖动动画 ── */
+@keyframes option-shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-8px); }
+  40%       { transform: translateX(8px); }
+  60%       { transform: translateX(-5px); }
+  80%       { transform: translateX(5px); }
+}
+.option-shake { animation: option-shake 0.35s ease-out; }
+
+/* 保底通过：正确答案金色高亮 */
+.option-bust-correct {
+  border-color: var(--color-accent) !important;
+  background: #FFF9E6 !important;
+}
+.option-bust-correct .option-label { background: var(--color-accent); color: #fff; }
+.option-bust-correct .option-text  { color: #8B5E04; font-weight: 800; }
+
+/* ── 反馈区基础 ── */
+.feedback-area { margin-top: var(--space-sm); }
+
+/* 答对：橙色大卡 */
+.feedback-correct {
+  background: var(--color-accent);
+  border-radius: var(--radius-card);
+  padding: var(--space-md) var(--space-sm);
+  text-align: center;
+  font-size: 32px;
+  font-weight: 900;
+  color: #fff;
+  box-shadow: var(--shadow-float);
+}
+
+/* 答错 / 保底：深色卡 */
+.feedback-wrong {
+  background: #2C3E50;
+  border-radius: var(--radius-card);
+  padding: var(--space-sm);
+  color: #fff;
+}
+.feedback-main-text {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+.feedback-hint-text {
+  font-size: 14px;
+  opacity: 0.78;
+  line-height: 1.5;
+}
+
+/* 求助类：蓝色卡 */
+.feedback-help {
+  background: var(--color-primary);
+  border-radius: var(--radius-card);
+  padding: var(--space-sm);
+  color: #fff;
+}
+.feedback-help-title {
+  font-size: 19px;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.4;
+  margin-bottom: var(--space-sm);
+}
+.feedback-help-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.btn-help-confirm {
+  min-height: 52px;
+  border: none;
+  border-radius: var(--radius-btn);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 var(--space-sm);
+}
+.btn-help-confirm:active { opacity: 0.8; }
+.btn-help-yes { background: #fff; color: var(--color-primary); }
+.btn-help-no  { background: rgba(255,255,255,0.2); color: #fff; }

@@ -40,7 +40,7 @@
     </div>
   </div>
 
-  <!-- ── 屏 2：答题（题目卡 + 2×2 选项）────────────────────── -->
+  <!-- ── 屏 2：答题（题目卡 + 2×2 选项 + 反馈区）──────────── -->
   <div id="screen-quiz" style="display:none">
     <main class="page-content">
       <!-- 题目卡片 -->
@@ -48,10 +48,10 @@
         <div class="question-meta" id="question-meta"></div>
         <p class="question-text" id="question-text"></p>
       </div>
-      <!-- 答错反馈（visibility:hidden 保留占位，避免布局跳动）-->
-      <p class="wrong-feedback" id="wrong-feedback" style="visibility:hidden">再试试？🤔</p>
       <!-- 选项 2×2 网格（JS 动态渲染）-->
       <div class="options-grid" id="options-grid"></div>
+      <!-- 反馈区：答对/答错/求助确认/求助用完（JS 切换内容）-->
+      <div id="feedback-area" style="display:none"></div>
     </main>
   </div>
 
@@ -75,44 +75,63 @@
   </script>
 
   <script type="module">
-    import { loadCurrentQuizData, startChallenge, submitAnswer }
-      from '../scripts/quiz-logic.js';
+    import {
+      loadCurrentQuizData, startChallenge,
+      checkAnswer, computeScore,
+      recordQuestionResult, advanceQuestionIndex,
+      consumeHelp,
+    } from '../scripts/quiz-logic.js';
 
     const sessionId = new URLSearchParams(location.search).get('sessionId');
-    if (!sessionId) {
-      location.href = 'select-level.html';
+    if (!sessionId) location.href = 'select-level.html';
+
+    // ── 音效预加载 ──────────────────────────────────────────
+    const sfxCorrect = new Audio('../assets/sounds/correct.mp3');
+    const sfxWrong   = new Audio('../assets/sounds/wrong.mp3');
+    sfxCorrect.preload = 'auto';
+    sfxWrong.preload   = 'auto';
+
+    function playSound(snd) {
+      try { snd.currentTime = 0; snd.play().catch(() => {}); } catch (e) {}
     }
 
-    // ── 初始化：加载数据并显示屏 1 ───────────────────────────
+    // ── 题目临时状态（每道新题加载时重置）──────────────────
+    let attemptCount         = 0;     // 本题已答错次数
+    let usedHelpThisQuestion = false; // 本题是否用过求助
+    let optionsLocked        = false; // 防止重复点击或与求助弹窗冲突
+    let currentData          = null;  // 最新的 loadCurrentQuizData 返回值
+
+    // ── 初始化 ──────────────────────────────────────────────
     async function init() {
       try {
-        const data = await loadCurrentQuizData(sessionId);
-        showDiscoveryScreen(data);
+        currentData = await loadCurrentQuizData(sessionId);
+        showDiscoveryScreen(currentData);
       } catch (err) {
         console.error('[答题页] 初始化失败', err);
         showError();
       }
     }
 
-    // ── 屏 1 渲染 ─────────────────────────────────────────────
+    // ── 屏 1：发现站点 ────────────────────────────────────
     function showDiscoveryScreen(data) {
       const { point, stationNumber, totalStations } = data;
-
       document.getElementById('banner-discovery').style.display = 'flex';
       document.getElementById('banner-quiz').style.display = 'none';
       document.getElementById('discovery-station-text').textContent =
         `第 ${stationNumber} 站 · 共 ${totalStations} 站`;
-
-      // discoveryText 为空时显示通用文案
       document.getElementById('discovery-text').textContent =
         point.discoveryText || `恭喜找到第 ${stationNumber} 站！请回答这里的题目吧！`;
-
       document.getElementById('screen-discovery').style.display = 'block';
       document.getElementById('screen-quiz').style.display = 'none';
     }
 
-    // ── 「开始挑战！」按钮 ────────────────────────────────────
+    // ── 「开始挑战！」按钮 ────────────────────────────────
     document.getElementById('btn-start-challenge').addEventListener('click', async () => {
+      // iOS 音频解锁：在用户手势内静默触发，解锁后续自动播放权限
+      [sfxCorrect, sfxWrong].forEach(s => {
+        s.muted = true;
+        s.play().then(() => { s.pause(); s.currentTime = 0; s.muted = false; }).catch(() => {});
+      });
       const btn = document.getElementById('btn-start-challenge');
       btn.disabled = true;
       btn.textContent = '⏳';
@@ -126,10 +145,14 @@
       }
     });
 
-    // ── 屏 2：从 DB 重新加载当前题，然后渲染 ─────────────────
+    // ── 屏 2：从 DB 加载当前题并渲染 ─────────────────────
     async function loadAndShowQuizScreen() {
-      const data = await loadCurrentQuizData(sessionId);
-      showQuizScreen(data);
+      currentData = await loadCurrentQuizData(sessionId);
+      // 每道新题重置临时状态
+      attemptCount         = 0;
+      usedHelpThisQuestion = false;
+      optionsLocked        = false;
+      showQuizScreen(currentData);
     }
 
     function showQuizScreen(data) {
@@ -146,88 +169,225 @@
 
       // 题目元信息（学科 + 难度星）
       const diff = Math.max(1, Math.min(3, question.difficulty || 1));
-      const stars = '★'.repeat(diff) + '☆'.repeat(3 - diff);
       document.getElementById('question-meta').textContent =
-        `${question.subject || '综合'} · ${stars}`;
+        `${question.subject || '综合'} · ${'★'.repeat(diff)}${'☆'.repeat(3 - diff)}`;
 
       // 题干
       document.getElementById('question-text').textContent = question.text;
 
-      // 选项 A/B/C/D（用 textContent 防止 XSS）
+      // 选项 A/B/C/D（用 textContent 防 XSS）
       const grid = document.getElementById('options-grid');
       grid.innerHTML = '';
       const labels = ['A', 'B', 'C', 'D'];
       (question.options || []).forEach((optText, idx) => {
         const btn = document.createElement('button');
         btn.className = 'option-btn';
-
-        const labelSpan = document.createElement('span');
-        labelSpan.className = 'option-label';
-        labelSpan.textContent = labels[idx];
-
-        const textSpan = document.createElement('span');
-        textSpan.className = 'option-text';
-        textSpan.textContent = optText;
-
-        btn.appendChild(labelSpan);
-        btn.appendChild(textSpan);
+        const ls = document.createElement('span'); ls.className = 'option-label'; ls.textContent = labels[idx];
+        const ts = document.createElement('span'); ts.className = 'option-text';  ts.textContent = optText;
+        btn.appendChild(ls); btn.appendChild(ts);
         btn.addEventListener('click', () => onSelectOption(idx));
         grid.appendChild(btn);
       });
 
-      // 清空答错反馈
-      document.getElementById('wrong-feedback').style.visibility = 'hidden';
-
-      // 切换到屏 2
+      hideFeedback();
       document.getElementById('screen-discovery').style.display = 'none';
       document.getElementById('screen-quiz').style.display = 'block';
     }
 
-    // ── 选项点击处理 ──────────────────────────────────────────
+    // ── 选项点击 ──────────────────────────────────────────
     async function onSelectOption(selectedIndex) {
+      if (optionsLocked) return;
+      optionsLocked = true;
+
+      const { question, questionId, questionNumber, totalQuestions } = currentData;
       const optBtns = [...document.querySelectorAll('.option-btn')];
-      // 立即禁用所有选项，防止重复点击
-      optBtns.forEach(b => { b.disabled = true; });
-      document.getElementById('wrong-feedback').style.visibility = 'hidden';
+      optBtns.forEach(b => b.disabled = true);
+      hideFeedback();
 
-      try {
-        const { result, hasMoreQuestions } = await submitAnswer(sessionId, selectedIndex);
+      const isCorrect = checkAnswer(question, selectedIndex);
+      const hasMore   = questionNumber < totalQuestions;
 
-        if (result === 'correct') {
-          optBtns[selectedIndex].classList.add('option-correct');
-          setTimeout(() => {
-            if (hasMoreQuestions) {
-              // 加载并显示下一题
-              loadAndShowQuizScreen().catch(err => {
-                console.error('[答题页] 加载下一题失败', err);
-                showError();
-              });
+      if (isCorrect) {
+        // ── 答对 ────────────────────────────────────────
+        playSound(sfxCorrect);
+        optBtns[selectedIndex].classList.add('option-correct');
+
+        const score = computeScore(attemptCount, usedHelpThisQuestion);
+        await recordQuestionResult(
+          sessionId, questionId, attemptCount + 1, usedHelpThisQuestion, score
+        );
+        showFeedback('correct');
+
+        setTimeout(async () => {
+          hideFeedback();
+          try {
+            if (hasMore) {
+              await advanceQuestionIndex(sessionId);
+              await loadAndShowQuizScreen();
             } else {
-              // 本站所有题答完 → 跳转到拍照页（M24 实现，现在 404 正常）
+              // 本站答完 → 拍照页（M24 实现，现在 404 正常）
               location.href = `photo.html?sessionId=${encodeURIComponent(sessionId)}`;
             }
-          }, 800);
+          } catch (err) { console.error('[答题页] 切题失败', err); showError(); }
+        }, 1000);
+
+      } else {
+        // ── 答错 ────────────────────────────────────────
+        attemptCount++;
+        playSound(sfxWrong);
+        optBtns[selectedIndex].classList.add('option-wrong', 'option-shake');
+        optBtns[selectedIndex].addEventListener(
+          'animationend',
+          () => optBtns[selectedIndex].classList.remove('option-shake'),
+          { once: true }
+        );
+
+        if (attemptCount >= 3) {
+          // 第 3 次错：保底通过，高亮正确答案，写 score=0
+          const ci = 'ABCD'.indexOf(String(question.correctAnswer).trim().toUpperCase());
+          if (optBtns[ci]) optBtns[ci].classList.add('option-bust-correct');
+          await recordQuestionResult(sessionId, questionId, 3, usedHelpThisQuestion, 0);
+          showFeedback('bust');
+
+          setTimeout(async () => {
+            hideFeedback();
+            try {
+              if (hasMore) {
+                await advanceQuestionIndex(sessionId);
+                await loadAndShowQuizScreen();
+              } else {
+                location.href = `photo.html?sessionId=${encodeURIComponent(sessionId)}`;
+              }
+            } catch (err) { console.error('[答题页] 切题失败', err); showError(); }
+          }, 1500);
+
         } else {
-          // 答错：高亮错误选项，0.6s 后恢复
-          optBtns[selectedIndex].classList.add('option-wrong');
-          document.getElementById('wrong-feedback').style.visibility = 'visible';
+          // 第 1-2 次错：显示提示，0.6s 后恢复选项允许重选
+          showFeedback('wrong', { hint: question.hint });
           setTimeout(() => {
             optBtns[selectedIndex].classList.remove('option-wrong');
-            optBtns.forEach(b => { b.disabled = false; });
+            optBtns.forEach(b => b.disabled = false);
+            optionsLocked = false;
           }, 600);
         }
-      } catch (err) {
-        console.error('[答题页] 提交答案失败', err);
-        optBtns.forEach(b => { b.disabled = false; });
       }
     }
 
-    // ── 求助按钮（M23 实现，此处仅占位）────────────────────
+    // ── 求助按钮 ──────────────────────────────────────────
     document.getElementById('btn-help').addEventListener('click', () => {
-      console.log('[M23] 求助功能待实现');
+      const { session } = currentData;
+      const remaining = session.maxHelpCount - session.helpUsedCount;
+      if (remaining <= 0) {
+        showFeedback('help-exhausted');
+        return;
+      }
+      // 锁定选项，防止同时操作
+      optionsLocked = true;
+      [...document.querySelectorAll('.option-btn')].forEach(b => b.disabled = true);
+      showFeedback('help-confirm');
     });
 
-    // ── 兜底错误 ──────────────────────────────────────────────
+    // ── 反馈区：按类型渲染不同卡片 ────────────────────────
+    function showFeedback(type, data = {}) {
+      const area = document.getElementById('feedback-area');
+      area.innerHTML = '';
+      area.className = 'feedback-area';
+
+      if (type === 'correct') {
+        area.classList.add('feedback-correct');
+        area.textContent = '🎉 答对啦！';
+
+      } else if (type === 'wrong') {
+        area.classList.add('feedback-wrong');
+        const msg = document.createElement('p');
+        msg.className = 'feedback-main-text';
+        msg.textContent = '答案不正确，再思考一下吧 🫤';
+        area.appendChild(msg);
+        if (data.hint) {
+          const hint = document.createElement('p');
+          hint.className = 'feedback-hint-text';
+          hint.textContent = `💡 提示：${data.hint}`;
+          area.appendChild(hint);
+        }
+
+      } else if (type === 'bust') {
+        area.classList.add('feedback-wrong');
+        const msg = document.createElement('p');
+        msg.className = 'feedback-main-text';
+        msg.textContent = '没关系，下次记住啦！🌟';
+        area.appendChild(msg);
+
+      } else if (type === 'help-confirm') {
+        area.classList.add('feedback-help');
+        const title = document.createElement('p');
+        title.className = 'feedback-help-title';
+        title.textContent = '确定求助爸爸妈妈吗？';
+        area.appendChild(title);
+
+        const actions = document.createElement('div');
+        actions.className = 'feedback-help-actions';
+
+        const btnYes = document.createElement('button');
+        btnYes.className = 'btn-help-confirm btn-help-yes';
+        btnYes.textContent = '确定！扣掉一次求助次数';
+
+        const btnNo = document.createElement('button');
+        btnNo.className = 'btn-help-confirm btn-help-no';
+        btnNo.textContent = '不用了，我再自己想想';
+
+        actions.appendChild(btnYes);
+        actions.appendChild(btnNo);
+        area.appendChild(actions);
+
+        btnYes.addEventListener('click', async () => {
+          btnYes.disabled = true;
+          btnNo.disabled  = true;
+          const remaining = await consumeHelp(sessionId);
+          usedHelpThisQuestion = true;
+          document.getElementById('help-count').textContent = remaining;
+          showFeedback('help-ask');
+          // 2 秒后关闭提示，恢复选项
+          setTimeout(() => {
+            hideFeedback();
+            [...document.querySelectorAll('.option-btn')].forEach(b => b.disabled = false);
+            optionsLocked = false;
+          }, 2000);
+        });
+
+        btnNo.addEventListener('click', () => {
+          hideFeedback();
+          [...document.querySelectorAll('.option-btn')].forEach(b => b.disabled = false);
+          optionsLocked = false;
+        });
+
+      } else if (type === 'help-ask') {
+        area.classList.add('feedback-help');
+        const msg = document.createElement('p');
+        msg.className = 'feedback-help-title';
+        msg.textContent = '快去问爸爸妈妈！👨‍👩‍👧';
+        area.appendChild(msg);
+
+      } else if (type === 'help-exhausted') {
+        area.classList.add('feedback-help');
+        const msg = document.createElement('p');
+        msg.className = 'feedback-help-title';
+        msg.textContent = '已经没有求助次数咯，自己再思考一下吧！💪';
+        area.appendChild(msg);
+        setTimeout(() => hideFeedback(), 2000);
+      }
+
+      area.style.display = 'block';
+      // 平滑滚动确保反馈卡片在屏幕内可见
+      setTimeout(() => area.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+    }
+
+    function hideFeedback() {
+      const area = document.getElementById('feedback-area');
+      area.style.display = 'none';
+      area.innerHTML = '';
+    }
+
+    // ── 兜底错误 ──────────────────────────────────────────
     function showError() {
       document.getElementById('quiz-banner').style.display = 'none';
       document.getElementById('screen-discovery').style.display = 'none';

@@ -1,31 +1,20 @@
 /**
  * play/scripts/quiz-logic.js
- * 答题页业务逻辑：加载题目数据 + 答题处理
- * M22 placeholder：答对得 10 分；答错返回错误状态，不记录（M23 补全 3 次容错 + 求助）
+ * 答题页业务逻辑：加载题目数据 + 答题判定 + session 写入
+ * M23 正式版（替换 M22 placeholder submitAnswer）
  */
 import db from '../../shared/db/play-db.js';
 
+// ── 加载数据 ───────────────────────────────────────────────────────────────
+
 /**
  * 加载当前站/题目的所有渲染数据，供答题页使用。
- *
- * @param {string} sessionId
- * @returns {Promise<{
- *   session: object,
- *   point: object,
- *   question: object,
- *   questionId: string,
- *   stationNumber: number,
- *   totalStations: number,
- *   questionNumber: number,
- *   totalQuestions: number,
- * }>}
  */
 export async function loadCurrentQuizData(sessionId) {
   const session = await db.sessions.get(sessionId);
   if (!session) throw new Error('游戏会话不存在，请重新开始游戏');
 
   const { levelId, currentPointIndex, currentQuestionIndex } = session;
-
   const allPoints = await db.points.where('levelId').equals(levelId).sortBy('order');
   const totalStations = allPoints.length;
   const currentPoint = allPoints[currentPointIndex];
@@ -56,8 +45,6 @@ export async function loadCurrentQuizData(sessionId) {
 /**
  * 进入答题前调用：在 session.pointRecords 中创建本站记录。
  * 已有记录（续玩场景）则直接跳过，不覆盖。
- *
- * @param {string} sessionId
  */
 export async function startChallenge(sessionId) {
   const session = await db.sessions.get(sessionId);
@@ -65,8 +52,6 @@ export async function startChallenge(sessionId) {
 
   const { levelId, currentPointIndex } = session;
   const records = session.pointRecords || [];
-
-  // 续玩：记录已存在，直接返回
   if (records[currentPointIndex]) return;
 
   const allPoints = await db.points.where('levelId').equals(levelId).sortBy('order');
@@ -82,66 +67,68 @@ export async function startChallenge(sessionId) {
   await db.sessions.update(sessionId, { pointRecords: newRecords });
 }
 
+// ── 答题判定（纯函数，不写 DB）────────────────────────────────────────────
+
 /**
- * M22 placeholder 答题处理：
- * - 答对：追加结果（answerAttempts=1, score=10）到 session，推进 currentQuestionIndex
- * - 答错：仅返回错误状态，不写 DB（M23 补全 3 次容错 + 求助逻辑）
- *
- * @param {string} sessionId
- * @param {number} selectedIndex  用户选的选项索引（0-3）
- * @returns {Promise<{ result: 'correct'|'wrong', hasMoreQuestions: boolean }>}
+ * 判断用户选的索引是否正确。
+ * correctAnswer 存的是字母 'A'/'B'/'C'/'D'（见 admin/question-form.js）。
  */
-export async function submitAnswer(sessionId, selectedIndex) {
+export function checkAnswer(question, selectedIndex) {
+  const correctIndex = 'ABCD'.indexOf(String(question.correctAnswer).trim().toUpperCase());
+  return selectedIndex === correctIndex;
+}
+
+/**
+ * 根据答题历史计算得分（CLAUDE.md §7 规则 7）。
+ * 求助优先级最高：只要曾用求助，无论错几次都得 3 分。
+ *
+ * @param {number}  attemptCount  答错次数（不含本次答对）
+ * @param {boolean} usedHelp      本题是否用过求助
+ */
+export function computeScore(attemptCount, usedHelp) {
+  if (usedHelp) return 3;         // 曾用求助 → 3 分
+  if (attemptCount === 0) return 10; // 一次答对 → 10 分
+  return 5;                       // 错 1-2 次后答对 → 5 分
+}
+
+// ── session 写入 ──────────────────────────────────────────────────────────
+
+/**
+ * 往 session.pointRecords[currentPointIndex].questionResults 追加一条答题记录。
+ * 每道题只在「答对」或「第 3 次错保底」时调用一次。
+ */
+export async function recordQuestionResult(sessionId, questionId, answerAttempts, usedHelp, score) {
   const session = await db.sessions.get(sessionId);
   if (!session) throw new Error('游戏会话不存在');
 
-  const { levelId, currentPointIndex, currentQuestionIndex } = session;
-
-  const allPoints = await db.points.where('levelId').equals(levelId).sortBy('order');
-  const currentPoint = allPoints[currentPointIndex];
-  const questionId = currentPoint.questionIds[currentQuestionIndex];
-  const question = await db.questions.get(questionId);
-
-  // 题库里 correctAnswer 存的是字母 'A'/'B'/'C'/'D'（见 admin/question-form.js），
-  // 不是数字索引。把字母转成 0/1/2/3 再和选项索引比较。
-  const correctIndex = 'ABCD'.indexOf(String(question.correctAnswer).trim().toUpperCase());
-  const isCorrect = (selectedIndex === correctIndex);
-
-  if (!isCorrect) {
-    // M22 placeholder：答错只告知前端，不写入任何记录
-    return { result: 'wrong', hasMoreQuestions: false };
-  }
-
-  // 答对：把题目结果追加到 pointRecords[currentPointIndex].questionResults
-  const records = session.pointRecords ? [...session.pointRecords] : [];
-  const pointRecord = { ...records[currentPointIndex] };
-  pointRecord.questionResults = [
-    ...(pointRecord.questionResults || []),
-    {
-      questionId,
-      answerAttempts: 1,  // M22 placeholder：一次答对
-      usedHelp: false,    // M22 placeholder：没用求助
-      score: 10,          // M22 placeholder：满分
-    },
+  const records = [...(session.pointRecords || [])];
+  const pr = { ...(records[session.currentPointIndex] || {}) };
+  pr.questionResults = [
+    ...(pr.questionResults || []),
+    { questionId, answerAttempts, usedHelp, score },
   ];
-  records[currentPointIndex] = pointRecord;
+  records[session.currentPointIndex] = pr;
+  await db.sessions.update(sessionId, { pointRecords: records });
+}
 
-  const totalQuestions = currentPoint.questionIds.length;
-  const hasMoreQuestions = currentQuestionIndex + 1 < totalQuestions;
+/**
+ * 推进到下一道题（currentQuestionIndex + 1）。
+ */
+export async function advanceQuestionIndex(sessionId) {
+  const session = await db.sessions.get(sessionId);
+  if (!session) throw new Error('游戏会话不存在');
+  await db.sessions.update(sessionId, {
+    currentQuestionIndex: session.currentQuestionIndex + 1,
+  });
+}
 
-  if (hasMoreQuestions) {
-    // 推进到下一题
-    await db.sessions.update(sessionId, {
-      pointRecords: records,
-      currentQuestionIndex: currentQuestionIndex + 1,
-    });
-  } else {
-    // 本站所有题答完：保存结果，保持 currentQuestionIndex
-    // M24 拍照页负责推进 currentPointIndex 并重置 currentQuestionIndex
-    await db.sessions.update(sessionId, {
-      pointRecords: records,
-    });
-  }
-
-  return { result: 'correct', hasMoreQuestions };
+/**
+ * 扣除一次求助次数，返回剩余次数。
+ */
+export async function consumeHelp(sessionId) {
+  const session = await db.sessions.get(sessionId);
+  if (!session) throw new Error('游戏会话不存在');
+  const newUsed = session.helpUsedCount + 1;
+  await db.sessions.update(sessionId, { helpUsedCount: newUsed });
+  return session.maxHelpCount - newUsed; // 剩余次数
 }
