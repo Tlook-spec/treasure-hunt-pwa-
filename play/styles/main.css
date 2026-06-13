@@ -792,3 +792,64 @@ body {
   cursor: pointer;
 }
 .btn-bust-confirm:active { opacity: 0.8; }
+
+/* ══════════════════════════════════════════════════════════
+   拍照页（photo.html）专用样式
+   ══════════════════════════════════════════════════════════ */
+
+/* 通关庆典卡：居中大图标 + 标题 + 副标题 */
+.completion-card {
+  text-align: center;
+  padding: var(--space-lg) var(--space-md);
+}
+.completion-icon {
+  font-size: 72px;
+  line-height: 1.2;
+  margin-bottom: var(--space-sm);
+}
+.completion-title {
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+.completion-subtitle {
+  font-size: 17px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+/* 照片预览区 */
+.photo-preview-wrap {
+  margin: var(--space-sm) 0;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: #000;
+  box-shadow: var(--shadow-card);
+}
+.photo-preview-img {
+  display: block;
+  width: 100%;
+  max-height: 380px;
+  object-fit: contain;
+}
+.photo-save-hint {
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 8px 0 var(--space-sm);
+}
+
+/* 跳过合影：浅色文字小按钮，不抢 📸 拍照 的视觉权重 */
+.btn-photo-skip {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 15px;
+  cursor: pointer;
+  text-align: center;
+}
+.btn-photo-skip:active { opacity: 0.5; }

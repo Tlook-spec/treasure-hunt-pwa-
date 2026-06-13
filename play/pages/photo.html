@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#4A90E2">
+  <link rel="stylesheet" href="../styles/main.css">
+  <title>拍合影 - 寻宝游戏</title>
+  <!-- Dexie 必须在 type="module" 之前加载 -->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+</head>
+<body>
+
+  <!-- 顶部进度横幅 -->
+  <div class="station-banner" id="station-banner" style="display:none">
+    <div class="station-banner-dot"></div>
+    <span id="station-text">加载中…</span>
+  </div>
+
+  <!-- ── 屏 1：拍照选择 ─────────────────────────────────── -->
+  <div id="screen-prompt" style="display:none">
+    <main class="page-content has-bottom-action">
+      <div class="completion-card">
+        <div class="completion-icon">🎉</div>
+        <h2 class="completion-title" id="completion-title">第 N 站完成！</h2>
+        <p class="completion-subtitle">拍一张通关合影作纪念吧！</p>
+      </div>
+    </main>
+    <!-- 隐藏的 file input：点击后调系统相机（capture="environment" = 后置摄像头）-->
+    <input type="file" id="photo-input" accept="image/*" capture="environment"
+           style="display:none" aria-label="拍摄合影">
+    <div class="bottom-action">
+      <button class="btn-primary btn-success" id="btn-take-photo">📸 拍照</button>
+      <button class="btn-photo-skip" id="btn-skip">跳过这一站合影</button>
+    </div>
+  </div>
+
+  <!-- ── 屏 2：完成（拍照预览 or 跳过提示 + 继续按钮）─── -->
+  <div id="screen-done" style="display:none">
+    <main class="page-content has-bottom-action">
+
+      <!-- 拍照路径：图片预览（跳过时隐藏）-->
+      <div id="photo-preview-area" style="display:none">
+        <div class="photo-preview-wrap">
+          <img class="photo-preview-img" id="photo-preview-img" src="" alt="通关合影">
+        </div>
+        <p class="photo-save-hint">💡 长按图片可保存到系统相册</p>
+      </div>
+
+      <!-- 跳过路径：简单提示 -->
+      <div id="skip-notice" style="display:none" class="completion-card">
+        <div class="completion-icon">✅</div>
+        <p class="completion-subtitle">已跳过合影，继续加油！</p>
+      </div>
+
+    </main>
+    <div class="bottom-action">
+      <button class="btn-primary btn-warning" id="btn-continue">
+        📷 继续扫码找下一站
+      </button>
+    </div>
+  </div>
+
+  <!-- ── 兜底：数据加载失败 ──────────────────────────────── -->
+  <div id="error-state" style="display:none; padding:48px 24px; text-align:center;
+       color:var(--color-error); font-size:17px; line-height:2">
+    数据加载失败 😵<br>
+    <a href="select-level.html" style="color:var(--color-primary); font-weight:700">
+      ← 返回选择探险
+    </a>
+  </div>
+
+  <!-- Eruda 调试（?debug=1 时加载）-->
+  <script>
+    if (new URLSearchParams(location.search).get('debug') === '1') {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/eruda@3.0.1/eruda.min.js';
+      s.onload = () => eruda.init();
+      document.head.appendChild(s);
+    }
+  </script>
+
+  <script type="module">
+    import db from '../../shared/db/play-db.js';
+    import { generateId } from '../../shared/utils/id.js';
+
+    const sessionId = new URLSearchParams(location.search).get('sessionId');
+    if (!sessionId) location.href = 'select-level.html';
+
+    // 进入页面时从 session 读出当前位置，整页只读一次
+    let currentPoint            = null;
+    let isLastStation           = false;
+    let currentPointIndexAtLoad = 0; // 拍照写回时用，不随继续按钮改变
+
+    // ── 初始化 ──────────────────────────────────────────────
+    async function init() {
+      try {
+        const session = await db.sessions.get(sessionId);
+        if (!session) { location.href = 'select-level.html'; return; }
+
+        const { levelId, currentPointIndex } = session;
+        currentPointIndexAtLoad = currentPointIndex;
+
+        // 读该探险所有点位，按 order 升序（单一真相：从 session 取站号）
+        const allPoints = await db.points
+          .where('levelId').equals(levelId)
+          .sortBy('order');
+
+        const totalStations = allPoints.length;
+        currentPoint  = allPoints[currentPointIndex];
+        if (!currentPoint) { showError(); return; }
+
+        const stationNumber = currentPointIndex + 1;
+        isLastStation = (currentPointIndex === totalStations - 1);
+
+        // 横幅
+        document.getElementById('station-text').textContent =
+          `第 ${stationNumber}/${totalStations} 站 完成`;
+        document.getElementById('station-banner').style.display = 'flex';
+
+        // 通关标题
+        document.getElementById('completion-title').textContent =
+          `第 ${stationNumber} 站完成！`;
+
+        // 最后一站时改变继续按钮文案
+        if (isLastStation) {
+          document.getElementById('btn-continue').textContent = '🏆 查看通关成绩！';
+        }
+
+        document.getElementById('screen-prompt').style.display = 'block';
+
+      } catch (err) {
+        console.error('[拍照页] 初始化失败', err);
+        showError();
+      }
+    }
+
+    // ── 拍照：由 file input 触发，不调 getUserMedia ──────────
+    document.getElementById('btn-take-photo').addEventListener('click', () => {
+      document.getElementById('photo-input').click();
+    });
+
+    document.getElementById('photo-input').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      e.target.value = ''; // 重置，允许重拍（相同文件名也能再次触发）
+      if (!file) return;   // 用户取消选择 → 静默回状态 1
+
+      const btn = document.getElementById('btn-take-photo');
+      btn.disabled = true;
+      btn.textContent = '⏳ 处理中…';
+
+      try {
+        // ① Canvas 压缩：长边 ≤ 1280px，JPEG quality=0.7
+        const { blob, width, height } = await compressImage(file);
+
+        // ② 写 photos 表
+        const photoId = generateId('ph');
+        await db.photos.add({
+          id: photoId,
+          blob,
+          type:      'completion_photo',
+          ownerId:   currentPoint.id,
+          createdAt: Date.now(),
+          width,
+          height,
+          sizeBytes: blob.size,
+          format:    'jpeg',
+        });
+
+        // ③ 读-改-写回 session.pointRecords[].completionPhotoId
+        //    （M22 startChallenge 已建好该 pointRecord，不新建）
+        const session = await db.sessions.get(sessionId);
+        const records = [...(session.pointRecords || [])];
+        const pr = { ...(records[currentPointIndexAtLoad] || {}) };
+        pr.completionPhotoId = photoId;
+        records[currentPointIndexAtLoad] = pr;
+        await db.sessions.update(sessionId, { pointRecords: records });
+
+        // ④ 预览图（用 createObjectURL 让 iOS 能长按保存）
+        const previewImg = document.getElementById('photo-preview-img');
+        previewImg.src = URL.createObjectURL(blob);
+        document.getElementById('photo-preview-area').style.display = 'block';
+
+        showDoneScreen();
+
+      } catch (err) {
+        console.error('[拍照页] 拍照处理失败', err);
+        btn.disabled = false;
+        btn.textContent = '📸 拍照';
+        alert('照片处理失败，请重试');
+      }
+    });
+
+    // ── 跳过 ─────────────────────────────────────────────────
+    document.getElementById('btn-skip').addEventListener('click', () => {
+      // 不写 photos 表，completionPhotoId 保持 M22 建好时的 null
+      document.getElementById('skip-notice').style.display = 'block';
+      showDoneScreen();
+    });
+
+    // ── 切到完成屏 ───────────────────────────────────────────
+    function showDoneScreen() {
+      document.getElementById('screen-prompt').style.display = 'none';
+      document.getElementById('screen-done').style.display   = 'block';
+    }
+
+    // ── 继续扫码 / 通关 ──────────────────────────────────────
+    document.getElementById('btn-continue').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-continue');
+      btn.disabled = true;
+      try {
+        if (isLastStation) {
+          // 最后一站 → 通关页（M25 实现，目前 404 正常）
+          location.href = `victory.html?sessionId=${encodeURIComponent(sessionId)}`;
+        } else {
+          // 推进站号 + 题号归零，再跳提示页（hint.html 展示下一站线索）
+          await db.sessions.update(sessionId, {
+            currentPointIndex:   currentPointIndexAtLoad + 1,
+            currentQuestionIndex: 0,
+          });
+          location.href = `hint.html?sessionId=${encodeURIComponent(sessionId)}`;
+        }
+      } catch (err) {
+        console.error('[拍照页] 切站失败', err);
+        btn.disabled = false;
+      }
+    });
+
+    // ── Canvas 压缩：长边 ≤ 1280px，JPEG quality 0.7 ────────
+    function compressImage(file) {
+      return new Promise((resolve, reject) => {
+        const img    = new Image();
+        const objUrl = URL.createObjectURL(file);
+
+        img.onload = () => {
+          URL.revokeObjectURL(objUrl); // 立即释放原文件 URL
+
+          const MAX = 1280;
+          let w = img.naturalWidth;
+          let h = img.naturalHeight;
+
+          // 等比缩放：只在需要时缩，不放大
+          if (w > MAX || h > MAX) {
+            if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+            else        { w = Math.round(w * MAX / h); h = MAX; }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width  = w;
+          canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+          canvas.toBlob(blob => {
+            if (!blob) { reject(new Error('Canvas toBlob 返回 null')); return; }
+            resolve({ blob, width: w, height: h });
+          }, 'image/jpeg', 0.7);
+        };
+
+        img.onerror = () => {
+          URL.revokeObjectURL(objUrl);
+          reject(new Error('图片加载失败'));
+        };
+
+        img.src = objUrl;
+      });
+    }
+
+    // ── 错误状态 ─────────────────────────────────────────────
+    function showError() {
+      document.getElementById('station-banner').style.display  = 'none';
+      document.getElementById('screen-prompt').style.display   = 'none';
+      document.getElementById('screen-done').style.display     = 'none';
+      document.getElementById('error-state').style.display     = 'block';
+    }
+
+    init();
+  </script>
+
+</body>
+</html>
