@@ -10,7 +10,7 @@
 
 **阶段**：MVP 开发阶段 B（编辑端）进行中
 
-**下一个任务**：M26 — 自动保存 + 续玩
+**下一个任务**：M27 — 端到端联调
 
 **M16 SW 增强**（已完成）：预缓存 18 个文件（install 事件逐个 add + catch）+ CHECK_CACHE 消息回报 + 设置页离线状态卡（绿/黄/灰三态）+ CACHE_VERSION → v2
 
@@ -75,7 +75,7 @@
 - **M23** ✅ 答题反馈 + 3 次容错 + 求助按钮：quiz-logic.js 正式版（checkAnswer/computeScore/recordQuestionResult/advanceQuestionIndex/consumeHelp）+ quiz.html 完整答题逻辑（抖动动画/保底通关绿色高亮/答对橙色卡/求助确认蓝色卡）+ iOS 音频解锁 + main.css 反馈区样式
 - **M24** ✅ L2 通关拍合影 + 继续扫码：photo.html 三状态（拍照选择/图片预览/跳过提示）+ Canvas 压缩（长边1280px JPEG 0.7）+ photos 表写入 + pointRecord.completionPhotoId 回写 + 站号推进 currentPointIndex+1/currentQuestionIndex 归零 → hint.html；最后一站 → victory.html
 - **M25** ✅ 极简通关庆典页：victory.html + 结算幂等（status=completed/endedAt 只写一次）+ 总分/用时/战绩计算 + 合影横向滚动 + 全屏查看 + CSS emoji 撒花 + SW 预缓存 victory.html（v2.3）
-- [ ] M26 自动保存 + 续玩
+- **M26** ✅ 自动保存 + 续玩横幅：select-level.html 顶部查 in_progress 存档 → 横幅显示探险名/已到第N站 → 「继续」按 session 状态跳 hint/quiz/photo + 「放弃」二次确认删存档；main.css 续玩横幅样式
 
 ### 阶段 D：联调 + 真实测试
 

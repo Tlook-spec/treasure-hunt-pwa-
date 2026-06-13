@@ -17,8 +17,17 @@
     <h1 class="page-title">选择探险</h1>
   </header>
 
-  <!-- ====== 续玩横幅位置（M26 实现）====== -->
-  <!-- M26 会在此处插入 div.resume-banner，M17 阶段不显示 -->
+  <!-- ====== 续玩横幅（有未完成游戏时 JS 显示）====== -->
+  <div id="resume-banner" class="resume-banner" style="display:none">
+    <div class="resume-banner-text">
+      <span class="resume-banner-title" id="resume-title">⏯ 继续上次的探险？</span>
+      <span class="resume-banner-sub"   id="resume-sub"></span>
+    </div>
+    <div class="resume-banner-actions">
+      <button class="btn-resume-continue" id="btn-resume-continue">继续</button>
+      <button class="btn-resume-abandon"  id="btn-resume-abandon">放弃</button>
+    </div>
+  </div>
 
   <!-- 主内容 -->
   <main class="page-content">
@@ -115,6 +124,73 @@
       document.getElementById('level-list').innerHTML =
         '<p style="color:#FF9F89;padding:24px 0;text-align:center">加载失败，请刷新页面重试</p>';
     });
+
+    // ====== M26 续玩横幅 ======
+
+    async function checkResume() {
+      // 查所有 in_progress 会话，取 startedAt 最新的一条
+      const all = await db.sessions.where('status').equals('in_progress').toArray();
+      if (all.length === 0) return;
+      const session = all.reduce((a, b) => a.startedAt > b.startedAt ? a : b);
+
+      // 读探险名和所有点位（计算"已到第 N 站"）
+      const level     = await db.levels.get(session.levelId);
+      const levelName = level ? level.name : '未知探险';
+      const stationNum = (session.currentPointIndex ?? 0) + 1;
+
+      // 填充横幅文字并显示
+      document.getElementById('resume-title').textContent =
+        `⏯ 继续上次的『${levelName}』？`;
+      document.getElementById('resume-sub').textContent =
+        `已到第 ${stationNum} 站`;
+      const banner = document.getElementById('resume-banner');
+      banner.style.display = 'flex';
+
+      // 「继续」按钮：按存档状态跳到正确页面
+      document.getElementById('btn-resume-continue').addEventListener('click', async () => {
+        try {
+          const allPoints = await db.points
+            .where('levelId').equals(session.levelId)
+            .sortBy('order');
+          const idx = session.currentPointIndex ?? 0;
+          const cp  = allPoints[idx];
+          const sid = encodeURIComponent(session.id);
+
+          if (!cp) {
+            alert('存档数据异常，无法恢复，请放弃后重新开始。');
+            return;
+          }
+
+          const pr = (session.pointRecords || [])[idx];
+          if (!pr) {
+            // 还没扫码进这一站 → 提示页
+            location.href = `hint.html?sessionId=${sid}`;
+          } else if (pr.questionResults.length < cp.questionIds.length) {
+            // 站内题目未全部答完 → 答题页
+            location.href = `quiz.html?sessionId=${sid}`;
+          } else {
+            // 题答完但还没拍照 → 拍照页
+            location.href = `photo.html?sessionId=${sid}`;
+          }
+        } catch (err) {
+          console.error('[续玩] 跳转失败', err);
+          alert('恢复存档失败，请重试。');
+        }
+      });
+
+      // 「放弃」按钮：二次确认后删除存档
+      document.getElementById('btn-resume-abandon').addEventListener('click', () => {
+        if (!confirm('确定放弃这次探险存档？\n存档删除后无法恢复。')) return;
+        db.sessions.delete(session.id).then(() => {
+          banner.style.display = 'none';
+        }).catch(err => {
+          console.error('[续玩] 删除存档失败', err);
+          alert('删除失败，请刷新后重试。');
+        });
+      });
+    }
+
+    checkResume().catch(err => console.error('[续玩] 检查失败', err));
   </script>
 
 </body>
