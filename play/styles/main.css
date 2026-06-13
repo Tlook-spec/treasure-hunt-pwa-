@@ -700,6 +700,12 @@ body {
 .option-bust-correct .option-label { background: var(--color-accent); color: #fff; }
 .option-bust-correct .option-text  { color: #8B5E04; font-weight: 800; }
 
+/* 保底时非正确答案变灰 */
+.option-dimmed {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
 /* ── 反馈区基础 ── */
 .feedback-area { margin-top: var(--space-sm); }
 
@@ -765,3 +771,19 @@ body {
 .btn-help-confirm:active { opacity: 0.8; }
 .btn-help-yes { background: #fff; color: var(--color-primary); }
 .btn-help-no  { background: rgba(255,255,255,0.2); color: #fff; }
+
+/* 保底通关「好的，记住了！」确认按钮 */
+.btn-bust-confirm {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-sm);
+  min-height: 52px;
+  border: none;
+  border-radius: var(--radius-btn);
+  background: #fff;
+  color: #2C3E50;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-bust-confirm:active { opacity: 0.8; }

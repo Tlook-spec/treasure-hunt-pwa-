@@ -166,6 +166,7 @@
       document.getElementById('quiz-question-count').textContent =
         `第 ${questionNumber}/${totalQuestions} 题`;
       document.getElementById('help-count').textContent = remainingHelp;
+      document.getElementById('btn-help').disabled = (remainingHelp <= 0);
 
       // 题目元信息（学科 + 难度星）
       const diff = Math.max(1, Math.min(3, question.difficulty || 1));
@@ -243,23 +244,24 @@
         );
 
         if (attemptCount >= 3) {
-          // 第 3 次错：保底通过，高亮正确答案，写 score=0
+          // 第 3 次错：保底通过，高亮正确答案，其余选项变灰，写 score=0
           const ci = 'ABCD'.indexOf(String(question.correctAnswer).trim().toUpperCase());
+          optBtns.forEach((b, i) => { if (i !== ci) b.classList.add('option-dimmed'); });
           if (optBtns[ci]) optBtns[ci].classList.add('option-bust-correct');
           await recordQuestionResult(sessionId, questionId, 3, usedHelpThisQuestion, 0);
-          showFeedback('bust');
-
-          setTimeout(async () => {
-            hideFeedback();
-            try {
-              if (hasMore) {
-                await advanceQuestionIndex(sessionId);
-                await loadAndShowQuizScreen();
-              } else {
-                location.href = `photo.html?sessionId=${encodeURIComponent(sessionId)}`;
-              }
-            } catch (err) { console.error('[答题页] 切题失败', err); showError(); }
-          }, 1500);
+          showFeedback('bust', {
+            onConfirm: async () => {
+              hideFeedback();
+              try {
+                if (hasMore) {
+                  await advanceQuestionIndex(sessionId);
+                  await loadAndShowQuizScreen();
+                } else {
+                  location.href = `photo.html?sessionId=${encodeURIComponent(sessionId)}`;
+                }
+              } catch (err) { console.error('[答题页] 切题失败', err); showError(); }
+            },
+          });
 
         } else {
           // 第 1-2 次错：显示提示，0.6s 后恢复选项允许重选
@@ -316,6 +318,13 @@
         msg.className = 'feedback-main-text';
         msg.textContent = '没关系，下次记住啦！🌟';
         area.appendChild(msg);
+        if (data.onConfirm) {
+          const btn = document.createElement('button');
+          btn.className = 'btn-bust-confirm';
+          btn.textContent = '好的，记住了！';
+          btn.addEventListener('click', data.onConfirm);
+          area.appendChild(btn);
+        }
 
       } else if (type === 'help-confirm') {
         area.classList.add('feedback-help');
@@ -345,6 +354,7 @@
           const remaining = await consumeHelp(sessionId);
           usedHelpThisQuestion = true;
           document.getElementById('help-count').textContent = remaining;
+          if (remaining <= 0) document.getElementById('btn-help').disabled = true;
           showFeedback('help-ask');
           // 2 秒后关闭提示，恢复选项
           setTimeout(() => {
