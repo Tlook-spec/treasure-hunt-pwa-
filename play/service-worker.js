@@ -6,7 +6,7 @@
 //
 // CACHE_VERSION 改变时旧缓存全部清除，强制重新缓存。
 
-const CACHE_VERSION = 'treasure-hunt-runtime-v2';
+const CACHE_VERSION = 'treasure-hunt-runtime-v2.1';
 
 // ── 预缓存清单（只列真实存在的文件；CDN 库不列，由 fetch 事件动态处理）──
 // ⚠️ 每次增删页面或 JS 文件时更新这里，并递增 CACHE_VERSION
@@ -74,7 +74,11 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(
     caches.open(CACHE_VERSION).then((cache) =>
-      cache.match(event.request).then((cached) => {
+      // ignoreSearch: true → 让带参数的页面（如 start-level.html?levelId=xxx、
+      // hint.html?sessionId=xxx）能命中预缓存的无参数版本。
+      // 这些页面用 ? 后参数在页面间传 sessionId/levelId，HTML 文件本身内容相同，
+      // 忽略参数匹配既安全又正确；否则飞行模式下每个新参数都会缓存未命中。
+      cache.match(event.request, { ignoreSearch: true }).then((cached) => {
         // 后台更新缓存（成功则刷新；失败则回退已有缓存）
         const networkFetch = fetch(event.request)
           .then((response) => {
@@ -86,7 +90,9 @@ self.addEventListener('fetch', (event) => {
             }
             return response;
           })
-          .catch(() => cached); // 网络失败时回退缓存
+          // 网络失败时回退缓存；连缓存都没有就返回错误 Response，
+          // 绝不返回 undefined/null（否则浏览器报 "returned response is null"）
+          .catch(() => cached || Response.error());
 
         // 有缓存 → 立即返回（后台更新）；无缓存 → 等网络
         return cached || networkFetch;
