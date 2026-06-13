@@ -567,6 +567,11 @@ body {
   min-height: 34px;
 }
 .btn-help-inline:active { background: #e09516; }
+.btn-help-inline:disabled {
+  background: #C0C0C0;
+  color: #888;
+  cursor: not-allowed;
+}
 
 /* ======== 答题页：屏 1 发现卡片 ======== */
 .discovery-card {
@@ -692,13 +697,13 @@ body {
 }
 .option-shake { animation: option-shake 0.35s ease-out; }
 
-/* 保底通过：正确答案金色高亮 */
+/* 保底通过：正确答案绿色高亮 */
 .option-bust-correct {
-  border-color: var(--color-accent) !important;
-  background: #FFF9E6 !important;
+  border-color: var(--color-success) !important;
+  background: #F0FFF4 !important;
 }
-.option-bust-correct .option-label { background: var(--color-accent); color: #fff; }
-.option-bust-correct .option-text  { color: #8B5E04; font-weight: 800; }
+.option-bust-correct .option-label { background: var(--color-success); color: #fff; }
+.option-bust-correct .option-text  { color: #2D7A2D; font-weight: 800; }
 
 /* 保底时非正确答案变灰 */
 .option-dimmed {
