@@ -853,3 +853,30 @@ body {
   text-align: center;
 }
 .btn-photo-skip:active { opacity: 0.5; }
+
+/* ══════════════════════════════════════════════════════════
+   设置页：离线准备状态卡（settings.html）
+   ══════════════════════════════════════════════════════════ */
+.offline-status-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px var(--space-sm);
+  border-radius: var(--radius-card);
+  margin-bottom: var(--space-sm);
+  border: 1.5px solid transparent;
+}
+.offline-status-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.offline-status-text {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 三种状态色 */
+.offline-status-green  { background: #F0FFF4; border-color: #7ED321; color: #2D7A2D; }
+.offline-status-yellow { background: #FFF9E6; border-color: #F5A623; color: #7A5F04; }
+.offline-status-gray   { background: #F5F5F5; border-color: #C8C8C8; color: #666;    }

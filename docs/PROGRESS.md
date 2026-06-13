@@ -12,6 +12,8 @@
 
 **下一个任务**：M25 — 极简通关页（victory.html）
 
+**M16 SW 增强**（已完成）：预缓存 18 个文件（install 事件逐个 add + catch）+ CHECK_CACHE 消息回报 + 设置页离线状态卡（绿/黄/灰三态）+ CACHE_VERSION → v2
+
 ---
 
 ## 已完成任务

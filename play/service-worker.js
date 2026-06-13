@@ -1,27 +1,63 @@
-// ====== 寻宝游戏 Service Worker：动态缓存策略（stale-while-revalidate）======
+// ====== 寻宝游戏 Service Worker：预缓存 + 动态缓存（stale-while-revalidate）======
 //
-// MVP 阶段不手写 FILES_TO_CACHE 列表，改用「用了就缓存」策略：
-//   第一次访问（有网）→ 所有资源自动被缓存（含 CDN 库）
-//   之后（包括飞行模式）→ 优先读缓存，后台更新，网络失败时回退缓存
+// 两层缓存策略：
+//   ① install 时预缓存所有自己的页面和 JS（只要联网打开一次首页，所有页面就绪）
+//   ② fetch 时动态缓存（CDN 库 + 首次访问时自动加入）
 //
-// 好处：无需每次新增/重命名文件后改 SW；CDN 资源自动缓存
+// CACHE_VERSION 改变时旧缓存全部清除，强制重新缓存。
 
-const CACHE_VERSION = 'treasure-hunt-runtime-v1.1';
+const CACHE_VERSION = 'treasure-hunt-runtime-v2';
 
-// ====== 安装：直接跳过等待，立刻激活 ======
-self.addEventListener('install', event => {
+// ── 预缓存清单（只列真实存在的文件；CDN 库不列，由 fetch 事件动态处理）──
+// ⚠️ 每次增删页面或 JS 文件时更新这里，并递增 CACHE_VERSION
+const PRECACHE_URLS = [
+  './',
+  './index.html',
+  './manifest.json',
+  './styles/main.css',
+  './pages/select-level.html',
+  './pages/settings.html',
+  './pages/start-level.html',
+  './pages/hint.html',
+  './pages/scan.html',
+  './pages/quiz.html',
+  './pages/photo.html',
+  './scripts/scan-verify.js',
+  './scripts/quiz-logic.js',
+  '../shared/db/db-config.js',
+  '../shared/db/play-db.js',
+  '../shared/utils/id.js',
+  '../shared/utils/json-io.js',
+  '../shared/version.js',
+];
+
+// ====== 安装：预缓存清单里的所有文件 ======
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_VERSION).then((cache) =>
+      // 逐个缓存，单个失败不影响其余（比 addAll 全有或全无更稳健）
+      Promise.all(
+        PRECACHE_URLS.map((url) =>
+          cache.add(new Request(url, { cache: 'reload' })).catch((err) => {
+            console.warn('[SW] 预缓存失败，跳过：', url, err.message);
+          })
+        )
+      )
+    )
+  );
+  // 安装后立刻接管，不等旧 SW 关闭
   self.skipWaiting();
 });
 
 // ====== 激活：清理旧版本缓存，立刻接管所有标签页 ======
-self.addEventListener('activate', event => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then(keys =>
+      .then((keys) =>
         Promise.all(
           keys
-            .filter(k => k !== CACHE_VERSION)
-            .map(k => {
+            .filter((k) => k !== CACHE_VERSION)
+            .map((k) => {
               console.log('[SW] 删除旧缓存：', k);
               return caches.delete(k);
             })
@@ -31,30 +67,53 @@ self.addEventListener('activate', event => {
   );
 });
 
-// ====== fetch：stale-while-revalidate 策略 ======
-self.addEventListener('fetch', event => {
+// ====== fetch：stale-while-revalidate 动态缓存策略 ======
+self.addEventListener('fetch', (event) => {
   // 只处理 GET 请求
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
-    caches.open(CACHE_VERSION).then(cache =>
-      cache.match(event.request).then(cached => {
+    caches.open(CACHE_VERSION).then((cache) =>
+      cache.match(event.request).then((cached) => {
+        // 后台更新缓存（成功则刷新；失败则回退已有缓存）
+        const networkFetch = fetch(event.request)
+          .then((response) => {
+            // response.ok      → 同源或带 CORS 的跨域请求（200-299）
+            // response.type=opaque → 无 CORS 的 CDN 脚本（jsdelivr 等）
+            // 两种都缓存，确保 CDN 库飞行模式下可用
+            if (response.ok || response.type === 'opaque') {
+              cache.put(event.request, response.clone());
+            }
+            return response;
+          })
+          .catch(() => cached); // 网络失败时回退缓存
 
-        // 后台发起网络请求，成功后更新缓存
-        const networkFetch = fetch(event.request).then(response => {
-          // 缓存条件：
-          //   response.ok       → 同源请求或带 CORS 的跨域请求（状态 200-299）
-          //   response.type === 'opaque' → 无 CORS 的跨域响应（如 CDN <script>）
-          //   两种都缓存，确保 jsdelivr CDN 库飞行模式下也能加载
-          if (response.ok || response.type === 'opaque') {
-            cache.put(event.request, response.clone());
-          }
-          return response;
-        }).catch(() => cached); // 网络失败时回退到已有缓存
-
-        // 有缓存 → 立即返回（同时后台更新）；无缓存 → 等网络
+        // 有缓存 → 立即返回（后台更新）；无缓存 → 等网络
         return cached || networkFetch;
       })
     )
   );
+});
+
+// ====== message：供设置页查询「离线准备是否完成」======
+self.addEventListener('message', async (event) => {
+  if (!event.data || event.data.type !== 'CHECK_CACHE') return;
+
+  const cache   = await caches.open(CACHE_VERSION);
+  const matches = await Promise.all(PRECACHE_URLS.map((url) => cache.match(url)));
+  const cached  = matches.filter(Boolean).length;
+  const total   = PRECACHE_URLS.length;
+  const reply   = {
+    type:   'CACHE_STATUS',
+    ready:  cached === total,
+    cached,
+    total,
+  };
+
+  // 优先用 MessageChannel port（postMessage 第二个参数传入的专用通道）
+  if (event.ports && event.ports[0]) {
+    event.ports[0].postMessage(reply);
+  } else if (event.source) {
+    event.source.postMessage(reply);
+  }
 });

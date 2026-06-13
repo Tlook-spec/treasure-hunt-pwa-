@@ -91,6 +91,12 @@
       </div>
     </div>
 
+    <!-- ====== 离线准备状态 ====== -->
+    <div class="offline-status-card offline-status-gray" id="offline-status-card">
+      <span class="offline-status-icon" id="offline-status-icon">⏳</span>
+      <span class="offline-status-text" id="offline-status-text">正在检测离线准备情况…</span>
+    </div>
+
     <!-- ====== 其他 ====== -->
     <div class="other-card">
       <p class="version-text" id="version-text">寻宝游戏 · 加载中…</p>
@@ -310,6 +316,54 @@
 
     // 页面初始化：显示统计数据
     renderStats().catch(err => console.error('[设置] 加载统计失败', err));
+
+    // ====== 离线准备状态检测 ======
+
+    async function checkOfflineStatus() {
+      const icon = document.getElementById('offline-status-icon');
+      const text = document.getElementById('offline-status-text');
+      const card = document.getElementById('offline-status-card');
+
+      // SW 还没接管这个标签页（首次打开 / 浏览器未支持）
+      if (!navigator.serviceWorker || !navigator.serviceWorker.controller) {
+        icon.textContent = '☁️';
+        text.textContent = '请联网打开一次首页，App 会自动把所有页面下载好，之后就能离线玩啦';
+        card.className   = 'offline-status-card offline-status-gray';
+        return;
+      }
+
+      try {
+        const status = await new Promise((resolve, reject) => {
+          // 用 MessageChannel 建专用回复通道，避免和其他消息混淆
+          const mc = new MessageChannel();
+          mc.port1.onmessage = (e) => resolve(e.data);
+          setTimeout(() => reject(new Error('超时')), 4000);
+          navigator.serviceWorker.controller.postMessage(
+            { type: 'CHECK_CACHE' },
+            [mc.port2]
+          );
+        });
+
+        if (status.ready) {
+          icon.textContent = '✅';
+          text.textContent = '离线准备已完成，飞行模式下也能正常玩';
+          card.className   = 'offline-status-card offline-status-green';
+        } else {
+          icon.textContent = '⏳';
+          text.textContent =
+            `离线准备进行中（已就绪 ${status.cached}/${status.total} 个页面），` +
+            '请保持联网，稍候刷新本页再看';
+          card.className   = 'offline-status-card offline-status-yellow';
+        }
+      } catch (err) {
+        console.warn('[设置] 无法获取离线状态：', err);
+        icon.textContent = '❓';
+        text.textContent = '暂时无法检测，如需离线使用请先联网打开一次首页';
+        card.className   = 'offline-status-card offline-status-gray';
+      }
+    }
+
+    checkOfflineStatus();
 
   </script>
 
