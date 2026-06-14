@@ -97,8 +97,8 @@
 </div>
 
 <script type="module">
-  import db           from '../../shared/db/admin-db.js';
-  import { exportFull, validateJson, importFull } from '../../shared/utils/json-io.js';
+  import db           from '../shared/db/admin-db.js';
+  import { exportFull, validateJson, importFull } from '../shared/utils/json-io.js';
 
   // 校验通过后暂存，等用户二次确认后再写入
   let pendingData     = null;
