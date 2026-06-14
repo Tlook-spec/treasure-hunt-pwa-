@@ -1216,20 +1216,21 @@ body {
   margin: 0;
 }
 .quiz-question-section #question-text {
-  font-size: clamp(18px, 5.5vw, 28px);
+  font-size: clamp(24px, 7vw, 38px);
   font-weight: 700;
   line-height: 1.5;
   margin: 0;
   color: var(--color-text);
 }
 
-/* 下段选项区：flex:1.2 纵向排满 */
+/* 下段选项区：flex:1.2 纵向排满，底部留白与顶部对称 */
 .quiz-options-section {
   flex: 1.2;
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-height: 0;
+  padding-bottom: 20px;
 }
 
 /* 选项列表容器（替代旧 options-grid 2×2 网格）*/
@@ -1239,15 +1240,18 @@ body {
   gap: 10px;
   flex: 1;
   min-height: 0;
+  align-items: center;  /* 按钮水平居中，宽度自适应内容 */
 }
 
-/* 选项按钮大版：等高铺满，字号放大 */
+/* 选项按钮大版：内容自适应宽度，字号和高度放大 */
 .options-list .option-btn {
   flex: 1;
-  min-height: 64px;
-  width: 100%;
-  font-size: clamp(17px, 4.6vw, 21px);
+  width: auto;
+  min-width: 65%;       /* 最短也占容器 65%，短答案不会太窄 */
+  max-width: 100%;
+  min-height: 72px;
+  font-size: clamp(20px, 5.5vw, 26px);
   border-radius: 14px;
-  padding: 0 16px;
+  padding: 14px 28px;
   justify-content: flex-start;
 }
