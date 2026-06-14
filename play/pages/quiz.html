@@ -11,19 +11,11 @@
 </head>
 <body>
 
-  <!-- ── 顶部进度横幅（两屏共用）────────────────────────────── -->
+  <!-- ── 顶部进度横幅（屏 1 专用）──────────────────────────── -->
   <div class="station-banner" id="quiz-banner">
-    <!-- 屏1 内容：第 N 站 · 共 M 站 -->
     <div id="banner-discovery" style="display:flex; align-items:center; gap:8px; width:100%">
       <div class="station-banner-dot"></div>
       <span id="discovery-station-text">加载中…</span>
-    </div>
-    <!-- 屏2 内容：第 N 站  第 X/M 题  💡求助 -->
-    <div id="banner-quiz" style="display:none; align-items:center; gap:8px; width:100%">
-      <div class="station-banner-dot"></div>
-      <span id="quiz-station-text">第 N 站</span>
-      <span class="banner-question-count" id="quiz-question-count">第 1/5 题</span>
-      <button class="btn-help-inline" id="btn-help">💡 求助 <span id="help-count">3</span></button>
     </div>
   </div>
 
@@ -40,18 +32,32 @@
     </div>
   </div>
 
-  <!-- ── 屏 2：答题（题目卡 + 2×2 选项 + 反馈区）──────────── -->
+  <!-- ── 屏 2：答题（全屏纵向布局）──────────────────────────── -->
   <div id="screen-quiz" style="display:none">
-    <main class="page-content">
-      <!-- 题目卡片 -->
-      <div class="question-card">
-        <div class="question-meta" id="question-meta"></div>
+    <main class="game-screen">
+
+      <!-- 顶部细条：进度 + 求助（banner-quiz 移入此处，ID 不变供 JS 控制）-->
+      <div id="banner-quiz" class="quiz-top-bar" style="display:none">
+        <div class="quiz-top-left">
+          <div class="station-banner-dot"></div>
+          <span id="quiz-station-text">第 N 站</span>
+          <span class="banner-question-count" id="quiz-question-count">第 1/5 题</span>
+        </div>
+        <button class="btn-help-inline" id="btn-help">💡 求助 <span id="help-count">3</span></button>
+      </div>
+
+      <!-- 中段：题干（大字、居中）-->
+      <div class="quiz-question-section">
+        <p class="question-meta" id="question-meta"></p>
         <p class="question-text" id="question-text"></p>
       </div>
-      <!-- 选项 2×2 网格（JS 动态渲染）-->
-      <div class="options-grid" id="options-grid"></div>
-      <!-- 反馈区：答对/答错/求助确认/求助用完（JS 切换内容）-->
-      <div id="feedback-area" style="display:none"></div>
+
+      <!-- 下段：选项列 + 反馈区 -->
+      <div class="quiz-options-section">
+        <div class="options-list" id="options-grid"></div>
+        <div id="feedback-area" style="display:none"></div>
+      </div>
+
     </main>
   </div>
 
@@ -159,8 +165,8 @@
       const { session, question, stationNumber, questionNumber, totalQuestions } = data;
       const remainingHelp = session.maxHelpCount - session.helpUsedCount;
 
-      // 横幅切到屏 2
-      document.getElementById('banner-discovery').style.display = 'none';
+      // 横幅切到屏 2（banner-quiz 现在在 screen-quiz 内部，隐藏外层 banner）
+      document.getElementById('quiz-banner').style.display = 'none';
       document.getElementById('banner-quiz').style.display = 'flex';
       document.getElementById('quiz-station-text').textContent = `第 ${stationNumber} 站`;
       document.getElementById('quiz-question-count').textContent =

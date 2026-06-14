@@ -1113,3 +1113,141 @@ body {
   min-height: 44px;
 }
 .btn-resume-abandon:active { background: #f5f5f5; }
+
+/* ══════════════════════════════════════════════════════════
+   游戏页公共大字版式（阶段一 quiz / 阶段二 hint/photo/victory）
+   ══════════════════════════════════════════════════════════ */
+
+/* 全屏纵向容器（五个游戏页共用）*/
+.game-screen {
+  min-height: 100vh;   /* 兼容旧 iOS */
+  min-height: 100dvh;  /* iOS 15+ 动态视口 */
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 0 16px 16px;
+  overflow: hidden;    /* 禁止整页滚动 */
+}
+
+/* 居中主区：flex:1 撑满，内容垂直水平居中（hint/photo/victory 用）*/
+.game-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+  padding: 8px 0;
+}
+
+/* 大 emoji 图标 */
+.game-icon {
+  font-size: clamp(40px, 12vw, 72px);
+  line-height: 1;
+}
+
+/* 大标题（「通关啦！」「第 N 站」等）*/
+.game-title {
+  font-size: clamp(22px, 6vw, 32px);
+  font-weight: 500;
+  margin: 0;
+  color: var(--color-text);
+}
+
+/* 正文 / 说明文字 */
+.game-body-text {
+  font-size: clamp(15px, 4.2vw, 20px);
+  line-height: 1.5;
+  margin: 0;
+  color: var(--color-text);
+}
+
+/* 主按钮大版（铺满宽度，60px 最小高，给五个游戏页共用）*/
+.btn-game-primary {
+  display: block;
+  width: 100%;
+  min-height: 60px;
+  font-size: clamp(18px, 5vw, 22px);
+  font-weight: 700;
+  border-radius: 16px;
+  text-align: center;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── 答题页（quiz.html）屏 2 专用 ────────────────────────── */
+
+/* 顶部细条：进度 + 求助 */
+.quiz-top-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  width: 100%;
+}
+.quiz-top-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* 中段题干区：flex:1 居中，字号放大 */
+.quiz-question-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+.quiz-question-section #question-meta {
+  font-size: clamp(13px, 3.5vw, 16px);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+.quiz-question-section #question-text {
+  font-size: clamp(18px, 5.5vw, 28px);
+  font-weight: 700;
+  line-height: 1.5;
+  margin: 0;
+  color: var(--color-text);
+}
+
+/* 下段选项区：flex:1.2 纵向排满 */
+.quiz-options-section {
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+/* 选项列表容器（替代旧 options-grid 2×2 网格）*/
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 选项按钮大版：等高铺满，字号放大 */
+.options-list .option-btn {
+  flex: 1;
+  min-height: 64px;
+  width: 100%;
+  font-size: clamp(17px, 4.6vw, 21px);
+  border-radius: 14px;
+  padding: 0 16px;
+  justify-content: flex-start;
+}

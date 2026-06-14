@@ -13,7 +13,7 @@ import { findQuestionReferences } from '../../shared/utils/reference-check.js';
 // ── 学科显示名映射 ────────────────────────────────────────
 const SUBJECT_LABELS = {
   math: '数学', chinese: '语文', english: '英语',
-  science: '自然/科学', common: '常识',
+  science: '自然/科学', common: '常识', fun: '趣味',
 };
 
 // ── 筛选状态（模块级变量）────────────────────────────────

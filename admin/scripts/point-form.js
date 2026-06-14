@@ -16,6 +16,7 @@ const SUBJECT_LABELS = {
   english: '英语',
   science: '自然/科学',
   common:  '常识',
+  fun:     '趣味',
 };
 
 // ── 模块状态（表单会话期间保持）──────────────────────────
