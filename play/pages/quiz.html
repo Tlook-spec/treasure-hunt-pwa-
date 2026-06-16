@@ -392,9 +392,8 @@
         setTimeout(() => hideFeedback(), 2000);
       }
 
+      // block：卡片内文字/按钮各自独占一行（居中由 CSS align-self 处理）
       area.style.display = 'block';
-      // 平滑滚动确保反馈卡片在屏幕内可见
-      setTimeout(() => area.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
     }
 
     function hideFeedback() {
