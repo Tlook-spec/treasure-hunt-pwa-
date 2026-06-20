@@ -17,10 +17,15 @@
     }
     .station-card-header {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       padding: 14px 16px;
       cursor: pointer;
       user-select: none;
+      gap: 4px;
+    }
+    .station-card-top-row {
+      display: flex;
+      align-items: center;
       gap: 8px;
     }
     .station-card-title {
@@ -29,15 +34,15 @@
       font-weight: 700;
       color: var(--color-text-primary, #1a1a2e);
     }
-    .station-card-score {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--color-primary, #4A90E2);
-    }
     .station-card-arrow {
       font-size: 16px;
       color: #999;
-      margin-left: 4px;
+    }
+    .station-card-subtitle {
+      font-size: 13px;
+      color: #888;
+      margin: 0;
+      line-height: 1.4;
     }
     .station-card-body {
       padding: 0 16px 14px;
@@ -276,17 +281,27 @@
       // 标题栏（可点击折叠）
       const header = document.createElement('div');
       header.className = 'station-card-header';
+
+      // 顶行：站名 + 箭头
+      const topRow = document.createElement('div');
+      topRow.className = 'station-card-top-row';
       const titleEl = document.createElement('span');
       titleEl.className = 'station-card-title';
       titleEl.textContent = `第 ${stationNumber} 站 · ${pointName}`;
-      const scoreEl = document.createElement('span');
-      scoreEl.className = 'station-card-score';
-      scoreEl.textContent = `${totalScore} 分`;
       const arrow = document.createElement('span');
       arrow.className = 'station-card-arrow';
-      header.appendChild(titleEl);
-      header.appendChild(scoreEl);
-      header.appendChild(arrow);
+      topRow.appendChild(titleEl);
+      topRow.appendChild(arrow);
+
+      // 副行：折叠时摘要（展开后去掉「点击查看」提示）
+      const subtitleCollapsed = `${totalScore} 分 · 答对 ${firstTryCorrect}/${totalQuestions} 道题 · 点击查看详情吧`;
+      const subtitleExpanded  = `${totalScore} 分 · 答对 ${firstTryCorrect}/${totalQuestions} 道题`;
+      const subtitle = document.createElement('p');
+      subtitle.className = 'station-card-subtitle';
+      subtitle.textContent = subtitleCollapsed;
+
+      header.appendChild(topRow);
+      header.appendChild(subtitle);
 
       // 内容区
       const body = document.createElement('div');
@@ -307,17 +322,15 @@
         }
       }
 
-      // 有错题默认展开，全对默认折叠
-      if (allCorrect) {
-        body.style.display = 'none';
-        arrow.textContent = '▸';
-      } else {
-        arrow.textContent = '▾';
-      }
+      // 全部默认折叠
+      body.style.display = 'none';
+      arrow.textContent = '▸';
+
       header.addEventListener('click', () => {
         const open = body.style.display !== 'none';
         body.style.display = open ? 'none' : 'block';
         arrow.textContent = open ? '▸' : '▾';
+        subtitle.textContent = open ? subtitleCollapsed : subtitleExpanded;
       });
 
       card.appendChild(header);
