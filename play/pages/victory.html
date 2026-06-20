@@ -6,6 +6,88 @@
   <meta name="theme-color" content="#4A90E2">
   <link rel="stylesheet" href="../styles/main.css">
   <title>通关啦！- 寻宝游戏</title>
+  <style>
+    /* ── 按站成绩卡 ──────────────────────────── */
+    .station-card {
+      background: #fff;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .station-card-header {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      cursor: pointer;
+      user-select: none;
+      gap: 8px;
+    }
+    .station-card-title {
+      flex: 1;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--color-text-primary, #1a1a2e);
+    }
+    .station-card-score {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--color-primary, #4A90E2);
+    }
+    .station-card-arrow {
+      font-size: 16px;
+      color: #999;
+      margin-left: 4px;
+    }
+    .station-card-body {
+      padding: 0 16px 14px;
+      border-top: 1px solid #f0f0f0;
+    }
+    .station-summary-line {
+      font-size: 14px;
+      color: var(--color-text-secondary, #666);
+      margin: 10px 0 8px;
+    }
+    .station-all-correct {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--color-success, #27AE60);
+      margin: 8px 0 2px;
+    }
+    /* ── 错题条目 ──────────────────────────────── */
+    .wrong-item {
+      border-left: 3px solid var(--color-error, #E74C3C);
+      padding: 10px 12px;
+      margin: 10px 0 0;
+      background: rgba(231,76,60,0.05);
+      border-radius: 0 8px 8px 0;
+    }
+    .wrong-item-bust {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-error, #E74C3C);
+      margin: 0 0 6px;
+    }
+    .wrong-item-question {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--color-text-primary, #1a1a2e);
+      margin: 0 0 6px;
+      line-height: 1.5;
+    }
+    .wrong-item-line {
+      font-size: 14px;
+      color: #555;
+      margin: 4px 0;
+      line-height: 1.5;
+    }
+    .wrong-item-explanation {
+      font-size: 13px;
+      color: #888;
+      margin: 6px 0 0;
+      line-height: 1.5;
+    }
+  </style>
   <!-- Dexie 必须在 type="module" 之前加载 -->
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
 </head>
@@ -60,6 +142,12 @@
       </div>
     </div>
 
+    <!-- 按站成绩 + 错题本 -->
+    <div id="station-cards-section" style="margin-top:24px">
+      <h3 class="photo-section-title">📋 按站成绩</h3>
+      <div id="station-cards-list"></div>
+    </div>
+
   </main>
 
   <!-- 返回首页（fixed bottom，init 完成后显示）-->
@@ -88,6 +176,7 @@
 
   <script type="module">
     import db from '../../shared/db/play-db.js';
+    import { computeStationSummaries } from '../scripts/quiz-logic.js';
 
     const sessionId = new URLSearchParams(location.search).get('sessionId');
     if (!sessionId) { location.href = '../index.html'; }
@@ -139,17 +228,165 @@
         // ⑥ 合影
         await renderPhotos(session, pointRecords);
 
-        // ⑦ 显示页面 + 按钮
+        // ⑦ 按站成绩 + 错题本
+        await renderStationCards(session, pointRecords);
+
+        // ⑧ 显示页面 + 按钮
         document.getElementById('main-content').style.display  = 'block';
         document.getElementById('bottom-action').style.display = 'block';
 
-        // ⑧ 撒花！
+        // ⑨ 撒花！
         launchConfetti();
 
       } catch (err) {
         console.error('[通关页] 初始化失败', err);
         showError();
       }
+    }
+
+    // ── 按站成绩 + 错题本 ────────────────────────────────────
+    async function renderStationCards(session, pointRecords) {
+      // 拉取所有点位 + 所有题目（复用 DB，不另起事务）
+      const allPoints = await db.points.where('levelId').equals(session.levelId).toArray();
+      const pointsMap = Object.fromEntries(allPoints.map(p => [p.id, p]));
+
+      // 收集本局用到的 questionId（去重）
+      const qidSet = new Set();
+      for (const pr of pointRecords) {
+        for (const qr of (pr.questionResults || [])) qidSet.add(qr.questionId);
+      }
+      const questions = await db.questions.bulkGet([...qidSet]);
+      const questionsMap = {};
+      questions.forEach(q => { if (q) questionsMap[q.id] = q; });
+
+      const summaries = computeStationSummaries(pointRecords, questionsMap, pointsMap);
+      const list = document.getElementById('station-cards-list');
+      for (const summary of summaries) {
+        list.appendChild(buildStationCard(summary));
+      }
+    }
+
+    function buildStationCard(summary) {
+      const { stationNumber, pointName, totalScore, totalQuestions, firstTryCorrect, wrongItems } = summary;
+      const allCorrect = wrongItems.length === 0;
+
+      const card = document.createElement('div');
+      card.className = 'station-card';
+
+      // 标题栏（可点击折叠）
+      const header = document.createElement('div');
+      header.className = 'station-card-header';
+      const titleEl = document.createElement('span');
+      titleEl.className = 'station-card-title';
+      titleEl.textContent = `第 ${stationNumber} 站 · ${pointName}`;
+      const scoreEl = document.createElement('span');
+      scoreEl.className = 'station-card-score';
+      scoreEl.textContent = `${totalScore} 分`;
+      const arrow = document.createElement('span');
+      arrow.className = 'station-card-arrow';
+      header.appendChild(titleEl);
+      header.appendChild(scoreEl);
+      header.appendChild(arrow);
+
+      // 内容区
+      const body = document.createElement('div');
+      body.className = 'station-card-body';
+      const summaryLine = document.createElement('p');
+      summaryLine.className = 'station-summary-line';
+      summaryLine.textContent = `共 ${totalQuestions} 题，一次答对 ${firstTryCorrect} 题`;
+      body.appendChild(summaryLine);
+
+      if (allCorrect) {
+        const allGood = document.createElement('p');
+        allGood.className = 'station-all-correct';
+        allGood.textContent = '这站全对，厉害！🌟';
+        body.appendChild(allGood);
+      } else {
+        for (const { qr, question } of wrongItems) {
+          body.appendChild(buildWrongItem(qr, question));
+        }
+      }
+
+      // 有错题默认展开，全对默认折叠
+      if (allCorrect) {
+        body.style.display = 'none';
+        arrow.textContent = '▸';
+      } else {
+        arrow.textContent = '▾';
+      }
+      header.addEventListener('click', () => {
+        const open = body.style.display !== 'none';
+        body.style.display = open ? 'none' : 'block';
+        arrow.textContent = open ? '▸' : '▾';
+      });
+
+      card.appendChild(header);
+      card.appendChild(body);
+      return card;
+    }
+
+    function buildWrongItem(qr, question) {
+      const item = document.createElement('div');
+      item.className = 'wrong-item';
+
+      // 保底标注：score === 0 才加（错 2 次后自己答对 score=5 不标）
+      if (qr.score === 0) {
+        const bust = document.createElement('p');
+        bust.className = 'wrong-item-bust';
+        bust.textContent = '这题没答出来，直接看了答案';
+        item.appendChild(bust);
+      }
+
+      if (!question) {
+        const missing = document.createElement('p');
+        missing.className = 'wrong-item-line';
+        missing.textContent = '（题目数据不存在）';
+        item.appendChild(missing);
+        return item;
+      }
+
+      // 题干
+      const qText = document.createElement('p');
+      qText.className = 'wrong-item-question';
+      qText.textContent = question.text;
+      item.appendChild(qText);
+
+      // 孩子选错的答案（wrongChoices 可能为空，旧存档降级）
+      const choices = qr.wrongChoices || [];
+      const wrongLine = document.createElement('p');
+      wrongLine.className = 'wrong-item-line';
+      if (choices.length > 0) {
+        const wrongTexts = choices.map(letter => {
+          const idx = 'ABCD'.indexOf(letter);
+          const optText = (question.options && idx >= 0) ? question.options[idx] : '';
+          return optText ? `${letter}. ${optText}` : letter;
+        });
+        wrongLine.textContent = `❌ 选了：${wrongTexts.join('、')}`;
+      } else {
+        wrongLine.textContent = '❌ 选错了（未记录具体选项）';
+      }
+      item.appendChild(wrongLine);
+
+      // 正确答案
+      const correctLetter = String(question.correctAnswer || '').trim().toUpperCase();
+      const correctIdx = 'ABCD'.indexOf(correctLetter);
+      const correctOptText = (question.options && correctIdx >= 0) ? question.options[correctIdx] : '';
+      const correctLine = document.createElement('p');
+      correctLine.className = 'wrong-item-line';
+      correctLine.textContent = correctOptText
+        ? `✅ 正确答案：${correctLetter}. ${correctOptText}`
+        : `✅ 正确答案：${correctLetter}`;
+      item.appendChild(correctLine);
+
+      // 解析（非空才显示）
+      if (question.explanation) {
+        const expLine = document.createElement('p');
+        expLine.className = 'wrong-item-explanation';
+        expLine.textContent = `📖 解析：${question.explanation}`;
+        item.appendChild(expLine);
+      }
+
+      return item;
     }
 
     // ── 合影渲染 ─────────────────────────────────────────────

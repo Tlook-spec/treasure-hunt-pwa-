@@ -123,6 +123,35 @@ export async function advanceQuestionIndex(sessionId) {
 }
 
 /**
+ * 计算各站得分汇总（纯函数，不写 DB）。
+ * 供通关页（V1-02）和海报（V1-18）复用。
+ *
+ * @param {object[]} pointRecords  session.pointRecords
+ * @param {object}   questionsMap  { [questionId]: Question }
+ * @param {object}   pointsMap     { [pointId]: Point }
+ * @returns {object[]} 每站 { stationNumber, pointName, totalScore, totalQuestions, firstTryCorrect, wrongItems }
+ */
+export function computeStationSummaries(pointRecords, questionsMap, pointsMap) {
+  return pointRecords.map((pr, i) => {
+    const results = pr.questionResults || [];
+    const point = pointsMap[pr.pointId];
+    const totalScore = results.reduce((s, qr) => s + (qr.score || 0), 0);
+    const firstTryCorrect = results.filter(qr => qr.answerAttempts === 1).length;
+    const wrongItems = results
+      .filter(qr => qr.answerAttempts >= 2)
+      .map(qr => ({ qr, question: questionsMap[qr.questionId] }));
+    return {
+      stationNumber: i + 1,
+      pointName: point ? point.name : `第 ${i + 1} 站`,
+      totalScore,
+      totalQuestions: results.length,
+      firstTryCorrect,
+      wrongItems,
+    };
+  });
+}
+
+/**
  * 扣除一次求助次数，返回剩余次数。
  */
 export async function consumeHelp(sessionId) {
