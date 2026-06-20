@@ -272,7 +272,7 @@
     }
 
     function buildStationCard(summary) {
-      const { stationNumber, pointName, totalScore, totalQuestions, correctCount, firstTryCorrect, wrongItems } = summary;
+      const { stationNumber, pointName, totalScore, totalQuestions, correctCount, wrongItems } = summary;
       const allCorrect = wrongItems.length === 0;
 
       const card = document.createElement('div');
@@ -308,7 +308,7 @@
       body.className = 'station-card-body';
       const summaryLine = document.createElement('p');
       summaryLine.className = 'station-summary-line';
-      summaryLine.textContent = `共 ${totalQuestions} 题，一次答对 ${firstTryCorrect} 题`;
+      summaryLine.textContent = `共 ${totalQuestions} 题，答对 ${correctCount} 题`;
       body.appendChild(summaryLine);
 
       if (allCorrect) {

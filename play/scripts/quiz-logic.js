@@ -136,11 +136,10 @@ export function computeStationSummaries(pointRecords, questionsMap, pointsMap) {
     const results = pr.questionResults || [];
     const point = pointsMap[pr.pointId];
     const totalScore = results.reduce((s, qr) => s + (qr.score || 0), 0);
-    // 答对 = 最终得了分（score>0）；错题 = 保底 0 分（与顶部总成绩卡口径一致）
+    // 答对 = 最终得了分（score>0）；错题 = 没答出来、保底 0 分（与顶部总成绩卡口径一致）
     const correctCount = results.filter(qr => (qr.score || 0) > 0).length;
-    const firstTryCorrect = results.filter(qr => qr.answerAttempts === 1).length;
     const wrongItems = results
-      .filter(qr => qr.answerAttempts >= 2)
+      .filter(qr => (qr.score || 0) === 0)
       .map(qr => ({ qr, question: questionsMap[qr.questionId] }));
     return {
       stationNumber: i + 1,
@@ -148,7 +147,6 @@ export function computeStationSummaries(pointRecords, questionsMap, pointsMap) {
       totalScore,
       totalQuestions: results.length,
       correctCount,
-      firstTryCorrect,
       wrongItems,
     };
   });
