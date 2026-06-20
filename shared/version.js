@@ -12,4 +12,4 @@
 export const APP_VERSION = 'V1-A';
 
 // 推送标识：格式「任务号 · 日期」，每次推 GitHub 前更新这一行
-export const BUILD_TAG = 'V1-02-错题本口径统一 · 2026-06-20';
+export const BUILD_TAG = 'V1-02-错题本逐题展开 · 2026-06-20';

@@ -59,34 +59,62 @@
       color: var(--color-success, #27AE60);
       margin: 8px 0 2px;
     }
-    /* ── 错题条目 ──────────────────────────────── */
-    .wrong-item {
-      border-left: 3px solid var(--color-error, #E74C3C);
-      padding: 10px 12px;
-      margin: 10px 0 0;
-      background: rgba(231,76,60,0.05);
-      border-radius: 0 8px 8px 0;
+    /* ── 题目行（二级折叠）──────────────────────── */
+    .q-item {
+      border: 1px solid #eee;
+      border-radius: 8px;
+      margin: 8px 0 0;
+      overflow: hidden;
     }
-    .wrong-item-bust {
+    .q-item-wrong {
+      border-color: rgba(231,76,60,0.4);
+      background: rgba(231,76,60,0.04);
+    }
+    .q-item-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .q-item-title {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--color-text-primary, #1a1a2e);
+      line-height: 1.4;
+    }
+    .q-item-score {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--color-success, #27AE60);
+      white-space: nowrap;
+    }
+    .q-item-score-zero {
+      color: var(--color-error, #E74C3C);
+    }
+    .q-item-arrow {
+      font-size: 14px;
+      color: #999;
+    }
+    .q-item-detail {
+      padding: 0 12px 12px;
+      border-top: 1px solid #f0f0f0;
+    }
+    .q-item-bust {
       font-size: 13px;
       font-weight: 700;
       color: var(--color-error, #E74C3C);
-      margin: 0 0 6px;
+      margin: 10px 0 6px;
     }
-    .wrong-item-question {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--color-text-primary, #1a1a2e);
-      margin: 0 0 6px;
-      line-height: 1.5;
-    }
-    .wrong-item-line {
+    .q-item-line {
       font-size: 14px;
       color: #555;
-      margin: 4px 0;
+      margin: 6px 0;
       line-height: 1.5;
     }
-    .wrong-item-explanation {
+    .q-item-explanation {
       font-size: 13px;
       color: #888;
       margin: 6px 0 0;
@@ -272,8 +300,8 @@
     }
 
     function buildStationCard(summary) {
-      const { stationNumber, pointName, totalScore, totalQuestions, correctCount, wrongItems } = summary;
-      const allCorrect = wrongItems.length === 0;
+      const { stationNumber, pointName, totalScore, totalQuestions, correctCount, items } = summary;
+      const allCorrect = correctCount === totalQuestions;
 
       const card = document.createElement('div');
       card.className = 'station-card';
@@ -311,15 +339,17 @@
       summaryLine.textContent = `共 ${totalQuestions} 题，答对 ${correctCount} 题`;
       body.appendChild(summaryLine);
 
+      // 全对时给一句鼓励，再照常逐题列出
       if (allCorrect) {
         const allGood = document.createElement('p');
         allGood.className = 'station-all-correct';
         allGood.textContent = '这站全对，厉害！🌟';
         body.appendChild(allGood);
-      } else {
-        for (const { qr, question } of wrongItems) {
-          body.appendChild(buildWrongItem(qr, question));
-        }
+      }
+
+      // 逐题列出（含得分），每题可二级展开，0 分题默认展开
+      for (const { qr, question } of items) {
+        body.appendChild(buildQuestionRow(qr, question));
       }
 
       // 全部默认折叠
@@ -338,68 +368,91 @@
       return card;
     }
 
-    function buildWrongItem(qr, question) {
+    // 单题行：题干 + 得分（0 分标红），点击展开看错误答案/正确答案/解析
+    function buildQuestionRow(qr, question) {
+      const isZero = (qr.score || 0) === 0;
+
       const item = document.createElement('div');
-      item.className = 'wrong-item';
+      item.className = isZero ? 'q-item q-item-wrong' : 'q-item';
 
-      // 保底标注：score === 0 才加（错 2 次后自己答对 score=5 不标）
-      if (qr.score === 0) {
+      // 头部：题干 + 得分 + 箭头（可点击）
+      const head = document.createElement('div');
+      head.className = 'q-item-header';
+      const titleEl = document.createElement('span');
+      titleEl.className = 'q-item-title';
+      titleEl.textContent = question ? question.text : '（题目数据不存在）';
+      const scoreEl = document.createElement('span');
+      scoreEl.className = isZero ? 'q-item-score q-item-score-zero' : 'q-item-score';
+      scoreEl.textContent = `${qr.score || 0} 分`;
+      const arrow = document.createElement('span');
+      arrow.className = 'q-item-arrow';
+      head.appendChild(titleEl);
+      head.appendChild(scoreEl);
+      head.appendChild(arrow);
+
+      // 详情区
+      const detail = document.createElement('div');
+      detail.className = 'q-item-detail';
+      buildQuestionDetail(detail, qr, question);
+
+      // 0 分题默认展开，其余默认折叠
+      const open = isZero;
+      detail.style.display = open ? 'block' : 'none';
+      arrow.textContent = open ? '▾' : '▸';
+      head.addEventListener('click', () => {
+        const nowOpen = detail.style.display !== 'none';
+        detail.style.display = nowOpen ? 'none' : 'block';
+        arrow.textContent = nowOpen ? '▸' : '▾';
+      });
+
+      item.appendChild(head);
+      item.appendChild(detail);
+      return item;
+    }
+
+    // 填充单题详情：保底标注（仅 0 分）、错误答案、正确答案、解析
+    function buildQuestionDetail(detail, qr, question) {
+      if ((qr.score || 0) === 0) {
         const bust = document.createElement('p');
-        bust.className = 'wrong-item-bust';
+        bust.className = 'q-item-bust';
         bust.textContent = '这题没答出来，直接看了答案';
-        item.appendChild(bust);
+        detail.appendChild(bust);
       }
 
-      if (!question) {
-        const missing = document.createElement('p');
-        missing.className = 'wrong-item-line';
-        missing.textContent = '（题目数据不存在）';
-        item.appendChild(missing);
-        return item;
-      }
+      if (!question) return;
 
-      // 题干
-      const qText = document.createElement('p');
-      qText.className = 'wrong-item-question';
-      qText.textContent = question.text;
-      item.appendChild(qText);
-
-      // 孩子选错的答案（wrongChoices 可能为空，旧存档降级）
+      // 孩子选错的答案（wrongChoices 可能为空：一次答对或旧存档）
       const choices = qr.wrongChoices || [];
-      const wrongLine = document.createElement('p');
-      wrongLine.className = 'wrong-item-line';
       if (choices.length > 0) {
         const wrongTexts = choices.map(letter => {
           const idx = 'ABCD'.indexOf(letter);
           const optText = (question.options && idx >= 0) ? question.options[idx] : '';
           return optText ? `${letter}. ${optText}` : letter;
         });
-        wrongLine.textContent = `❌ 选了：${wrongTexts.join('、')}`;
-      } else {
-        wrongLine.textContent = '❌ 选错了（未记录具体选项）';
+        const wrongLine = document.createElement('p');
+        wrongLine.className = 'q-item-line';
+        wrongLine.textContent = `❌ 选错：${wrongTexts.join('、')}`;
+        detail.appendChild(wrongLine);
       }
-      item.appendChild(wrongLine);
 
       // 正确答案
       const correctLetter = String(question.correctAnswer || '').trim().toUpperCase();
       const correctIdx = 'ABCD'.indexOf(correctLetter);
       const correctOptText = (question.options && correctIdx >= 0) ? question.options[correctIdx] : '';
       const correctLine = document.createElement('p');
-      correctLine.className = 'wrong-item-line';
+      correctLine.className = 'q-item-line';
       correctLine.textContent = correctOptText
         ? `✅ 正确答案：${correctLetter}. ${correctOptText}`
         : `✅ 正确答案：${correctLetter}`;
-      item.appendChild(correctLine);
+      detail.appendChild(correctLine);
 
       // 解析（非空才显示）
       if (question.explanation) {
         const expLine = document.createElement('p');
-        expLine.className = 'wrong-item-explanation';
+        expLine.className = 'q-item-explanation';
         expLine.textContent = `📖 解析：${question.explanation}`;
-        item.appendChild(expLine);
+        detail.appendChild(expLine);
       }
-
-      return item;
     }
 
     // ── 合影渲染 ─────────────────────────────────────────────

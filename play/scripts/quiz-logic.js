@@ -138,16 +138,15 @@ export function computeStationSummaries(pointRecords, questionsMap, pointsMap) {
     const totalScore = results.reduce((s, qr) => s + (qr.score || 0), 0);
     // 答对 = 最终得了分（score>0）；错题 = 没答出来、保底 0 分（与顶部总成绩卡口径一致）
     const correctCount = results.filter(qr => (qr.score || 0) > 0).length;
-    const wrongItems = results
-      .filter(qr => (qr.score || 0) === 0)
-      .map(qr => ({ qr, question: questionsMap[qr.questionId] }));
+    // 返回该站全部题目（含得分），展示时逐题列出，0 分标红
+    const items = results.map(qr => ({ qr, question: questionsMap[qr.questionId] }));
     return {
       stationNumber: i + 1,
       pointName: point ? point.name : `第 ${i + 1} 站`,
       totalScore,
       totalQuestions: results.length,
       correctCount,
-      wrongItems,
+      items,
     };
   });
 }
