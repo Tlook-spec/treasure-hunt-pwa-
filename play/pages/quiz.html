@@ -256,6 +256,8 @@
           if (optBtns[ci]) optBtns[ci].classList.add('option-bust-correct');
           await recordQuestionResult(sessionId, questionId, 3, usedHelpThisQuestion, 0);
           showFeedback('bust', {
+            correctText: question.options[ci],
+            explanation: question.explanation,
             onConfirm: async () => {
               hideFeedback();
               try {
@@ -324,6 +326,20 @@
         msg.className = 'feedback-main-text';
         msg.textContent = '没关系，下次记住啦！🌟';
         area.appendChild(msg);
+        // 显示正确答案（纯文字，不抓按钮 DOM 避免黏连 A/B 标签）
+        if (data.correctText) {
+          const ans = document.createElement('p');
+          ans.className = 'feedback-hint-text';
+          ans.textContent = `✅ 正确答案：${data.correctText}`;
+          area.appendChild(ans);
+        }
+        // 仅当 explanation 非空时才显示解析行
+        if (data.explanation) {
+          const exp = document.createElement('p');
+          exp.className = 'feedback-hint-text';
+          exp.textContent = `📖 解析：${data.explanation}`;
+          area.appendChild(exp);
+        }
         if (data.onConfirm) {
           const btn = document.createElement('button');
           btn.className = 'btn-bust-confirm';
