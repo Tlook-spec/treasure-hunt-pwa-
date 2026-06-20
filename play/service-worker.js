@@ -6,7 +6,7 @@
 //
 // CACHE_VERSION 改变时旧缓存全部清除，强制重新缓存。
 
-const CACHE_VERSION = 'treasure-hunt-runtime-v2.6';
+const CACHE_VERSION = 'treasure-hunt-runtime-v2.7';
 
 // ── 预缓存清单（只列真实存在的文件；CDN 库不列，由 fetch 事件动态处理）──
 // ⚠️ 每次增删页面或 JS 文件时更新这里，并递增 CACHE_VERSION
@@ -18,6 +18,7 @@ const PRECACHE_URLS = [
   './assets/sounds/correct.mp3',
   './assets/sounds/wrong.mp3',
   './assets/sounds/ding.mp3',
+  './assets/sounds/victory.mp3',
   './pages/select-level.html',
   './pages/settings.html',
   './pages/start-level.html',

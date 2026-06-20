@@ -220,6 +220,27 @@
     const sessionId = new URLSearchParams(location.search).get('sessionId');
     if (!sessionId) { location.href = '../index.html'; }
 
+    // ── 通关音效 ─────────────────────────────────────────────
+    // iOS 不允许跨页面继承音频解锁状态，进通关页属于新 document，
+    // 自动播放大概率被拦 → .catch 静默吞掉。
+    // 方案：先尝试自动播；同时挂一次性 pointerdown/touchstart，
+    // 若自动播失败（catch 重置标志）则孩子首次碰屏时补播一次。
+    const victorySound = new Audio('../assets/sounds/victory.mp3');
+    let victoryTriggered = false;
+
+    function playVictoryOnce() {
+      if (victoryTriggered) return;
+      victoryTriggered = true;
+      victorySound.currentTime = 0;
+      victorySound.play().catch(() => {
+        victoryTriggered = false; // 自动播被拦，等待首次用户触摸补播
+      });
+    }
+
+    // 首次用户触摸兜底（iOS 场景）
+    document.addEventListener('pointerdown', playVictoryOnce, { once: true });
+    document.addEventListener('touchstart',  playVictoryOnce, { once: true });
+
     // ── 初始化入口 ───────────────────────────────────────────
     async function init() {
       try {
@@ -274,8 +295,9 @@
         document.getElementById('main-content').style.display  = 'block';
         document.getElementById('bottom-action').style.display = 'block';
 
-        // ⑨ 撒花！
+        // ⑨ 撒花 + 通关音效！
         launchConfetti();
+        playVictoryOnce(); // 桌面直接响；iOS 被拦时等首次触摸补播
 
       } catch (err) {
         console.error('[通关页] 初始化失败', err);
