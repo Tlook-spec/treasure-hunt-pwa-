@@ -114,6 +114,12 @@
       margin: 6px 0;
       line-height: 1.5;
     }
+    .q-item-score-hint {
+      font-size: 13px;
+      color: var(--color-text-secondary, #666);
+      margin: 10px 0 4px;
+      line-height: 1.5;
+    }
     .q-item-explanation {
       font-size: 13px;
       color: #888;
@@ -410,32 +416,53 @@
       return item;
     }
 
-    // 填充单题详情：保底标注（仅 0 分）、错误答案、正确答案、解析
+    // 把 wrongChoices 字母数组转成「A. 选项文字」列表，供各分支复用
+    function formatWrongChoices(choices, question) {
+      return choices.map(letter => {
+        const idx = 'ABCD'.indexOf(letter);
+        const optText = (question && question.options && idx >= 0) ? question.options[idx] : '';
+        return optText ? `${letter}. ${optText}` : letter;
+      });
+    }
+
+    // 填充单题详情：得分说明 + 错误答案（嵌入说明句）+ 正确答案 + 解析
     function buildQuestionDetail(detail, qr, question) {
-      if ((qr.score || 0) === 0) {
-        const bust = document.createElement('p');
-        bust.className = 'q-item-bust';
-        bust.textContent = '这题没答出来，直接看了答案';
-        detail.appendChild(bust);
+      const score = qr.score || 0;
+      const choices = qr.wrongChoices || [];
+
+      // ① 得分说明（每种分值一句自然语言）
+      const hint = document.createElement('p');
+      hint.className = score === 0 ? 'q-item-bust' : 'q-item-score-hint';
+
+      if (score === 0) {
+        hint.textContent = '这题没答出来，直接看了答案';
+      } else if (score === 3) {
+        hint.textContent = '本题求助了爸爸妈妈，所以是 3 分';
+      } else if (score === 5) {
+        if (choices.length > 0 && question) {
+          const wrongTexts = formatWrongChoices(choices, question);
+          hint.textContent = `这道题一开始答错了 ${wrongTexts.join('、')}，所以是 5 分`;
+        } else {
+          hint.textContent = '这道题答错后答对了，所以是 5 分';
+        }
+      } else {
+        // score === 10：一次答对，不加说明行
+        hint.style.display = 'none';
       }
+      detail.appendChild(hint);
 
       if (!question) return;
 
-      // 孩子选错的答案（wrongChoices 可能为空：一次答对或旧存档）
-      const choices = qr.wrongChoices || [];
-      if (choices.length > 0) {
-        const wrongTexts = choices.map(letter => {
-          const idx = 'ABCD'.indexOf(letter);
-          const optText = (question.options && idx >= 0) ? question.options[idx] : '';
-          return optText ? `${letter}. ${optText}` : letter;
-        });
+      // ② 0 分时单独列选错答案（5/3 分已嵌入说明句，不重复）
+      if (score === 0 && choices.length > 0) {
+        const wrongTexts = formatWrongChoices(choices, question);
         const wrongLine = document.createElement('p');
         wrongLine.className = 'q-item-line';
         wrongLine.textContent = `❌ 选错：${wrongTexts.join('、')}`;
         detail.appendChild(wrongLine);
       }
 
-      // 正确答案
+      // ③ 正确答案
       const correctLetter = String(question.correctAnswer || '').trim().toUpperCase();
       const correctIdx = 'ABCD'.indexOf(correctLetter);
       const correctOptText = (question.options && correctIdx >= 0) ? question.options[correctIdx] : '';
@@ -446,7 +473,7 @@
         : `✅ 正确答案：${correctLetter}`;
       detail.appendChild(correctLine);
 
-      // 解析（非空才显示）
+      // ④ 解析（非空才显示）
       if (question.explanation) {
         const expLine = document.createElement('p');
         expLine.className = 'q-item-explanation';
