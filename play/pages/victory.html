@@ -272,7 +272,7 @@
     }
 
     function buildStationCard(summary) {
-      const { stationNumber, pointName, totalScore, totalQuestions, firstTryCorrect, wrongItems } = summary;
+      const { stationNumber, pointName, totalScore, totalQuestions, correctCount, firstTryCorrect, wrongItems } = summary;
       const allCorrect = wrongItems.length === 0;
 
       const card = document.createElement('div');
@@ -294,8 +294,8 @@
       topRow.appendChild(arrow);
 
       // 副行：折叠时摘要（展开后去掉「点击查看」提示）
-      const subtitleCollapsed = `${totalScore} 分 · 答对 ${firstTryCorrect}/${totalQuestions} 道题 · 点击查看详情吧`;
-      const subtitleExpanded  = `${totalScore} 分 · 答对 ${firstTryCorrect}/${totalQuestions} 道题`;
+      const subtitleCollapsed = `${totalScore} 分 · 答对 ${correctCount}/${totalQuestions} 道题 · 点击查看详情吧`;
+      const subtitleExpanded  = `${totalScore} 分 · 答对 ${correctCount}/${totalQuestions} 道题`;
       const subtitle = document.createElement('p');
       subtitle.className = 'station-card-subtitle';
       subtitle.textContent = subtitleCollapsed;
