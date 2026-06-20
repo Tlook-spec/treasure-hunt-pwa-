@@ -97,7 +97,7 @@ export function computeScore(attemptCount, usedHelp) {
  * 往 session.pointRecords[currentPointIndex].questionResults 追加一条答题记录。
  * 每道题只在「答对」或「第 3 次错保底」时调用一次。
  */
-export async function recordQuestionResult(sessionId, questionId, answerAttempts, usedHelp, score) {
+export async function recordQuestionResult(sessionId, questionId, answerAttempts, usedHelp, score, wrongChoices = []) {
   const session = await db.sessions.get(sessionId);
   if (!session) throw new Error('游戏会话不存在');
 
@@ -105,7 +105,7 @@ export async function recordQuestionResult(sessionId, questionId, answerAttempts
   const pr = { ...(records[session.currentPointIndex] || {}) };
   pr.questionResults = [
     ...(pr.questionResults || []),
-    { questionId, answerAttempts, usedHelp, score },
+    { questionId, answerAttempts, usedHelp, score, wrongChoices },
   ];
   records[session.currentPointIndex] = pr;
   await db.sessions.update(sessionId, { pointRecords: records });

@@ -106,6 +106,7 @@
     let usedHelpThisQuestion = false; // 本题是否用过求助
     let optionsLocked        = false; // 防止重复点击或与求助弹窗冲突
     let currentData          = null;  // 最新的 loadCurrentQuizData 返回值
+    let wrongChoices         = [];    // 本题选错的答案字母（最多 3 个）
 
     // ── 初始化 ──────────────────────────────────────────────
     async function init() {
@@ -158,6 +159,7 @@
       attemptCount         = 0;
       usedHelpThisQuestion = false;
       optionsLocked        = false;
+      wrongChoices         = [];
       showQuizScreen(currentData);
     }
 
@@ -221,7 +223,7 @@
 
         const score = computeScore(attemptCount, usedHelpThisQuestion);
         await recordQuestionResult(
-          sessionId, questionId, attemptCount + 1, usedHelpThisQuestion, score
+          sessionId, questionId, attemptCount + 1, usedHelpThisQuestion, score, wrongChoices
         );
         showFeedback('correct');
 
@@ -240,6 +242,7 @@
 
       } else {
         // ── 答错 ────────────────────────────────────────
+        wrongChoices.push('ABCD'[selectedIndex]); // 记录选错的字母
         attemptCount++;
         playSound(sfxWrong);
         optBtns[selectedIndex].classList.add('option-wrong', 'option-shake');
@@ -254,7 +257,7 @@
           const ci = 'ABCD'.indexOf(String(question.correctAnswer).trim().toUpperCase());
           optBtns.forEach((b, i) => { if (i !== ci) b.classList.add('option-dimmed'); });
           if (optBtns[ci]) optBtns[ci].classList.add('option-bust-correct');
-          await recordQuestionResult(sessionId, questionId, 3, usedHelpThisQuestion, 0);
+          await recordQuestionResult(sessionId, questionId, 3, usedHelpThisQuestion, 0, wrongChoices);
           showFeedback('bust', {
             correctText: question.options[ci],
             explanation: question.explanation,
