@@ -179,6 +179,39 @@
     }
     .code-btn-confirm:active  { opacity: 0.85; }
     .code-btn-confirm:disabled { opacity: 0.5; }
+
+    /* ====== 扫码成功动画 ====== */
+    .camera-wrapper.scan-success {
+      box-shadow: 0 0 0 4px #27AE60, 0 0 0 8px rgba(39,174,96,0.25);
+    }
+    #scan-success-overlay {
+      position: absolute; inset: 0; z-index: 20;
+      display: none;
+      align-items: center; justify-content: center;
+      background: rgba(39,174,96,0.18);
+      border-radius: 16px;
+    }
+    #scan-success-overlay.active {
+      display: flex;
+      animation: scanOverlayFade 0.85s ease forwards;
+    }
+    .scan-success-icon {
+      font-size: 96px;
+      animation: scanIconPop 0.85s ease forwards;
+    }
+    @keyframes scanOverlayFade {
+      0%   { opacity: 0; }
+      20%  { opacity: 1; }
+      75%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    @keyframes scanIconPop {
+      0%   { transform: scale(0.3); }
+      40%  { transform: scale(1.18); }
+      60%  { transform: scale(0.95); }
+      80%  { transform: scale(1); }
+      100% { transform: scale(1); }
+    }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
@@ -209,6 +242,10 @@
         </div>
       </div>
       <div id="reader"></div>
+      <!-- 扫码成功绿色遮罩 + ✅ 动画 -->
+      <div id="scan-success-overlay">
+        <span class="scan-success-icon">✅</span>
+      </div>
     </div>
     <p id="scan-hint">把二维码放进框里就行啦～</p>
   </div>
@@ -304,6 +341,9 @@
     let isScanning  = false;
     let isVerifying = false; // 扫码验证中（防重复触发）
 
+    // ding 音效预加载（统一管理 + iOS 解锁）
+    const dingSound = new Audio('../assets/sounds/ding.mp3');
+
     // ── 加载站点编号 ──
     async function loadStation() {
       const session = await db.sessions.get(sessionId);
@@ -371,8 +411,10 @@
       try {
         const res = await resolveCode(code, sessionId);
         if (res.status === 'correct') {
-          new Audio('../assets/sounds/ding.mp3').play().catch(() => {});
-          goToChallenge(sessionId);
+          dingSound.currentTime = 0;
+          dingSound.play().catch(() => {});
+          showScanSuccess();
+          setTimeout(() => goToChallenge(sessionId), 850);
           return; // 导航中，不走 finally
         } else if (res.status === 'wrong-point') {
           showResultCard('wrong',
@@ -407,18 +449,34 @@
       }, 2000);
     }
 
+    // 扫码成功动画：取景框绿光 + ✅ 弹出淡出（约 0.85 秒）
+    function showScanSuccess() {
+      const wrapper = document.querySelector('.camera-wrapper');
+      wrapper.classList.add('scan-success');
+      const overlay = document.getElementById('scan-success-overlay');
+      overlay.classList.add('active');
+    }
+
     // ── 扫码页按钮 ──
     document.getElementById('btn-back').addEventListener('click', async () => {
       await stopCamera();
       location.href = `hint.html?sessionId=${encodeURIComponent(sessionId)}`;
     });
-    document.getElementById('btn-start-scan').addEventListener('click', startScan);
+    document.getElementById('btn-start-scan').addEventListener('click', () => {
+      // iOS 音频解锁：必须在用户手势内预触发，否则 handleScanResult 里无法自动播放
+      dingSound.muted = true;
+      dingSound.play().then(() => { dingSound.pause(); dingSound.currentTime = 0; dingSound.muted = false; }).catch(() => {});
+      startScan();
+    });
     document.getElementById('btn-retry-scan').addEventListener('click', () => {
       showIdleState();
       startScan();
     });
     // 底部两个按钮：停摄像头 → 打开对应弹窗
     document.getElementById('btn-manual-input').addEventListener('click', async () => {
+      // iOS 音频解锁：submitCode 里的播放不在手势内，需在这里提前解锁
+      dingSound.muted = true;
+      dingSound.play().then(() => { dingSound.pause(); dingSound.currentTime = 0; dingSound.muted = false; }).catch(() => {});
       await stopCamera();
       openCodeModal('child');
     });
@@ -533,7 +591,8 @@
         if (res.status === 'correct') {
           // 正确：关弹窗 → 音效 → 跳转
           document.getElementById('code-modal').style.display = 'none';
-          new Audio('../assets/sounds/ding.mp3').play().catch(() => {});
+          dingSound.currentTime = 0;
+          dingSound.play().catch(() => {});
           goToChallenge(sessionId);
           return; // 不走 finally（页面正在跳转）
 
