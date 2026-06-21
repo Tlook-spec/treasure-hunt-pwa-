@@ -111,7 +111,8 @@ function handleMapClick(e) {
   // 如果刚拖拽结束，这次 click 是 mouseup 后的冒泡，忽略
   if (dragMoved) { dragMoved = false; return; }
   // 点在已有标记上 → 由标记自己处理（mouseup 阶段）
-  if (e.target.closest('.marker-dot')) return;
+  // stopPropagation 防止 click 冒泡到 document，否则「关闭菜单」监听器会立刻关掉刚打开的菜单
+  if (e.target.closest('.marker-dot')) { e.stopPropagation(); return; }
 
   // 找下一个还没有坐标的点位（order 最小）
   const next = points.find(pt => markerPos[pt.id] === null);
