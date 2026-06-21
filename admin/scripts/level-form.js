@@ -209,6 +209,9 @@ function openCreateForm() {
   currentColor = THEME_COLORS[0];
   updateColorSwatches();
   resetMapSection(); // 清空地图字段，恢复默认值
+  // 故事文本框置空
+  document.getElementById('input-opening-story').value = '';
+  document.getElementById('input-ending-story').value  = '';
   openModal('level-form-modal');
   document.getElementById('input-level-name').focus();
 }
@@ -227,6 +230,9 @@ async function openEditForm(levelId) {
   currentColor = level.themeColor || THEME_COLORS[0];
   updateColorSwatches();
   loadMapSection(level); // 把地图字段填入表单
+  // 故事文本框：老数据可能没有此字段，用 || '' 兜底显示为空
+  document.getElementById('input-opening-story').value = level.openingStory || '';
+  document.getElementById('input-ending-story').value  = level.endingStory  || '';
   openModal('level-form-modal');
 }
 
@@ -252,6 +258,9 @@ async function saveForm() {
     mapFontSize:              document.querySelector('input[name="map-font-size"]:checked')?.value || 'medium',
     mapNameColor:             document.getElementById('input-map-name-color').value || '#2C3E50',
     mapNameColorCompleted:    document.getElementById('input-map-name-color-completed').value || '#F5A623',
+    // 探险故事（V1-12 新增）：留空时为空串，不报错
+    openingStory:             document.getElementById('input-opening-story').value.trim(),
+    endingStory:              document.getElementById('input-ending-story').value.trim(),
     updatedAt:                now,
   };
 
@@ -261,12 +270,10 @@ async function saveForm() {
   } else {
     // 新建：创建完整 Level 对象，V1 预留字段由 formData 携带
     await db.levels.add({
-      id: generateId('lvl'),
-      ...formData,
+      id:           generateId('lvl'),
+      ...formData,            // 含 openingStory / endingStory（已在 formData 里）
       createdAt:    now,
-      openingStory: '',
-      endingStory:  '',
-      customAwards: [],
+      customAwards: [],       // V1 多人功能预留
     });
   }
 

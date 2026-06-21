@@ -261,6 +261,34 @@
           </div>
         </div>
       </div>
+
+      <!-- 探险故事（可选）分组（V1-12 新增） -->
+      <div class="form-group" style="margin-top:var(--space-md)">
+        <div style="font-weight:600;font-size:13px;color:var(--color-text-muted);
+                    border-top:1px solid var(--color-border);padding-top:var(--space-sm);
+                    margin-bottom:var(--space-sm)">
+          📖 探险故事（可选）
+        </div>
+
+        <!-- 开场故事 -->
+        <label class="form-label" for="input-opening-story">开场故事</label>
+        <p style="font-size:12px;color:var(--color-text-muted);margin:-4px 0 6px;line-height:1.5">
+          孩子进入这个探险时先读到的故事开头。留空就直接开始，不显示故事页。
+        </p>
+        <textarea id="input-opening-story" class="form-textarea"
+                  placeholder="如「勇敢的小探险家，一封神秘信件落在了你的桌上……」"
+                  maxlength="500"></textarea>
+
+        <!-- 结局故事 -->
+        <label class="form-label" for="input-ending-story"
+               style="margin-top:var(--space-sm)">结局故事</label>
+        <p style="font-size:12px;color:var(--color-text-muted);margin:-4px 0 6px;line-height:1.5">
+          全部通关后显示的故事结尾。留空就不显示。
+        </p>
+        <textarea id="input-ending-story" class="form-textarea"
+                  placeholder="如「你成功破解了所有谜题，宝藏已经在等着你了！」"
+                  maxlength="500"></textarea>
+      </div>
     </div>
     <div class="modal-footer">
       <button id="btn-form-cancel" class="btn btn-secondary">取消</button>
@@ -355,6 +383,6 @@
 </div>
 
 <script type="module">
-  import { initLevelsPage } from './scripts/level-form.js?v=V1-11';
+  import { initLevelsPage } from './scripts/level-form.js?v=V1-12';
   initLevelsPage();
 </script>
