@@ -181,6 +181,7 @@ function buildMarkerDot(pt, pos) {
 
 function handleMarkerMousedown(e, pointId) {
   if (previewMode) return;
+  if (e.button !== 0) return;  // 只响应左键，忽略右键/中键
   e.preventDefault();  // 阻止文字选中
   e.stopPropagation(); // 阻止触发 wrapper click
 
