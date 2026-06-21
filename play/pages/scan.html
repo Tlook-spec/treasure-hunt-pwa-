@@ -490,6 +490,9 @@
       openCodeModal('child');
     });
     document.getElementById('btn-cant-find').addEventListener('click', async () => {
+      // iOS 音频解锁（与 btn-manual-input 相同）
+      dingSound.muted = true;
+      dingSound.play().then(() => { dingSound.pause(); dingSound.currentTime = 0; dingSound.muted = false; }).catch(() => {});
       await stopCamera();
       openCodeModal('parent');
     });
