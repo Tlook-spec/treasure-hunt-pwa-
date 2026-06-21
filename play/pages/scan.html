@@ -182,35 +182,41 @@
 
     /* ====== 扫码成功动画 ====== */
     .camera-wrapper.scan-success {
-      box-shadow: 0 0 0 4px #27AE60, 0 0 0 8px rgba(39,174,96,0.25);
+      box-shadow: 0 0 0 4px #27AE60, 0 0 0 8px rgba(39,174,96,0.3);
     }
+    /* ⚠️ 不用 display:none，用 opacity:0 隐藏。
+       Safari 已知 bug：display:none 元素直接加 animation 类会不触发动画。
+       始终保持 display:flex，动画只改 opacity，可靠触发。 */
     #scan-success-overlay {
       position: absolute; inset: 0; z-index: 20;
-      display: none;
+      display: flex; opacity: 0; pointer-events: none;
       align-items: center; justify-content: center;
-      background: rgba(39,174,96,0.18);
+      background: rgba(39,174,96,0.22);
       border-radius: 16px;
     }
     #scan-success-overlay.active {
-      display: flex;
       animation: scanOverlayFade 0.85s ease forwards;
     }
     .scan-success-icon {
       font-size: 96px;
+      opacity: 0; /* 跟随父层，由父层动画带出来 */
+    }
+    #scan-success-overlay.active .scan-success-icon {
       animation: scanIconPop 0.85s ease forwards;
     }
     @keyframes scanOverlayFade {
       0%   { opacity: 0; }
-      20%  { opacity: 1; }
-      75%  { opacity: 1; }
+      18%  { opacity: 1; }
+      72%  { opacity: 1; }
       100% { opacity: 0; }
     }
     @keyframes scanIconPop {
-      0%   { transform: scale(0.3); }
+      0%   { opacity: 0; transform: scale(0.3); }
+      20%  { opacity: 1; }
       40%  { transform: scale(1.18); }
       60%  { transform: scale(0.95); }
       80%  { transform: scale(1); }
-      100% { transform: scale(1); }
+      100% { opacity: 1; transform: scale(1); }
     }
   </style>
 
@@ -450,11 +456,14 @@
     }
 
     // 扫码成功动画：取景框绿光 + ✅ 弹出淡出（约 0.85 秒）
+    // 用 rAF 确保浏览器先完成一帧布局再加动画类，防止 Safari 吞动画
     function showScanSuccess() {
       const wrapper = document.querySelector('.camera-wrapper');
       wrapper.classList.add('scan-success');
       const overlay = document.getElementById('scan-success-overlay');
-      overlay.classList.add('active');
+      requestAnimationFrame(() => {
+        overlay.classList.add('active');
+      });
     }
 
     // ── 扫码页按钮 ──
