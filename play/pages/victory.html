@@ -126,6 +126,20 @@
       margin: 6px 0 0;
       line-height: 1.5;
     }
+    /* ── 结局故事文字区（通关后给孩子读的大字故事）── */
+    .ending-story-section {
+      padding: 32px 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .story-text {
+      font-size: 20px;
+      line-height: 1.9;
+      color: var(--color-text, #1a1a2e);
+      white-space: pre-wrap;   /* 保留家长填写的换行符 */
+      text-align: center;
+      max-width: 560px;
+    }
   </style>
   <!-- Dexie 必须在 type="module" 之前加载 -->
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
@@ -143,6 +157,11 @@
       <div class="victory-trophy">🏆</div>
       <h1 class="victory-title">通关啦！</h1>
       <p class="victory-level-name" id="victory-level-name"></p>
+    </div>
+
+    <!-- 结局故事（endingStory 非空时显示，JS 控制）-->
+    <div id="ending-story-section" class="ending-story-section" style="display:none">
+      <p id="ending-story-text" class="story-text"></p>
     </div>
 
     <!-- 成绩卡 -->
@@ -255,10 +274,17 @@
           session = { ...session, status: 'completed', endedAt };
         }
 
-        // ③ 读探险名
+        // ③ 读探险名 + 结局故事
         const level     = await db.levels.get(session.levelId);
         const levelName = level ? level.name : '精彩探险';
         document.getElementById('victory-level-name').textContent = levelName;
+
+        // 结局故事（非空才显示）
+        const endingStory = level ? (level.endingStory || '') : '';
+        if (endingStory) {
+          document.getElementById('ending-story-text').textContent = endingStory;
+          document.getElementById('ending-story-section').style.display = 'block';
+        }
 
         // ④ 计算成绩（遍历全部站、全部题）
         const pointRecords   = session.pointRecords || [];

@@ -6,6 +6,22 @@
   <meta name="theme-color" content="#4A90E2">
   <link rel="stylesheet" href="../styles/main.css">
   <title>开始冒险 - 寻宝游戏</title>
+  <style>
+    /* 开场故事文字区（给孩子读的：字大、留白足、保留换行）*/
+    .story-section {
+      padding: 32px 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .story-text {
+      font-size: 20px;
+      line-height: 1.9;
+      color: var(--color-text, #1a1a2e);
+      white-space: pre-wrap;   /* 保留家长填写的换行符 */
+      text-align: center;
+      max-width: 560px;
+    }
+  </style>
   <!-- CDN 库（普通 script，必须在 type="module" 之前）-->
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
 </head>
@@ -18,12 +34,18 @@
 
   <!-- 主内容 -->
   <main class="page-content has-bottom-action">
-    <div class="level-overview">
+    <!-- 探险概览（默认显示；有故事时点「开始冒险」后隐藏，切到故事视图）-->
+    <div class="level-overview" id="level-overview">
       <!-- 探险图标（JS 根据 ID 哈希选 emoji，保证同一探险图标稳定）-->
       <div class="level-overview-icon" id="level-icon">🗺️</div>
       <h1 class="level-overview-name" id="level-name">加载中…</h1>
       <!-- 探险简介卡片 -->
       <div class="level-overview-desc" id="level-desc"></div>
+    </div>
+
+    <!-- 开场故事（openingStory 非空时，点「开始冒险」后显示；默认隐藏）-->
+    <div id="story-section" class="story-section" style="display:none">
+      <p id="story-text" class="story-text"></p>
     </div>
   </main>
 
@@ -61,6 +83,11 @@
       location.href = 'select-level.html';
     }
 
+    // 开场故事文本（模块级，供 init 赋值、点击事件读取）
+    let levelOpeningStory = '';
+    // 是否已经切换到故事视图（防止二次点击再切一次）
+    let storyShown = false;
+
     async function init() {
       const level = await db.levels.get(levelId);
       if (!level) {
@@ -68,6 +95,9 @@
         location.href = 'select-level.html';
         return;
       }
+
+      // 保存开场故事，供按钮点击事件使用
+      levelOpeningStory = level.openingStory || '';
 
       // 渲染探险信息
       document.getElementById('level-icon').textContent = pickIcon(level.id);
@@ -86,9 +116,23 @@
       btn.disabled = false;
     }
 
-    // 点击「开始冒险！」：创建 GameSession，跳转到提示页
+    // 点击「开始冒险！」：
+    //   第一阶段（有开场故事）→ 切换到故事视图
+    //   第二阶段（或无故事）  → 创建 GameSession，跳转到提示页
     document.getElementById('btn-start').addEventListener('click', async () => {
       const btn = document.getElementById('btn-start');
+
+      // ── 第一阶段：有开场故事且还没显示过 ──
+      if (levelOpeningStory && !storyShown) {
+        document.getElementById('level-overview').style.display = 'none';
+        document.getElementById('story-text').textContent = levelOpeningStory;
+        document.getElementById('story-section').style.display = 'block';
+        btn.textContent = '🚀 开始冒险！';
+        storyShown = true;
+        return; // 等待孩子读完故事再点一次
+      }
+
+      // ── 第二阶段：无故事 或 故事已显示，创建 session 并跳转 ──
       btn.disabled = true;
       btn.textContent = '⏳ 出发中…';
 
