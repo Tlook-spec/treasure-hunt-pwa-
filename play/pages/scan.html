@@ -598,11 +598,12 @@
         const res = await resolveCode(currentInput, sessionId);
 
         if (res.status === 'correct') {
-          // 正确：关弹窗 → 音效 → 跳转
+          // 正确：关弹窗 → 音效 → 动画 → 跳转（与扫码路径行为一致）
           document.getElementById('code-modal').style.display = 'none';
           dingSound.currentTime = 0;
           dingSound.play().catch(() => {});
-          goToChallenge(sessionId);
+          showScanSuccess();
+          setTimeout(() => goToChallenge(sessionId), 850);
           return; // 不走 finally（页面正在跳转）
 
         } else {
