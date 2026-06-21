@@ -27,6 +27,12 @@ export function initLevelDetail() {
     if (levelId) window.open(`pages/print-cheatsheet.html?levelId=${levelId}`, '_blank');
   });
 
+  // 地图标记：在新标签页打开标记编辑器（仅有地图时可见）
+  document.getElementById('btn-map-marker').addEventListener('click', () => {
+    const levelId = document.getElementById('levels-detail-panel').dataset.levelId;
+    if (levelId) window.open(`pages/map-marker.html?levelId=${levelId}`, '_blank');
+  });
+
   initPointList();
 }
 
@@ -43,6 +49,10 @@ export async function showLevelDetail(levelId) {
   panel.dataset.levelId = levelId;
 
   document.getElementById('detail-level-name').textContent = level.name;
+
+  // 「地图标记」按钮：只在已上传地图时才显示
+  const mapBtn = document.getElementById('btn-map-marker');
+  if (mapBtn) mapBtn.style.display = level.mapImage ? '' : 'none';
 
   await renderDetailInfo(level);
   await renderPointList(levelId);

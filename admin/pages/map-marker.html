@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>地图标记 — 寻宝游戏</title>
+
+  <!-- Dexie 必须在 type="module" 之前加载 -->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, 'Microsoft YaHei', '苹方', sans-serif;
+      background: #f5f6fa;
+      color: #333;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── 顶部工具栏 ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 20px;
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      flex-shrink: 0;
+    }
+    .toolbar-title {
+      flex: 1;
+      font-size: 16px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── 按钮 ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.1s, background 0.12s;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(0.96); }
+    .btn-secondary { background: #f0f0f0; color: #555; }
+    .btn-secondary:hover { background: #e0e0e0; }
+    .btn-primary { background: #4A90E2; color: #fff; }
+    .btn-primary:hover { background: #3a7bc8; }
+    .btn-danger { background: #e74c3c; color: #fff; font-size: 13px; padding: 7px 14px; }
+    .btn-danger:hover { background: #c0392b; }
+
+    /* ── 触摸设备提示横幅 ── */
+    #touch-banner {
+      display: none;
+      background: #fff3cd;
+      border-bottom: 2px solid #ffc107;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #856404;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    /* ── 主编辑区（左图+右面板）── */
+    .editor-area {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── 左：地图图片区 ── */
+    .map-panel {
+      flex: 1;
+      overflow: auto;
+      background: #d8d8d8;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* wrapper：相对定位，内联块（高度随图片内容撑开）*/
+    #map-wrapper {
+      position: relative;
+      display: inline-block;
+      cursor: crosshair;
+      flex-shrink: 0;
+    }
+
+    /* 图片：pointer-events:none 让点击事件透传到 wrapper */
+    #map-img {
+      display: block;
+      max-width: 100%;
+      max-height: calc(100vh - 130px);
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* ── 标记圆点 ── */
+    .marker-dot {
+      position: absolute;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      transition: box-shadow 0.1s;
+    }
+
+    /* 编辑模式：蓝色实心 + 序号 */
+    .marker-dot.edit-mode {
+      width: 36px;
+      height: 36px;
+      background: #4A90E2;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      border: 2.5px solid #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+      cursor: grab;
+    }
+    .marker-dot.edit-mode:hover {
+      box-shadow: 0 3px 14px rgba(0,0,0,0.45);
+    }
+
+    /* 预览模式：空心圆 + 下方名字 */
+    .marker-dot.preview-mode {
+      width: 26px;
+      height: 26px;
+      background: transparent;
+      border: 2.5px solid currentColor;
+      cursor: default;
+    }
+    .marker-label {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-size: 11px;
+      font-weight: 700;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.65);
+      pointer-events: none;
+    }
+
+    /* ── 右：控制面板 ── */
+    .control-panel {
+      width: 270px;
+      flex-shrink: 0;
+      background: #fff;
+      border-left: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .control-section {
+      padding: 14px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .control-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      line-height: 1.4;
+    }
+
+    /* 点位状态列表 */
+    #point-status-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: #f8f8f8;
+      font-size: 13px;
+    }
+    .status-item.marked { background: #eafaf1; }
+    .status-badge {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #4A90E2;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .status-name { flex: 1; font-weight: 500; }
+    .status-icon { font-size: 15px; }
+
+    /* 操作提示文字 */
+    #click-hint {
+      padding: 12px 16px;
+      font-size: 12px;
+      color: #999;
+      border-top: 1px solid #f0f0f0;
+      line-height: 1.55;
+    }
+
+    /* ── 右键/点击上下文菜单 ── */
+    #context-menu {
+      position: fixed;
+      display: none;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      padding: 4px;
+      z-index: 9999;
+      min-width: 130px;
+    }
+    .ctx-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 7px;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+    }
+    .ctx-item:hover { background: #f5f5f5; }
+    .ctx-item.danger { color: #e74c3c; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <!-- 顶部工具栏 -->
+  <div class="toolbar">
+    <button id="btn-back" class="btn btn-secondary">← 返回详情</button>
+    <span class="toolbar-title" id="page-title">📍 地图标记</span>
+    <button id="btn-save" class="btn btn-primary">💾 保存标记</button>
+  </div>
+
+  <!-- 触摸设备提示（指针精度粗略时显示，桌面隐藏）-->
+  <div id="touch-banner">
+    📍 地图标记请在电脑上编辑，触摸屏仅可查看已有标记
+  </div>
+
+  <!-- 编辑区 -->
+  <div class="editor-area">
+
+    <!-- 左：地图图片 + 绝对定位标记 -->
+    <div class="map-panel">
+      <div id="map-wrapper">
+        <img id="map-img" alt="探险地图底图">
+        <!-- 标记圆点由 JS 动态插入 -->
+      </div>
+    </div>
+
+    <!-- 右：操作面板 -->
+    <div class="control-panel">
+      <div class="control-section">
+        <label class="control-label">
+          <input type="checkbox" id="toggle-preview">
+          游戏预览（空心圆 + 名字）
+        </label>
+        <button id="btn-clear-all" class="btn btn-danger">🗑️ 清空所有标记</button>
+      </div>
+
+      <!-- 各点位已标/未标状态 -->
+      <div id="point-status-list"></div>
+
+      <!-- 操作提示（JS 实时更新）-->
+      <p id="click-hint">点击地图空白处放置标记，依次绑定各点位</p>
+    </div>
+  </div>
+
+  <!-- 点击标记后弹出的小菜单 -->
+  <div id="context-menu">
+    <button class="ctx-item danger" id="ctx-delete">🗑️ 删除此标记</button>
+    <button class="ctx-item"        id="ctx-cancel">✕ 取消</button>
+  </div>
+
+  <script type="module" src="../scripts/map-marker.js"></script>
+</body>
+</html>

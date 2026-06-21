@@ -41,10 +41,12 @@
   </div>
 
   <div class="detail-section">
-    <div class="detail-section-title">🖨️ 打印工具</div>
+    <div class="detail-section-title">🛠️ 工具</div>
     <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap">
       <button id="btn-print-qr" class="btn btn-secondary">🖨️ 打印二维码</button>
       <button id="btn-print-cheatsheet" class="btn btn-secondary">📋 打印应急小抄</button>
+      <!-- 仅在该探险已上传地图时显示（level-detail.js 控制） -->
+      <button id="btn-map-marker" class="btn btn-secondary" style="display:none">📍 地图标记</button>
     </div>
   </div>
 </div>
