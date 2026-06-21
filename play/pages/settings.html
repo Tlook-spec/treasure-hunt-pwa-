@@ -8,6 +8,31 @@
   <title>设置 - 寻宝游戏</title>
   <!-- CDN 库（普通 script，必须在 type="module" 之前）-->
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+  <style>
+    /* 偏好设置卡 */
+    .pref-card {
+      background: #fff; border-radius: 12px; padding: 0 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 16px;
+    }
+    .pref-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; }
+    .pref-info { flex: 1; }
+    .pref-title { display: block; font-size: 16px; font-weight: 600; color: #2C3E50; }
+    .pref-desc  { display: block; font-size: 13px; color: #6C757D; margin-top: 2px; line-height: 1.4; }
+    /* iOS 风格拨动开关 */
+    .pref-toggle { position: relative; display: inline-block; width: 52px; height: 30px; flex-shrink: 0; }
+    .pref-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .pref-toggle-knob {
+      position: absolute; inset: 0;
+      background: #ccc; border-radius: 30px; cursor: pointer; transition: background 0.2s;
+    }
+    .pref-toggle-knob::before {
+      content: ''; position: absolute;
+      width: 22px; height: 22px; background: #fff; border-radius: 50%;
+      top: 4px; left: 4px; transition: transform 0.2s;
+    }
+    .pref-toggle input:checked + .pref-toggle-knob { background: #4A90E2; }
+    .pref-toggle input:checked + .pref-toggle-knob::before { transform: translateX(22px); }
+  </style>
 </head>
 <body>
 
@@ -18,6 +43,20 @@
   </header>
 
   <main class="page-content">
+
+    <!-- ====== 区块 0：游戏显示选项 ====== -->
+    <div class="pref-card">
+      <div class="pref-row">
+        <div class="pref-info">
+          <span class="pref-title">🔤 显示拼音标注</span>
+          <span class="pref-desc">在题目和选项文字上方标注拼音，帮助孩子认字</span>
+        </div>
+        <label class="pref-toggle">
+          <input type="checkbox" id="toggle-pinyin">
+          <span class="pref-toggle-knob"></span>
+        </label>
+      </div>
+    </div>
 
     <!-- ====== 区块 A：当前数据状态（只读）====== -->
     <div class="stats-card">
@@ -364,6 +403,13 @@
     }
 
     checkOfflineStatus();
+
+    // 拼音开关（默认开，存 localStorage play-show-pinyin = 'on'/'off'）
+    const togglePinyin = document.getElementById('toggle-pinyin');
+    togglePinyin.checked = (localStorage.getItem('play-show-pinyin') ?? 'on') === 'on';
+    togglePinyin.addEventListener('change', () => {
+      localStorage.setItem('play-show-pinyin', togglePinyin.checked ? 'on' : 'off');
+    });
 
   </script>
 

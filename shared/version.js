@@ -12,4 +12,4 @@
 export const APP_VERSION = 'V1-A';
 
 // 推送标识：格式「任务号 · 日期」，每次推 GitHub 前更新这一行
-export const BUILD_TAG = 'V1-04-通关音效 · 2026-06-20';
+export const BUILD_TAG = 'V1-05-拼音 · 2026-06-21';

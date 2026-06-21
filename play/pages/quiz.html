@@ -8,6 +8,13 @@
   <title>答题 - 寻宝游戏</title>
   <!-- Dexie 必须在 type="module" 脚本之前加载 -->
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+  <!-- pinyin-pro：拼音标注（全局名 pinyinPro） -->
+  <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.18.2/dist/index.js"></script>
+  <style>
+    /* 拼音 ruby 标注：字号小、颜色淡，不抢眼 */
+    ruby { ruby-align: center; }
+    rt   { font-size: 0.52em; color: #aaa; line-height: 1.2; }
+  </style>
 </head>
 <body>
 
@@ -108,6 +115,25 @@
     let currentData          = null;  // 最新的 loadCurrentQuizData 返回值
     let wrongChoices         = [];    // 本题选错的答案字母（最多 3 个）
 
+    // ── 拼音渲染工具 ─────────────────────────────────────────
+    function escHtml(str) {
+      return String(str).replace(/[&<>"']/g, c =>
+        ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])
+      );
+    }
+
+    // 整段一次调 pinyin-pro，按字符索引对齐；非汉字原样 HTML 转义输出
+    function renderPinyin(text) {
+      if (!text) return '';
+      const pinyinArr = pinyinPro.pinyin(text, { type: 'array' });
+      return Array.from(text).map((char, i) => {
+        if (/[一-龥]/.test(char)) {
+          return `<ruby>${escHtml(char)}<rt>${escHtml(pinyinArr[i] || '')}</rt></ruby>`;
+        }
+        return escHtml(char);
+      }).join('');
+    }
+
     // ── 初始化 ──────────────────────────────────────────────
     async function init() {
       try {
@@ -181,10 +207,18 @@
       document.getElementById('question-meta').textContent =
         `${question.subject || '综合'} · ${'★'.repeat(diff)}${'☆'.repeat(3 - diff)}`;
 
-      // 题干
-      document.getElementById('question-text').textContent = question.text;
+      // 读拼音开关（每道题渲染时实时读，改完设置下一道题就生效）
+      const showPinyin = (localStorage.getItem('play-show-pinyin') ?? 'on') === 'on';
 
-      // 选项 A/B/C/D（用 textContent 防 XSS）
+      // 题干
+      const qtEl = document.getElementById('question-text');
+      if (showPinyin) {
+        qtEl.innerHTML = renderPinyin(question.text);
+      } else {
+        qtEl.textContent = question.text;
+      }
+
+      // 选项 A/B/C/D（label 字母不标拼音；只对 option-text span 做拼音）
       const grid = document.getElementById('options-grid');
       grid.innerHTML = '';
       const labels = ['A', 'B', 'C', 'D'];
@@ -192,7 +226,12 @@
         const btn = document.createElement('button');
         btn.className = 'option-btn';
         const ls = document.createElement('span'); ls.className = 'option-label'; ls.textContent = labels[idx];
-        const ts = document.createElement('span'); ts.className = 'option-text';  ts.textContent = optText;
+        const ts = document.createElement('span'); ts.className = 'option-text';
+        if (showPinyin) {
+          ts.innerHTML = renderPinyin(optText);
+        } else {
+          ts.textContent = optText;
+        }
         btn.appendChild(ls); btn.appendChild(ts);
         btn.addEventListener('click', () => onSelectOption(idx));
         grid.appendChild(btn);
