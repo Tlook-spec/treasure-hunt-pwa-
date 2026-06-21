@@ -166,6 +166,72 @@
         <label class="form-label">主题色</label>
         <div id="color-swatches" class="color-swatches"><!-- JS 生成 --></div>
       </div>
+
+      <!-- 探险地图（可选）分组 -->
+      <div class="form-group" style="margin-top:var(--space-md)">
+        <div style="font-weight:600;font-size:13px;color:var(--color-text-muted);
+                    border-top:1px solid var(--color-border);padding-top:var(--space-sm);
+                    margin-bottom:var(--space-sm)">
+          🗺️ 探险地图（可选）
+        </div>
+
+        <!-- 上传底图 -->
+        <label class="form-label">手绘地图底图</label>
+        <p style="font-size:12px;color:var(--color-text-muted);margin:-4px 0 8px;line-height:1.5">
+          只画风景、图标、路线就行，点位的圆圈、名字、印章都是游戏里自动画的，不用你画。
+        </p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
+            📷 选择图片
+            <input id="input-map-image" type="file" accept="image/*" style="display:none">
+          </label>
+          <button id="btn-remove-map" type="button"
+                  class="btn btn-secondary btn-sm" style="display:none">🗑️ 移除地图</button>
+        </div>
+        <div id="map-preview-container" style="display:none;margin-top:8px">
+          <img id="map-preview-img"
+               style="max-width:100%;max-height:150px;border-radius:8px;
+                      border:1px solid var(--color-border);object-fit:contain;display:block">
+        </div>
+
+        <!-- 点位名称字号 -->
+        <div style="margin-top:var(--space-sm)">
+          <label class="form-label">点位名称字号</label>
+          <div style="display:flex;gap:20px">
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:14px">
+              <input type="radio" name="map-font-size" value="small"> 小
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:14px">
+              <input type="radio" name="map-font-size" value="medium" checked> 中（默认）
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:14px">
+              <input type="radio" name="map-font-size" value="large"> 大
+            </label>
+          </div>
+        </div>
+
+        <!-- 两个颜色选择器并排 -->
+        <div class="form-row" style="margin-top:var(--space-sm)">
+          <div class="form-group">
+            <label class="form-label" for="input-map-name-color">名称颜色（发现时）</label>
+            <input id="input-map-name-color" type="color" value="#2C3E50"
+                   style="width:60px;height:38px;padding:3px;border-radius:6px;
+                          border:1px solid var(--color-border);cursor:pointer;background:none">
+            <p style="font-size:11px;color:var(--color-text-muted);margin:4px 0 0;line-height:1.4">
+              点位「已发现，未通关」时的名字颜色
+            </p>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="input-map-name-color-completed">名称颜色（完成后）</label>
+            <input id="input-map-name-color-completed" type="color" value="#F5A623"
+                   style="width:60px;height:38px;padding:3px;border-radius:6px;
+                          border:1px solid var(--color-border);cursor:pointer;background:none">
+            <p style="font-size:11px;color:var(--color-text-muted);margin:4px 0 0;line-height:1.4">
+              通关盖章后名字变成的颜色（默认金色）
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button id="btn-form-cancel" class="btn btn-secondary">取消</button>

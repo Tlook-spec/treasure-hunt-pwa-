@@ -28,6 +28,7 @@ const THEME_COLORS = [
 
 let currentColor     = THEME_COLORS[0]; // 表单当前选中的主题色
 let editingLevelId   = null;             // null=新建，有值=编辑
+let currentMapImage  = null;             // base64 压缩后的地图底图，null=未上传
 
 // ── 入口 ────────────────────────────────────────────────────
 
@@ -163,6 +164,21 @@ function bindFormButtons() {
     .addEventListener('click', e => { if (e.target === e.currentTarget) closeForm(); });
   document.getElementById('confirm-modal')
     .addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
+
+  // 地图图片：选图后压缩（长边 ≤1600px，JPEG 0.8）并显示预览
+  document.getElementById('input-map-image').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    currentMapImage = await compressMapImage(file);
+    showMapPreview(currentMapImage);
+  });
+
+  // 移除地图按钮
+  document.getElementById('btn-remove-map').addEventListener('click', () => {
+    currentMapImage = null;
+    document.getElementById('input-map-image').value = '';
+    hideMapPreview();
+  });
 }
 
 /**
@@ -192,6 +208,7 @@ function openCreateForm() {
   document.getElementById('select-age-group').value   = '7-9';
   currentColor = THEME_COLORS[0];
   updateColorSwatches();
+  resetMapSection(); // 清空地图字段，恢复默认值
   openModal('level-form-modal');
   document.getElementById('input-level-name').focus();
 }
@@ -209,6 +226,7 @@ async function openEditForm(levelId) {
   document.getElementById('select-age-group').value   = level.recommendedAge || '7-9';
   currentColor = level.themeColor || THEME_COLORS[0];
   updateColorSwatches();
+  loadMapSection(level); // 把地图字段填入表单
   openModal('level-form-modal');
 }
 
@@ -229,6 +247,11 @@ async function saveForm() {
     recommendedPlayerCount:   parseInt(document.getElementById('select-player-count').value),
     recommendedAge:           document.getElementById('select-age-group').value,
     themeColor:               currentColor,
+    // 探险地图字段（新建和编辑共用，从表单读取）
+    mapImage:                 currentMapImage,
+    mapFontSize:              document.querySelector('input[name="map-font-size"]:checked')?.value || 'medium',
+    mapNameColor:             document.getElementById('input-map-name-color').value || '#2C3E50',
+    mapNameColorCompleted:    document.getElementById('input-map-name-color-completed').value || '#F5A623',
     updatedAt:                now,
   };
 
@@ -236,18 +259,14 @@ async function saveForm() {
     // 编辑：只更新可变字段，保留 id/createdAt 等
     await db.levels.update(levelId, formData);
   } else {
-    // 新建：创建完整 Level 对象，包含 V1 预留字段
+    // 新建：创建完整 Level 对象，V1 预留字段由 formData 携带
     await db.levels.add({
       id: generateId('lvl'),
       ...formData,
-      createdAt:              now,
-      openingStory:           '',
-      endingStory:            '',
-      mapImage:               null,
-      mapFontSize:            'medium',
-      mapNameColor:           '#2C3E50',
-      mapNameColorCompleted:  '#F5A623',
-      customAwards:           [],
+      createdAt:    now,
+      openingStory: '',
+      endingStory:  '',
+      customAwards: [],
     });
   }
 
@@ -364,4 +383,78 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+// ── 地图区域辅助函数 ───────────────────────────────────────
+
+/** 新建表单时重置地图区域到默认值 */
+function resetMapSection() {
+  currentMapImage = null;
+  document.getElementById('input-map-image').value = '';
+  const radio = document.querySelector('input[name="map-font-size"][value="medium"]');
+  if (radio) radio.checked = true;
+  document.getElementById('input-map-name-color').value = '#2C3E50';
+  document.getElementById('input-map-name-color-completed').value = '#F5A623';
+  hideMapPreview();
+}
+
+/** 编辑表单时把 Level 的地图字段填入 UI */
+function loadMapSection(level) {
+  currentMapImage = level.mapImage || null;
+  // 字号单选：有值用已有值，否则默认 medium
+  const fontSize = level.mapFontSize || 'medium';
+  const radio = document.querySelector(`input[name="map-font-size"][value="${fontSize}"]`);
+  if (radio) radio.checked = true;
+  // 颜色（老数据可能没有这两个字段，回退默认色）
+  document.getElementById('input-map-name-color').value = level.mapNameColor || '#2C3E50';
+  document.getElementById('input-map-name-color-completed').value = level.mapNameColorCompleted || '#F5A623';
+  // 有底图则显示预览
+  if (currentMapImage) showMapPreview(currentMapImage);
+  else hideMapPreview();
+}
+
+/** 显示地图缩略图预览 + 「移除」按钮 */
+function showMapPreview(base64) {
+  document.getElementById('map-preview-img').src = base64;
+  document.getElementById('map-preview-container').style.display = 'block';
+  document.getElementById('btn-remove-map').style.display = 'inline-flex';
+}
+
+/** 隐藏地图预览并清空 src */
+function hideMapPreview() {
+  document.getElementById('map-preview-img').src = '';
+  document.getElementById('map-preview-container').style.display = 'none';
+  document.getElementById('btn-remove-map').style.display = 'none';
+}
+
+/**
+ * 用 Canvas 把图片文件压缩为 base64（长边 ≤1600px，JPEG quality 0.8）
+ * @param {File} file - 用户选择的图片文件
+ * @returns {Promise<string>} base64 字符串
+ */
+function compressMapImage(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 1600;
+      let w = img.width, h = img.height;
+      // 只在超出限制时等比缩放
+      if (w > MAX || h > MAX) {
+        if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+        else        { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width  = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(null); // 读图失败 → 不存底图
+    };
+    img.src = url;
+  });
 }
