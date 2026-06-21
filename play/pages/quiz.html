@@ -26,16 +26,21 @@
     </div>
   </div>
 
-  <!-- ── 屏 1：发现站点（discoveryText + 开始挑战按钮）──────── -->
+  <!-- ── 屏 1：发现站点（发现文案 + 内联地图，有其一就显示）── -->
   <div id="screen-discovery" style="display:none">
     <main class="page-content has-bottom-action">
-      <div class="discovery-card">
+      <!-- 发现文案（discoveryText 非空时显示，默认隐藏）-->
+      <div class="discovery-card" id="discovery-text-section" style="display:none">
         <div class="discovery-card-icon">💡</div>
-        <p class="discovery-card-text" id="discovery-text">加载中…</p>
+        <p class="discovery-card-text" id="discovery-text"></p>
       </div>
+      <!-- 内联地图（有 mapImage 时渲染，浮现动画在这里播，不消失）-->
+      <div id="discovery-map-container"
+           style="display:none; margin:12px 0 0; border-radius:12px; overflow:hidden;
+                  height:min(55vw,320px); background:#1a1a2e; position:relative;"></div>
     </main>
     <div class="bottom-action">
-      <button class="btn-primary btn-success" id="btn-start-challenge">开始挑战！</button>
+      <button class="btn-primary btn-success" id="btn-start-challenge">继续 →</button>
     </div>
   </div>
 
@@ -179,10 +184,12 @@
         currentAllPoints = await db.points
           .where('levelId').equals(session.levelId).sortBy('order');
 
-        if (point.discoveryText) {
-          showDiscoveryScreen(currentData); // 有发现文案 → 先显示
+        // 有发现文案 OR 有地图 → 显示发现页；两者都没有 → 直接进答题流程
+        const hasDiscovery = point.discoveryText || (currentLevel && currentLevel.mapImage);
+        if (hasDiscovery) {
+          showDiscoveryScreen(currentData);
         } else {
-          await afterDiscovery();           // 无文案 → 直接进地图/答题流程
+          await afterDiscovery();
         }
       } catch (err) {
         console.error('[答题页] 初始化失败', err);
@@ -190,18 +197,49 @@
       }
     }
 
-    // ── 屏 1：发现站点（只在 discoveryText 非空时才调用）────
+    // ── 屏 1：发现站点（有发现文案 OR 有地图时调用）────────
     function showDiscoveryScreen(data) {
-      const { point, stationNumber, totalStations } = data;
+      const { point, stationNumber, totalStations, session } = data;
       document.getElementById('banner-discovery').style.display = 'flex';
       document.getElementById('banner-quiz').style.display = 'none';
       document.getElementById('discovery-station-text').textContent =
         `第 ${stationNumber} 站 · 共 ${totalStations} 站`;
-      document.getElementById('discovery-text').textContent = point.discoveryText;
-      // 按钮文字换成「继续」，明确下一步是地图/答题，不是"开始挑战"
-      document.getElementById('btn-start-challenge').textContent = '继续 →';
+
+      // 发现文案：有就显示，没有就隐藏（不显示兜底文案）
+      const textSection = document.getElementById('discovery-text-section');
+      if (point.discoveryText) {
+        document.getElementById('discovery-text').textContent = point.discoveryText;
+        textSection.style.display = 'block';
+      } else {
+        textSection.style.display = 'none';
+      }
+
+      // 地图：有底图就渲染在文案下方，对当前点位播浮现动画，之后一直可见
+      const mapEl = document.getElementById('discovery-map-container');
+      if (currentLevel && currentLevel.mapImage) {
+        injectMapAnimStyles();
+        renderMapOverlay(mapEl, currentLevel, currentAllPoints, buildStateMap(session), {
+          animatePointId: point.id,
+          animateType: 'reveal',
+        });
+        mapEl.style.display = 'block';
+      } else {
+        mapEl.style.display = 'none';
+      }
+
       document.getElementById('screen-discovery').style.display = 'block';
       document.getElementById('screen-quiz').style.display = 'none';
+    }
+
+    /** 根据 session 当前进度构建点位状态图 */
+    function buildStateMap(session) {
+      const stateMap = {};
+      currentAllPoints.forEach((pt, i) => {
+        if      (i < session.currentPointIndex)  stateMap[pt.id] = 'completed';
+        else if (i === session.currentPointIndex) stateMap[pt.id] = 'discovered';
+        else                                      stateMap[pt.id] = 'undiscovered';
+      });
+      return stateMap;
     }
 
     // ── 「继续 →」按钮（V1-14：进发现文案后的地图/答题引导流程）──
@@ -225,53 +263,15 @@
 
     // ── V1-14：发现文案 → 地图浮现 → 答题引导 → 答题 ─────────
 
-    /** 发现文案确认后（或无文案时 init 直接调用）的衔接逻辑 */
+    /** 发现页「继续 →」后（或无发现内容时 init 直接调用）的衔接逻辑 */
     async function afterDiscovery() {
       document.getElementById('screen-discovery').style.display = 'none';
 
-      if (currentLevel && currentLevel.mapImage) {
-        // 有地图 → 全屏弹出，对当前点位播「浮现」动画
-        await showMapOverlay();
-        // 浮现动画 0.5s + 再停留 0.5s 让孩子看清楚
-        await sleep(500);
-        hideMapOverlay();
-      }
-
       if (currentData.point.questionIntroText) {
-        // 有答题引导文案 → 弹引导弹窗，等孩子点「开始答题！」
         showIntroModal(currentData.point.questionIntroText);
       } else {
         await startQuiz();
       }
-    }
-
-    /** 在全屏覆盖层上渲染地图，并对当前点位播浮现动画 */
-    async function showMapOverlay() {
-      const { session, point } = currentData;
-
-      // 构建状态图：已过的站 = completed；当前站 = discovered；后面的 = undiscovered
-      const stateMap = {};
-      currentAllPoints.forEach((pt, i) => {
-        if      (i < session.currentPointIndex)  stateMap[pt.id] = 'completed';
-        else if (i === session.currentPointIndex) stateMap[pt.id] = 'discovered';
-        else                                      stateMap[pt.id] = 'undiscovered';
-      });
-
-      injectMapAnimStyles();
-      const container = document.getElementById('map-overlay-container');
-      renderMapOverlay(container, currentLevel, currentAllPoints, stateMap, {
-        animatePointId: point.id,
-        animateType: 'reveal',
-      });
-      document.getElementById('map-overlay-layer').style.display = 'flex';
-
-      // 等浮现动画完成（0.5s）
-      await sleep(500);
-    }
-
-    /** 关闭地图覆盖层 */
-    function hideMapOverlay() {
-      document.getElementById('map-overlay-layer').style.display = 'none';
     }
 
     /** 弹出答题引导弹窗 */
@@ -284,11 +284,6 @@
     async function startQuiz() {
       await startChallenge(sessionId);
       await loadAndShowQuizScreen();
-    }
-
-    /** 简单的 async 等待（不依赖外部库）*/
-    function sleep(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     // 「开始答题！」按钮（答题引导弹窗）
