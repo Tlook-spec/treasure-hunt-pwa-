@@ -92,10 +92,12 @@ export async function showPointForm(levelId, pointId) {
     if (!pt) return;
     document.getElementById('point-panel-title').textContent   = `第 ${pt.order} 站编辑`;
     document.getElementById('point-order-display').value       = pt.order;
-    document.getElementById('input-point-name').value          = pt.name;
-    document.getElementById('input-point-parent-note').value   = pt.parentNote || '';
-    document.getElementById('input-discovery-text').value      = pt.discoveryText || '';
-    document.getElementById('input-location-hint').value       = pt.locationHint || '';
+    document.getElementById('input-point-name').value             = pt.name;
+    document.getElementById('input-point-parent-note').value      = pt.parentNote || '';
+    document.getElementById('input-discovery-text').value         = pt.discoveryText || '';
+    document.getElementById('input-question-intro-text').value    = pt.questionIntroText || '';
+    document.getElementById('input-completion-text').value        = pt.completionText || '';
+    document.getElementById('input-location-hint').value          = pt.locationHint || '';
     currentQuestionIds = [...(pt.questionIds || [])];
   } else {
     // 新建：计算序号 = 当前 L1 内最大 order + 1
@@ -103,10 +105,12 @@ export async function showPointForm(levelId, pointId) {
     const nextOrder = existing.length > 0 ? existing[existing.length - 1].order + 1 : 1;
     document.getElementById('point-panel-title').textContent   = `第 ${nextOrder} 站（新建）`;
     document.getElementById('point-order-display').value       = nextOrder;
-    document.getElementById('input-point-name').value          = '';
-    document.getElementById('input-point-parent-note').value   = '';
-    document.getElementById('input-discovery-text').value      = '';
-    document.getElementById('input-location-hint').value       = '';
+    document.getElementById('input-point-name').value             = '';
+    document.getElementById('input-point-parent-note').value      = '';
+    document.getElementById('input-discovery-text').value         = '';
+    document.getElementById('input-question-intro-text').value    = '';
+    document.getElementById('input-completion-text').value        = '';
+    document.getElementById('input-location-hint').value          = '';
     currentQuestionIds = [];
   }
 
@@ -140,10 +144,12 @@ async function savePointForm() {
 
   const fields = {
     name,
-    parentNote:    document.getElementById('input-point-parent-note').value.trim(),
-    discoveryText: document.getElementById('input-discovery-text').value.trim(),
-    locationHint:  document.getElementById('input-location-hint').value.trim(),
-    questionIds:   [...currentQuestionIds],
+    parentNote:         document.getElementById('input-point-parent-note').value.trim(),
+    discoveryText:      document.getElementById('input-discovery-text').value.trim(),
+    questionIntroText:  document.getElementById('input-question-intro-text').value.trim(),
+    completionText:     document.getElementById('input-completion-text').value.trim(),
+    locationHint:       document.getElementById('input-location-hint').value.trim(),
+    questionIds:        [...currentQuestionIds],
   };
 
   if (currentPointId) {
@@ -164,12 +170,9 @@ async function savePointForm() {
       levelId: currentLevelId,
       order,
       code,
-      ...fields,
-      // V1 预留字段默认值
-      mapX:              null,
-      mapY:              null,
-      questionIntroText: '',
-      completionText:    '',
+      mapX:    null,  // V1 地图坐标，默认 null
+      mapY:    null,
+      ...fields,      // questionIntroText / completionText 已在 fields 里
     });
   }
 

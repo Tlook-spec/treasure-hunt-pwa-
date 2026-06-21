@@ -92,6 +92,33 @@
     </div>
   </div>
 
+  <!-- 答题引导 + 通关庆祝两段文案（V1-11 新增） -->
+  <div class="detail-section">
+    <div class="detail-section-title">🎉 孩子看到的文案（都可留空）</div>
+    <!-- 三段文案出现顺序总说明 -->
+    <p style="font-size:12px;color:var(--color-text-muted);margin:-4px 0 12px;line-height:1.7">
+      出现顺序：发现文案 → （地图动画）→ 答题引导 → 答题 → 通关庆祝 → （盖章动画）
+    </p>
+
+    <div class="form-group">
+      <label class="form-label" for="input-question-intro-text">答题引导</label>
+      <p style="font-size:12px;color:var(--color-text-muted);margin:-4px 0 6px;line-height:1.5">
+        扫码、地图动画之后，开始答题前弹给孩子看（比如：仔细看看周围，答出 3 道题就能继续闯关！）。留空就不弹。
+      </p>
+      <textarea id="input-question-intro-text" class="form-textarea"
+                placeholder="如「仔细看看周围，答出 3 道题就能继续闯关！」" maxlength="200"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="input-completion-text">通关庆祝</label>
+      <p style="font-size:12px;color:var(--color-text-muted);margin:-4px 0 6px;line-height:1.5">
+        这一站全部答完时弹给孩子看（比如：太棒了！这一站攻克啦！）。留空就不弹。
+      </p>
+      <textarea id="input-completion-text" class="form-textarea"
+                placeholder="如「太棒了！这一站攻克啦！」" maxlength="200"></textarea>
+    </div>
+  </div>
+
   <div class="detail-section">
     <div class="detail-section-title">🗺️ 下一点提示（孩子可见）</div>
     <div class="form-group">
@@ -328,6 +355,6 @@
 </div>
 
 <script type="module">
-  import { initLevelsPage } from './scripts/level-form.js?v=V1-10';
+  import { initLevelsPage } from './scripts/level-form.js?v=V1-11';
   initLevelsPage();
 </script>

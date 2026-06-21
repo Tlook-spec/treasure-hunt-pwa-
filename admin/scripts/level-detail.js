@@ -5,7 +5,7 @@
  */
 
 import db from '../../shared/db/admin-db.js';
-import { initPointList, renderPointList } from './point-list.js';
+import { initPointList, renderPointList } from './point-list.js?v=V1-11';
 
 /**
  * 初始化详情面板（绑定「返回」按钮 + 初始化点位列表）

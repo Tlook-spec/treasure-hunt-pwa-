@@ -10,8 +10,8 @@ import {
   initLevelDetail,
   showLevelDetail,
   hideLevelDetail,
-} from './level-detail.js?v=V1-10';
-import { initPointForm } from './point-form.js';
+} from './level-detail.js?v=V1-11';
+import { initPointForm } from './point-form.js?v=V1-11';
 
 // ── 常量 ───────────────────────────────────────────────────
 

@@ -7,7 +7,7 @@
 import db from '../../shared/db/admin-db.js';
 import { generateId } from '../../shared/utils/id.js';
 import { generateSixDigitCode, isCodeUnique } from '../../shared/utils/code-generator.js';
-import { showPointForm } from './point-form.js';
+import { showPointForm } from './point-form.js?v=V1-11';
 
 /**
  * 初始化点位列表模块
