@@ -155,6 +155,20 @@
     <h1 class="launch-title">寻宝游戏</h1>
     <p class="launch-subtitle">和小伙伴一起去探险吧！</p>
     <a href="pages/select-level.html" class="btn-start">🎮 开始游戏</a>
+    <!-- 离线准备提示：SW 未就绪时显示，就绪后隐藏；不打扰正常用户 -->
+    <div id="offline-tip" style="
+      display: none;
+      margin-top: 10px;
+      padding: 10px 16px;
+      background: rgba(245,166,35,0.13);
+      border: 1px solid rgba(245,166,35,0.5);
+      border-radius: 12px;
+      font-size: 14px;
+      color: #7A5A00;
+      line-height: 1.6;
+      text-align: center;
+      max-width: 320px;
+    "></div>
   </div>
 
   <!-- 右下角设置入口（不显眼）-->
@@ -170,13 +184,46 @@
     }
   </script>
 
-  <!-- 注册 Service Worker（仅在根入口注册一次，覆盖整个 play/ 目录）-->
+  <!-- 注册 Service Worker + 检查离线准备状态 -->
   <script>
+    // 检查 SW 缓存进度并按需显示提示
+    async function checkAndShowTip() {
+      const tip = document.getElementById('offline-tip');
+      if (!tip) return;
+
+      // 没有 controller：首次打开或刚更新版本，需联网缓存一次
+      if (!navigator.serviceWorker || !navigator.serviceWorker.controller) {
+        tip.textContent = '⚠️ 第一次使用请先联网打开一遍，确保离线资源已下载，之后即可飞行模式游玩';
+        tip.style.display = 'block';
+        return;
+      }
+
+      // 有 controller：向 SW 查询缓存完成情况
+      try {
+        const status = await new Promise((resolve, reject) => {
+          const mc = new MessageChannel();
+          mc.port1.onmessage = (e) => resolve(e.data);
+          setTimeout(() => reject(new Error('超时')), 4000);
+          navigator.serviceWorker.controller.postMessage({ type: 'CHECK_CACHE' }, [mc.port2]);
+        });
+
+        if (!status.ready) {
+          tip.textContent = `⚠️ 离线资源下载中（${status.cached}/${status.total}），请保持联网，下载完成后可飞行模式游玩`;
+          tip.style.display = 'block';
+        }
+        // ready → 提示保持隐藏，不打扰正常玩家
+      } catch (e) {
+        // 超时或异常 → 静默不显示
+      }
+    }
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./service-worker.js')
           .then(r => console.log('[SW] 注册成功，范围：', r.scope))
           .catch(e => console.error('[SW] 注册失败：', e));
+        // 注册后检查离线就绪状态（首次访问 controller 为 null，直接提示；已就绪则静默）
+        checkAndShowTip();
       });
     }
   </script>

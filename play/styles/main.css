@@ -1270,3 +1270,27 @@ body {
   padding: 16px 18px;
   justify-content: flex-start;
 }
+
+/* ── 矮屏适配（iPad Mini 横屏 ≈ 744px，iPad 10 横屏 ≈ 810px）──────── */
+@media (max-height: 820px) {
+  /* 大幅缩减选项区上方间距（正常屏约 100-168px，矮屏缩到 16-36px）*/
+  .options-list {
+    margin-top: clamp(16px, 4vh, 36px);
+  }
+  /* 选项按钮高度/字号/内边距适当收窄 */
+  .options-list .option-btn {
+    min-height: 68px;
+    font-size: clamp(17px, 4.2vw, 22px);
+    padding: 10px 14px;
+  }
+  /* 题干字号微收 */
+  .quiz-question-section #question-text {
+    font-size: clamp(20px, 5.5vw, 32px);
+  }
+  /* 选项区变为弹性填充 + 内部可滚，兜底超长选项 + 拼音场景 */
+  .quiz-options-section {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}

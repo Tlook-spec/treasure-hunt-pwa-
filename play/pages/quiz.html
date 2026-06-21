@@ -450,8 +450,12 @@
         setTimeout(() => hideFeedback(), 2000);
       }
 
-      // block：卡片内文字/按钮各自独占一行（居中由 CSS align-self 处理）
+      // block：卡片内文字/按钮各自独看一行（居中由 CSS align-self 处理）
       area.style.display = 'block';
+      // 矮屏上「保底」确认按钮可能被折叠线遮住，主动滚入可见区
+      if (type === 'bust') {
+        requestAnimationFrame(() => area.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+      }
     }
 
     function hideFeedback() {
