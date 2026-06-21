@@ -68,6 +68,34 @@
     </main>
   </div>
 
+  <!-- ── V1-14：地图覆盖层（扫码后若有地图则全屏弹出，动画结束后关闭）── -->
+  <div id="map-overlay-layer"
+       style="display:none; position:fixed; inset:0; z-index:500;
+              background:rgba(0,0,0,0.90); flex-direction:column; align-items:center;
+              justify-content:center; padding:20px;">
+    <div id="map-overlay-container"
+         style="width:min(90vw,560px); height:min(75vw,480px); border-radius:14px;
+                overflow:hidden; background:#1a1a2e; position:relative;"></div>
+    <p style="color:#fff; margin-top:14px; font-size:16px; font-weight:600;
+              opacity:0.9; text-align:center;">✨ 发现了这个地点！</p>
+  </div>
+
+  <!-- ── V1-14：答题引导弹窗（questionIntroText 非空时显示）── -->
+  <div id="intro-modal"
+       style="display:none; position:fixed; inset:0; z-index:600;
+              background:rgba(0,0,0,0.72); flex-direction:column; align-items:center;
+              justify-content:center; padding:24px;">
+    <div style="background:#fff; border-radius:20px; padding:28px 24px 24px;
+                max-width:380px; width:100%; text-align:center;">
+      <p id="intro-modal-text"
+         style="font-size:18px; line-height:1.8; color:#2C3E50;
+                margin-bottom:24px; white-space:pre-wrap;"></p>
+      <button id="btn-quiz-from-intro" class="btn-primary btn-success" style="width:100%;">
+        开始答题！
+      </button>
+    </div>
+  </div>
+
   <!-- ── 兜底：数据加载失败 ──────────────────────────────────── -->
   <div id="error-state" style="display:none; padding:48px 24px; text-align:center;
        color:var(--color-error); font-size:17px; line-height:2">
@@ -94,6 +122,8 @@
       recordQuestionResult, advanceQuestionIndex,
       consumeHelp,
     } from '../scripts/quiz-logic.js';
+    import db from '../../shared/db/play-db.js';
+    import { renderMapOverlay, injectMapAnimStyles } from '../scripts/map-overlay.js';
 
     const sessionId = new URLSearchParams(location.search).get('sessionId');
     if (!sessionId) location.href = 'select-level.html';
@@ -114,6 +144,10 @@
     let optionsLocked        = false; // 防止重复点击或与求助弹窗冲突
     let currentData          = null;  // 最新的 loadCurrentQuizData 返回值
     let wrongChoices         = [];    // 本题选错的答案字母（最多 3 个）
+
+    // ── V1-14：地图渲染需要的数据 ─────────────────────────
+    let currentLevel     = null; // Level 对象（含 mapImage 等地图字段）
+    let currentAllPoints = [];   // 本探险全部点位（按 order 排序）
 
     // ── 拼音渲染工具 ─────────────────────────────────────────
     function escHtml(str) {
@@ -137,30 +171,42 @@
     // ── 初始化 ──────────────────────────────────────────────
     async function init() {
       try {
-        currentData = await loadCurrentQuizData(sessionId);
-        showDiscoveryScreen(currentData);
+        currentData      = await loadCurrentQuizData(sessionId);
+        const { session, point } = currentData;
+
+        // 加载 level 和全部点位（地图渲染需要）
+        currentLevel     = await db.levels.get(session.levelId);
+        currentAllPoints = await db.points
+          .where('levelId').equals(session.levelId).sortBy('order');
+
+        if (point.discoveryText) {
+          showDiscoveryScreen(currentData); // 有发现文案 → 先显示
+        } else {
+          await afterDiscovery();           // 无文案 → 直接进地图/答题流程
+        }
       } catch (err) {
         console.error('[答题页] 初始化失败', err);
         showError();
       }
     }
 
-    // ── 屏 1：发现站点 ────────────────────────────────────
+    // ── 屏 1：发现站点（只在 discoveryText 非空时才调用）────
     function showDiscoveryScreen(data) {
       const { point, stationNumber, totalStations } = data;
       document.getElementById('banner-discovery').style.display = 'flex';
       document.getElementById('banner-quiz').style.display = 'none';
       document.getElementById('discovery-station-text').textContent =
         `第 ${stationNumber} 站 · 共 ${totalStations} 站`;
-      document.getElementById('discovery-text').textContent =
-        point.discoveryText || `恭喜找到第 ${stationNumber} 站！请回答这里的题目吧！`;
+      document.getElementById('discovery-text').textContent = point.discoveryText;
+      // 按钮文字换成「继续」，明确下一步是地图/答题，不是"开始挑战"
+      document.getElementById('btn-start-challenge').textContent = '继续 →';
       document.getElementById('screen-discovery').style.display = 'block';
       document.getElementById('screen-quiz').style.display = 'none';
     }
 
-    // ── 「开始挑战！」按钮 ────────────────────────────────
+    // ── 「继续 →」按钮（V1-14：进发现文案后的地图/答题引导流程）──
     document.getElementById('btn-start-challenge').addEventListener('click', async () => {
-      // iOS 音频解锁：在用户手势内静默触发，解锁后续自动播放权限
+      // iOS 音频解锁：在用户手势内静默触发，解锁后续答题音效
       [sfxCorrect, sfxWrong].forEach(s => {
         s.muted = true;
         s.play().then(() => { s.pause(); s.currentTime = 0; s.muted = false; }).catch(() => {});
@@ -169,12 +215,95 @@
       btn.disabled = true;
       btn.textContent = '⏳';
       try {
-        await startChallenge(sessionId);
-        await loadAndShowQuizScreen();
+        await afterDiscovery();
       } catch (err) {
-        console.error('[答题页] 开始挑战失败', err);
+        console.error('[答题页] 继续出错', err);
         btn.disabled = false;
-        btn.textContent = '开始挑战！';
+        btn.textContent = '继续 →';
+      }
+    });
+
+    // ── V1-14：发现文案 → 地图浮现 → 答题引导 → 答题 ─────────
+
+    /** 发现文案确认后（或无文案时 init 直接调用）的衔接逻辑 */
+    async function afterDiscovery() {
+      document.getElementById('screen-discovery').style.display = 'none';
+
+      if (currentLevel && currentLevel.mapImage) {
+        // 有地图 → 全屏弹出，对当前点位播「浮现」动画
+        await showMapOverlay();
+        // 浮现动画 0.5s + 再停留 0.5s 让孩子看清楚
+        await sleep(500);
+        hideMapOverlay();
+      }
+
+      if (currentData.point.questionIntroText) {
+        // 有答题引导文案 → 弹引导弹窗，等孩子点「开始答题！」
+        showIntroModal(currentData.point.questionIntroText);
+      } else {
+        await startQuiz();
+      }
+    }
+
+    /** 在全屏覆盖层上渲染地图，并对当前点位播浮现动画 */
+    async function showMapOverlay() {
+      const { session, point } = currentData;
+
+      // 构建状态图：已过的站 = completed；当前站 = discovered；后面的 = undiscovered
+      const stateMap = {};
+      currentAllPoints.forEach((pt, i) => {
+        if      (i < session.currentPointIndex)  stateMap[pt.id] = 'completed';
+        else if (i === session.currentPointIndex) stateMap[pt.id] = 'discovered';
+        else                                      stateMap[pt.id] = 'undiscovered';
+      });
+
+      injectMapAnimStyles();
+      const container = document.getElementById('map-overlay-container');
+      renderMapOverlay(container, currentLevel, currentAllPoints, stateMap, {
+        animatePointId: point.id,
+        animateType: 'reveal',
+      });
+      document.getElementById('map-overlay-layer').style.display = 'flex';
+
+      // 等浮现动画完成（0.5s）
+      await sleep(500);
+    }
+
+    /** 关闭地图覆盖层 */
+    function hideMapOverlay() {
+      document.getElementById('map-overlay-layer').style.display = 'none';
+    }
+
+    /** 弹出答题引导弹窗 */
+    function showIntroModal(text) {
+      document.getElementById('intro-modal-text').textContent = text;
+      document.getElementById('intro-modal').style.display = 'flex';
+    }
+
+    /** 正式进入答题：创建 pointRecord + 加载第一道题 */
+    async function startQuiz() {
+      await startChallenge(sessionId);
+      await loadAndShowQuizScreen();
+    }
+
+    /** 简单的 async 等待（不依赖外部库）*/
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // 「开始答题！」按钮（答题引导弹窗）
+    document.getElementById('btn-quiz-from-intro').addEventListener('click', async () => {
+      // iOS 音频解锁（当没有发现文案直接进引导弹窗时，这是第一个用户手势）
+      [sfxCorrect, sfxWrong].forEach(s => {
+        s.muted = true;
+        s.play().then(() => { s.pause(); s.currentTime = 0; s.muted = false; }).catch(() => {});
+      });
+      document.getElementById('intro-modal').style.display = 'none';
+      try {
+        await startQuiz();
+      } catch (err) {
+        console.error('[答题页] 开始答题失败', err);
+        showError();
       }
     });
 
@@ -469,6 +598,8 @@
       document.getElementById('quiz-banner').style.display = 'none';
       document.getElementById('screen-discovery').style.display = 'none';
       document.getElementById('screen-quiz').style.display = 'none';
+      document.getElementById('map-overlay-layer').style.display = 'none';
+      document.getElementById('intro-modal').style.display = 'none';
       document.getElementById('error-state').style.display = 'block';
     }
 
