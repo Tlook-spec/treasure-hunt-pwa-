@@ -206,6 +206,20 @@
       <div id="station-cards-list"></div>
     </div>
 
+    <!-- V1-18 成就海报 -->
+    <div id="poster-section" style="margin-top:28px; padding-bottom:4px;">
+      <button class="btn-primary" id="btn-gen-poster">🎁 生成成就海报</button>
+      <p id="poster-status"
+         style="display:none; text-align:center; padding:16px 0; color:#888; font-size:16px;"></p>
+      <div id="poster-result" style="display:none; margin-top:12px;">
+        <img id="poster-img" alt="成就海报"
+             style="width:100%; border-radius:12px; cursor:pointer; display:block;">
+        <p style="text-align:center; margin:10px 0 0; color:#888; font-size:14px;">
+          👆 长按图片保存到相册
+        </p>
+      </div>
+    </div>
+
   </main>
 
   <!-- 返回首页（fixed bottom，init 完成后显示）-->
@@ -238,6 +252,13 @@
 
     const sessionId = new URLSearchParams(location.search).get('sessionId');
     if (!sessionId) { location.href = '../index.html'; }
+
+    // ── V1-18 海报数据（init 完成后填充，点按钮时使用）──────
+    let _posterLevel     = null;
+    let _posterPoints    = [];
+    let _posterSummaries = [];
+    let _posterPhotos    = [];
+    let _posterStats     = null;
 
     // ── 通关音效 ─────────────────────────────────────────────
     // iOS 不允许跨页面继承音频解锁状态，进通关页属于新 document，
@@ -317,11 +338,38 @@
         // ⑦ 按站成绩 + 错题本
         await renderStationCards(session, pointRecords);
 
-        // ⑧ 显示页面 + 按钮
+        // ⑧ 预取海报数据（复用 V1-02 computeStationSummaries；前面已查 DB，这里二次查缓存快）
+        _posterLevel = level;
+        _posterStats = { totalScore, totalQuestions, correctQuestions, timeStr, levelName };
+        {
+          const pts  = await db.points.where('levelId').equals(session.levelId).sortBy('order');
+          const pMap = Object.fromEntries(pts.map(p => [p.id, p]));
+          const qids = new Set();
+          for (const pr of pointRecords)
+            for (const qr of (pr.questionResults || [])) qids.add(qr.questionId);
+          const qs = await db.questions.bulkGet([...qids]);
+          const qMap = {};
+          qs.forEach(q => { if (q) qMap[q.id] = q; });
+          _posterPoints    = pts;
+          _posterSummaries = computeStationSummaries(pointRecords, qMap, pMap);
+          const phoEnt = pointRecords
+            .map((pr, i) => ({
+              stationNum: i + 1,
+              pointName:  pMap[pr.pointId]?.name || `第 ${i + 1} 站`,
+              photoId:    pr.completionPhotoId,
+            }))
+            .filter(x => x.photoId);
+          const blobs = await db.photos.bulkGet(phoEnt.map(x => x.photoId));
+          _posterPhotos = phoEnt
+            .map((e, i) => ({ stationNum: e.stationNum, pointName: e.pointName, blob: blobs[i]?.blob || null }))
+            .filter(x => x.blob);
+        }
+
+        // ⑨ 显示页面 + 按钮
         document.getElementById('main-content').style.display  = 'block';
         document.getElementById('bottom-action').style.display = 'block';
 
-        // ⑨ 撒花 + 通关音效！
+        // ⑩ 撒花 + 通关音效！
         launchConfetti();
         playVictoryOnce(); // 桌面直接响；iOS 被拦时等首次触摸补播
 
@@ -640,6 +688,309 @@
           el.addEventListener('animationend', () => el.remove(), { once: true });
         }, i * 100);
       }
+    }
+
+    // ── V1-18 成就海报：按钮事件 ─────────────────────────────
+    document.getElementById('btn-gen-poster').addEventListener('click', async () => {
+      const btnEl   = document.getElementById('btn-gen-poster');
+      const statEl  = document.getElementById('poster-status');
+      const resultEl = document.getElementById('poster-result');
+      btnEl.disabled    = true;
+      btnEl.textContent = '⏳ 生成中…';
+      statEl.textContent  = '⏳ 生成中，请稍候…';
+      statEl.style.display  = 'block';
+      resultEl.style.display = 'none';
+
+      // 先让 UI 刷新再开始 Canvas 合成
+      await new Promise(r => setTimeout(r, 60));
+
+      let ok = false;
+      try {
+        const dataUrl   = await _buildPosterCanvas();
+        const imgEl     = document.getElementById('poster-img');
+        imgEl.src       = dataUrl;
+        imgEl.onclick   = () => openFullscreen(dataUrl);
+        resultEl.style.display = 'block';
+        resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        ok = true;
+      } catch (err) {
+        console.error('[海报] 生成失败', err);
+        statEl.textContent   = '⚠️ 生成失败，请重试（' + err.message + '）';
+        statEl.style.display = 'block';
+      } finally {
+        btnEl.disabled    = false;
+        btnEl.textContent = '🎁 重新生成海报';
+        if (ok) statEl.style.display = 'none';
+      }
+    });
+
+    // ── V1-18 成就海报：Canvas 合成 ──────────────────────────
+    async function _buildPosterCanvas() {
+      const W    = 1080;
+      const PAD  = 56;
+      const CW   = W - PAD * 2;           // 可用内容宽 968
+      const FONT = '-apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+      const { totalScore, totalQuestions, correctQuestions, timeStr, levelName } = _posterStats;
+
+      // ① 加载图片资源
+      let mapImg = null, MAP_W = CW, MAP_H = 0;
+      if (_posterLevel && _posterLevel.mapImage) {
+        try {
+          mapImg = await _loadImg(_posterLevel.mapImage);
+          MAP_H  = Math.round(mapImg.naturalHeight * MAP_W / mapImg.naturalWidth);
+        } catch (e) { mapImg = null; }
+      }
+
+      const photoImgs = [];
+      for (const p of _posterPhotos) {
+        try {
+          const url = URL.createObjectURL(p.blob);
+          const img = await _loadImg(url);
+          URL.revokeObjectURL(url);
+          photoImgs.push({ img, stationNum: p.stationNum, pointName: p.pointName });
+        } catch (e) { /* 跳过加载失败的照片 */ }
+      }
+
+      // ② 计算布局高度
+      const PH_COLS = 2;
+      const PH_GAP  = 16;
+      const PH_W    = Math.floor((CW - PH_GAP) / PH_COLS); // ~476
+      const PH_H    = Math.round(PH_W * 9 / 16);           // ~268 (16:9 裁剪)
+      const PH_CAP  = 36;                                    // 合影标题高
+      const PH_ROW  = PH_H + PH_CAP + 12;
+      const PH_ROWS = Math.ceil(photoImgs.length / PH_COLS);
+
+      const H_HDR   = 310;  // 蓝色顶部区域（标题 + 分数 + 时间）
+      const H_WPT   = 28;   // 白色区上边距
+      const H_STTL  = 54;   // 各节标题行高
+      const H_SROW  = 52;   // 站点数据行高
+      const H_DIV   = 36;   // 分隔线（含上下留白）
+      const H_BOT   = 64;   // 底部留白
+
+      let totalH = H_HDR + H_WPT;
+      totalH += H_STTL + _posterSummaries.length * H_SROW + 16;
+      if (photoImgs.length > 0) totalH += H_DIV + H_STTL + PH_ROWS * PH_ROW + 16;
+      if (mapImg)               totalH += H_DIV + H_STTL + MAP_H + 20;
+      totalH += H_BOT;
+
+      // ③ 创建 Canvas
+      const canvas   = document.createElement('canvas');
+      canvas.width   = W;
+      canvas.height  = totalH;
+      const ctx      = canvas.getContext('2d');
+
+      // ④ 蓝色渐变顶部区
+      const hGrad = ctx.createLinearGradient(0, 0, 0, H_HDR);
+      hGrad.addColorStop(0, '#3B82F6');
+      hGrad.addColorStop(1, '#1E40AF');
+      ctx.fillStyle = hGrad;
+      ctx.fillRect(0, 0, W, H_HDR);
+
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillStyle    = '#ffffff';
+
+      // 探险名（自动截断防溢出）
+      ctx.font = `bold 52px ${FONT}`;
+      _posterFillFit(ctx, levelName, W / 2, 76, CW);
+
+      // "宝藏探险 · 成就海报" 副标题
+      ctx.font      = `28px ${FONT}`;
+      ctx.fillStyle = 'rgba(255,255,255,0.80)';
+      ctx.fillText('宝藏探险 · 成就海报', W / 2, 122);
+
+      // 总分（大字）
+      ctx.font      = `bold 72px ${FONT}`;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(`${totalScore} 分`, W / 2, 218);
+
+      // 用时 + 答对数
+      ctx.font      = `30px ${FONT}`;
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillText(`${timeStr}  ·  答对 ${correctQuestions}/${totalQuestions} 题`, W / 2, 274);
+
+      // ⑤ 白色内容区
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, H_HDR, W, totalH - H_HDR);
+
+      let y = H_HDR + H_WPT;
+
+      // ⑥ 按站成绩列表
+      ctx.fillStyle = '#1a1a2e';
+      ctx.textAlign = 'left';
+      ctx.font      = `bold 36px ${FONT}`;
+      ctx.fillText('📋 按站成绩', PAD, y + 36);
+      y += H_STTL;
+
+      for (const s of _posterSummaries) {
+        ctx.font      = `30px ${FONT}`;
+        ctx.fillStyle = '#333333';
+        ctx.textAlign = 'left';
+        _posterFillFit(ctx, `第 ${s.stationNumber} 站 · ${s.pointName}`, PAD, y + 30, CW - 160);
+
+        ctx.textAlign = 'right';
+        ctx.font      = `bold 30px ${FONT}`;
+        ctx.fillStyle = s.totalScore > 0 ? '#16A34A' : '#DC2626';
+        ctx.fillText(`${s.totalScore} 分`, W - PAD, y + 30);
+
+        ctx.strokeStyle = '#f0f0f0';
+        ctx.lineWidth   = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(PAD,     y + H_SROW - 2);
+        ctx.lineTo(W - PAD, y + H_SROW - 2);
+        ctx.stroke();
+        y += H_SROW;
+      }
+      y += 16;
+
+      // ⑦ 合影拼图（无合影则跳过）
+      if (photoImgs.length > 0) {
+        _posterDivider(ctx, y, W, PAD);
+        y += H_DIV;
+
+        ctx.fillStyle = '#1a1a2e';
+        ctx.textAlign = 'left';
+        ctx.font      = `bold 36px ${FONT}`;
+        ctx.fillText(`📷 通关合影（${photoImgs.length} 张）`, PAD, y + 36);
+        y += H_STTL;
+
+        for (let i = 0; i < photoImgs.length; i++) {
+          const col = i % PH_COLS;
+          const row = Math.floor(i / PH_COLS);
+          const ix  = PAD + col * (PH_W + PH_GAP);
+          const iy  = y + row * PH_ROW;
+          const { img, stationNum, pointName } = photoImgs[i];
+
+          // 按 16:9 居中裁剪
+          const sr = img.naturalWidth / img.naturalHeight;
+          const dr = PH_W / PH_H;
+          let sx, sy, sw, sh;
+          if (sr > dr) { sh = img.naturalHeight; sw = sh * dr; sx = (img.naturalWidth - sw) / 2; sy = 0; }
+          else          { sw = img.naturalWidth;  sh = sw / dr; sx = 0; sy = (img.naturalHeight - sh) / 2; }
+
+          ctx.save();
+          _posterRRect(ctx, ix, iy, PH_W, PH_H, 10);
+          ctx.clip();
+          ctx.drawImage(img, sx, sy, sw, sh, ix, iy, PH_W, PH_H);
+          ctx.restore();
+
+          ctx.fillStyle    = '#555';
+          ctx.font         = `24px ${FONT}`;
+          ctx.textAlign    = 'center';
+          ctx.fillText(`第 ${stationNum} 站 · ${pointName}`, ix + PH_W / 2, iy + PH_H + 26);
+        }
+        y += PH_ROWS * PH_ROW + 16;
+      }
+
+      // ⑧ 全亮地图（无地图则跳过）
+      if (mapImg) {
+        _posterDivider(ctx, y, W, PAD);
+        y += H_DIV;
+
+        ctx.fillStyle = '#1a1a2e';
+        ctx.textAlign = 'left';
+        ctx.font      = `bold 36px ${FONT}`;
+        ctx.fillText('🗺️ 全程地图（全站通关）', PAD, y + 36);
+        y += H_STTL;
+
+        // 底图（圆角裁剪）
+        ctx.save();
+        _posterRRect(ctx, PAD, y, MAP_W, MAP_H, 12);
+        ctx.clip();
+        ctx.drawImage(mapImg, PAD, y, MAP_W, MAP_H);
+        ctx.restore();
+
+        // 所有点位：红星 + 金色站名（全部 completed 态）
+        const fontSize  = ({ small: 12, medium: 15, large: 19 })[_posterLevel.mapFontSize] || 15;
+        const goldColor = _posterLevel.mapNameColorCompleted || '#FFD700';
+        const labelPx   = Math.max(18, Math.round(fontSize * MAP_W / 350));
+        const starOuter = Math.max(12, Math.round(MAP_W / 52));
+        const starInner = Math.round(starOuter * 0.42);
+
+        for (const pt of _posterPoints) {
+          if (pt.mapX == null || pt.mapY == null) continue;
+          const mx = PAD + pt.mapX * MAP_W;
+          const my = y   + pt.mapY * MAP_H;
+
+          // 旋转 -15° 模拟印章感（同 map-overlay.js 的 SVG 旋转）
+          ctx.save();
+          ctx.translate(mx, my);
+          ctx.rotate(-15 * Math.PI / 180);
+          _posterStar5(ctx, 0, 0, starOuter, starInner, '#E74C3C');
+          ctx.restore();
+
+          // 站名：黑色阴影 + 金色文字
+          ctx.save();
+          ctx.font         = `bold ${labelPx}px ${FONT}`;
+          ctx.textAlign    = 'center';
+          ctx.textBaseline = 'top';
+          ctx.shadowColor  = 'rgba(0,0,0,0.85)';
+          ctx.shadowBlur   = 5;
+          ctx.fillStyle    = goldColor;
+          ctx.fillText(pt.name, mx, my + starOuter + 4);
+          ctx.restore();
+        }
+        y += MAP_H + 20;
+      }
+
+      return canvas.toDataURL('image/jpeg', 0.85);
+    }
+
+    // ── V1-18 海报辅助函数（_前缀防止与其他函数名冲突）────────
+
+    function _loadImg(src) {
+      return new Promise((resolve, reject) => {
+        const img   = new Image();
+        img.onload  = () => resolve(img);
+        img.onerror = () => reject(new Error('图片加载失败'));
+        img.src     = src;
+      });
+    }
+
+    // 文字超宽时自动截断加省略号
+    function _posterFillFit(ctx, text, x, y, maxW) {
+      if (ctx.measureText(text).width <= maxW) { ctx.fillText(text, x, y); return; }
+      let t = text;
+      while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+      ctx.fillText(t + '…', x, y);
+    }
+
+    // 圆角矩形路径（用于 clip）
+    function _posterRRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y,     x + w, y + r, r);
+      ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+      ctx.arcTo(x,     y + h, x, y + h - r, r);
+      ctx.arcTo(x,     y,     x + r, y, r);
+      ctx.closePath();
+    }
+
+    // 水平分隔线
+    function _posterDivider(ctx, y, W, PAD) {
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth   = 2;
+      ctx.beginPath();
+      ctx.moveTo(PAD,     y + 16);
+      ctx.lineTo(W - PAD, y + 16);
+      ctx.stroke();
+    }
+
+    // 五角星路径（10 顶点交替 outer/inner）
+    function _posterStar5(ctx, cx, cy, outerR, innerR, color) {
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const r     = i % 2 === 0 ? outerR : innerR;
+        const angle = (i * Math.PI / 5) - Math.PI / 2;
+        if (i === 0) ctx.moveTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+        else         ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+      }
+      ctx.closePath();
+      ctx.fillStyle   = color;
+      ctx.fill();
+      ctx.strokeStyle = '#C0392B';
+      ctx.lineWidth   = 1.5;
+      ctx.stroke();
     }
 
     // ── 错误状态 ─────────────────────────────────────────────
