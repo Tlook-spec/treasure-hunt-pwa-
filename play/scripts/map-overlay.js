@@ -28,11 +28,6 @@ export function renderMapOverlay(container, level, points, stateMap, opts = {}) 
   // ── 底图 ──────────────────────────────────────────────────────
   const img = document.createElement('img');
   img.alt = '探险地图';
-  // naturalHeight:true → 高度随图片真实比例（内嵌使用，无黑边）
-  // 默认模式         → 撑满容器固定高度（全屏覆盖层使用）
-  img.style.cssText = opts.naturalHeight
-    ? 'width:100%;height:auto;display:block;'
-    : 'width:100%;height:100%;object-fit:contain;display:block;';
   container.appendChild(img);
 
   const fontSize      = FONT_SIZE_MAP[level.mapFontSize] || 15;
@@ -63,11 +58,24 @@ export function renderMapOverlay(container, level, points, stateMap, opts = {}) 
   }
 
   if (opts.naturalHeight) {
+    // 内嵌模式：整张图等比缩进一屏内（max-height），确保底部点位的动画也在视口里。
+    // 图片用 width/height:auto + max 约束 → 不变形、无黑边；
+    // 容器收缩贴合图片实际显示尺寸（fit-content）→ 标记按百分比定位永远对齐，不错位。
+    const maxH = opts.maxHeight || '55vh';
+    img.style.cssText =
+      `display:block;width:auto;height:auto;max-width:100%;max-height:${maxH};`;
+    container.style.width    = '-webkit-fit-content'; // iOS Safari 前缀兜底
+    container.style.width    = 'fit-content';
+    container.style.maxWidth = '100%';
+    container.style.marginLeft  = 'auto';  // 水平居中，保留调用方的上下 margin
+    container.style.marginRight = 'auto';
+
     // 先注册 onload，再赋 src——避免 base64 图片同步触发 load 时回调还没挂上
     img.onload = placeMarkers;
     img.src = level.mapImage;
   } else {
-    // 固定高度容器：同步放置即可（容器高度已由调用方写死）
+    // 全屏覆盖层模式：撑满容器固定高度
+    img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;';
     img.src = level.mapImage;
     placeMarkers();
   }

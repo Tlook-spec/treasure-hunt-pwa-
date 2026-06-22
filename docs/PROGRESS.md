@@ -107,7 +107,7 @@
 - [x] V1-12 ✅ 编辑端 L1 开场/结局故事字段（openingStory + endingStory）
 - [x] V1-13 ✅ 游戏端故事页（开场故事两阶段点击 + 结局故事区块，SW v2.13）
 - [x] V1-14 ✅ 发现文案弹窗 + 地图浮现动画（新建 map-overlay.js 共享渲染模块，quiz.html 三阶段过渡流程，SW v2.14）+ 五处调整：地图容器高度自适应/无黑边、discovered 标记可见性、答题引导合并到发现页、开场故事加地图全览、版本号 V1，SW v2.15；修 bug：坐标单位 0~1→×100 转百分比 + img.onload 时序修复，SW v2.16
-- [x] V1-15 ✅ 拍照页内嵌地图盖章动画（photo.html 完成区加 completionText 内嵌 + 地图容器，复用 map-overlay.js stamp 动画 0.8s 落点震动，stateMap 当前站=completed，SW v2.16）
+- [x] V1-15 ✅ 拍照页内嵌地图盖章动画（photo.html 完成区加 completionText 内嵌 + 地图容器，复用 map-overlay.js stamp 动画 0.8s 落点震动，stateMap 当前站=completed，SW v2.16）；V1-15b 地图一屏适配（max-height 55vh + 容器 fit-content 贴合图片，任何尺寸地图整图一屏可见、标记不错位，SW v2.17）
 ### 🟩 C 区 收尾杂项（V1-21 ~ V1-24）待开始
 ### 🟥 D 区 多人 + 题型增强（V1-25 ~ V1-34）待定（玩过 A/B/C 再确认）
 ### 🟪 E 区 真机测试 + 修 bug（V1-35 ~ V1-38）待开始
