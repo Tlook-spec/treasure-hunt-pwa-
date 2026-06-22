@@ -164,7 +164,7 @@
 
 /**
  * @typedef {Object} JsonEnvelope
- * @property {string}   schemaVersion  - 固定 "1.0"（MVP），V1 地图功能启用后升为 "1.1"
+ * @property {string}   schemaVersion  - "1.0"（MVP 旧文件）或 "1.1"（V1-19 起新导出）；校验放宽为主版本号 === 1 即接受
  * @property {number}   exportedAt     - 导出时间戳（ms）
  * @property {string}   exportType     - 固定 "full"（MVP），V1 加 "single-level"
  * @property {Object}   data

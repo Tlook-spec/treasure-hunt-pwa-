@@ -6,7 +6,7 @@
  * 单 L1 导入/导出推到 V1。
  */
 
-const SCHEMA_VERSION = '1.0';
+const SCHEMA_VERSION = '1.1';
 
 // ============================================================
 // exportFull(db) — 整库导出为 JSON 字符串
@@ -57,8 +57,10 @@ export function validateJson(jsonString) {
     return { ok: false, error: '这不是有效的寻宝游戏数据文件（缺少 schemaVersion）' };
   }
 
-  // 3. 检查 schemaVersion === "1.0"（MVP 只认 1.0）
-  if (envelope.schemaVersion !== SCHEMA_VERSION) {
+  // 3. 主版本号为 1 即放行（1.0 和 1.1 都接受；主版本 ≠ 1 拒绝）
+  //    老 1.0 文件导入时缺少地图/故事字段，bulkPut 写入后字段为 undefined，游戏端已按可选处理
+  const majorVer = String(envelope.schemaVersion).split('.')[0];
+  if (majorVer !== '1') {
     return {
       ok: false,
       error: `该文件由不兼容的 App 版本创建（版本 ${envelope.schemaVersion}），请升级 App`,

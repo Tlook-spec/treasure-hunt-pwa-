@@ -10,7 +10,7 @@
 
 **阶段**：🟦 **V1-A 单人打磨（进行中）**
 
-**下一个任务**：V1-19（放宽 JSON 版本校验，接受主版本号为 1 的文件）
+**下一个任务**：V1-20（B 区联调 + iPad 三态验收，V1-09~19 全部跑一遍）
 
 详见：[任务清单_V1.md](../任务清单_V1.md)
 
@@ -111,6 +111,7 @@
 - [x] V1-16 ✅ 浮动地图按钮（hint.html + quiz.html 答题屏右下角 🗺️ 圆按钮，有 mapImage 才显示；点击 → 全屏黑色覆盖层 + naturalHeight 地图纯查看，无动画；右上 ✕ 关闭；发现屏已内嵌不显示 FAB；hint 的 stateMap=前站 completed/其余 undiscovered；quiz 复用 buildStateMap；SW v2.19）
 - [x] V1-17 ✅ 地图三态统一（map-overlay.js 新增 buildPointStateMap 共用函数，依据 pointRecords 推三态，消除各页自写 index 绕道；quiz.html 提前调 startChallenge 使 discover 屏能正确显示 discovered；photo.html 去掉 i<=current 绕道改走共用函数；hint.html 同；SW v2.20）
 - [x] V1-18 ✅ 成就海报（victory.html Canvas 生成 1080px 竖版海报：蓝色渐变头部/站点列表/16:9 合影网格/全亮地图红星盖章；按钮触发，长按保存；无地图/无照片向下兼容；SW v2.21）
+- [x] V1-19 ✅ schemaVersion 升 1.1 + 放宽校验（导出改写 "1.1"；validateJson 改为主版本号 === '1' 即接受，1.0/1.1 均通过，2.0 拒绝，无字段拒绝；exportFull/importFull 整对象倒出/写入，地图故事字段自然包含，无需补字段）
 ### 🟩 C 区 收尾杂项（V1-21 ~ V1-24）待开始
 ### 🟥 D 区 多人 + 题型增强（V1-25 ~ V1-34）待定（玩过 A/B/C 再确认）
 ### 🟪 E 区 真机测试 + 修 bug（V1-35 ~ V1-38）待开始
