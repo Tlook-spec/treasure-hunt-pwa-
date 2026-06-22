@@ -170,6 +170,34 @@ function makeStarSvg() {
 }
 
 /**
+ * 根据 session.pointRecords 计算每个点位的三态（纯函数，不访问 DB）。
+ *
+ * 判断依据（不依赖 currentPointIndex，完全由记录数据驱动）：
+ *   - undiscovered：该点位无 pointRecord（还没扫码）
+ *   - discovered  ：pointRecord 存在，但 questionResults 数量 < 该点位题数（答题中）
+ *   - completed   ：pointRecord 存在，且 questionResults 数量 ≥ 该点位题数（已答完）
+ *
+ * @param {object}   session  GameSession 对象（需含 pointRecords 数组）
+ * @param {object[]} points   点位数组（按 order 升序；需含 questionIds 字段）
+ * @returns {object} { [pointId]: 'undiscovered'|'discovered'|'completed' }
+ */
+export function buildPointStateMap(session, points) {
+  const stateMap = {};
+  const records  = session.pointRecords || [];
+  points.forEach((pt, i) => {
+    const record = records[i];
+    if (!record) {
+      stateMap[pt.id] = 'undiscovered';
+    } else {
+      const answered = (record.questionResults || []).length;
+      const total    = (pt.questionIds || []).length;
+      stateMap[pt.id] = answered >= total ? 'completed' : 'discovered';
+    }
+  });
+  return stateMap;
+}
+
+/**
  * 注入动画 keyframes CSS（每页只注入一次，重复调用安全）。
  * 须在 renderMapOverlay 之前或同时调用。
  */

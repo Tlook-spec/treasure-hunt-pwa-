@@ -84,7 +84,7 @@
   <!-- ES Module：以 session 为唯一数据源，展示当前点位提示 -->
   <script type="module">
     import db from '../../shared/db/play-db.js';
-    import { renderMapOverlay, injectMapAnimStyles } from '../scripts/map-overlay.js?v=V1-16';
+    import { renderMapOverlay, injectMapAnimStyles, buildPointStateMap } from '../scripts/map-overlay.js?v=V1-17';
 
     const sessionId = new URLSearchParams(location.search).get('sessionId');
     if (!sessionId) {
@@ -151,23 +151,15 @@
       }
     }
 
-    // hint.html 的 stateMap：正在寻找第 currentPointIndex 站（还没扫码）
-    //   → 之前的站已完成；当前及之后还没发现
-    function buildStateMap(session) {
-      const stateMap = {};
-      currentAllPoints.forEach((pt, i) => {
-        stateMap[pt.id] = (i < session.currentPointIndex) ? 'completed' : 'undiscovered';
-      });
-      return stateMap;
-    }
-
     // ── V1-16 FAB 点击：打开覆盖层，渲染纯查看地图（无动画）──
+    // hint.html 场景：还没扫码当前站 → pointRecord 不存在 → buildPointStateMap 返回 undiscovered
+    // 之前已完成的站 → pointRecord 存在且 questionResults 已满 → returned completed ✅
     document.getElementById('btn-map-fab').addEventListener('click', () => {
       if (!currentLevel || !currentSession) return;
       const container = document.getElementById('map-view-container');
       renderMapOverlay(
         container, currentLevel, currentAllPoints,
-        buildStateMap(currentSession),
+        buildPointStateMap(currentSession, currentAllPoints),
         { naturalHeight: true, maxHeight: '70vh' }
       );
       document.getElementById('map-view-overlay').style.display = 'block';

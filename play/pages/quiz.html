@@ -126,7 +126,7 @@
       consumeHelp,
     } from '../scripts/quiz-logic.js';
     import db from '../../shared/db/play-db.js';
-    import { renderMapOverlay, injectMapAnimStyles } from '../scripts/map-overlay.js?v=V1-16';
+    import { renderMapOverlay, injectMapAnimStyles, buildPointStateMap } from '../scripts/map-overlay.js?v=V1-17';
 
     const sessionId = new URLSearchParams(location.search).get('sessionId');
     if (!sessionId) location.href = 'select-level.html';
@@ -174,13 +174,21 @@
     // ── 初始化 ──────────────────────────────────────────────
     async function init() {
       try {
-        currentData      = await loadCurrentQuizData(sessionId);
-        const { session, point } = currentData;
+        const firstLoad  = await loadCurrentQuizData(sessionId);
+        const { point }  = firstLoad;
 
         // 加载 level 和全部点位（地图渲染需要）
-        currentLevel     = await db.levels.get(session.levelId);
+        currentLevel     = await db.levels.get(firstLoad.session.levelId);
         currentAllPoints = await db.points
-          .where('levelId').equals(session.levelId).sortBy('order');
+          .where('levelId').equals(firstLoad.session.levelId).sortBy('order');
+
+        // 扫码成功后立即建立本站 pointRecord（内部有幂等检查，续玩时不覆盖）
+        // 必须在 showDiscoveryScreen 前调用，使 buildPointStateMap 能看到
+        // 已写入的 pointRecord → 当前站正确显示 discovered（而非 undiscovered）
+        await startChallenge(sessionId);
+
+        // 重新读 session（含刚写入的 pointRecord）
+        currentData = await loadCurrentQuizData(sessionId);
 
         // 有发现文案 / 答题引导 / 地图 → 显示发现页；三者都没有 → 直接进答题
         const hasDiscovery = point.discoveryText || point.questionIntroText || (currentLevel && currentLevel.mapImage);
@@ -226,7 +234,8 @@
       const mapEl = document.getElementById('discovery-map-container');
       if (currentLevel && currentLevel.mapImage) {
         injectMapAnimStyles();
-        renderMapOverlay(mapEl, currentLevel, currentAllPoints, buildStateMap(session), {
+        renderMapOverlay(mapEl, currentLevel, currentAllPoints,
+          buildPointStateMap(currentData.session, currentAllPoints), {
           naturalHeight: true,
           animatePointId: point.id,
           animateType: 'reveal',
@@ -239,17 +248,6 @@
       document.getElementById('screen-discovery').style.display = 'block';
       document.getElementById('screen-quiz').style.display = 'none';
       document.getElementById('btn-map-fab').style.display = 'none'; // 发现页已内嵌地图，不需 FAB
-    }
-
-    /** 根据 session 当前进度构建点位状态图 */
-    function buildStateMap(session) {
-      const stateMap = {};
-      currentAllPoints.forEach((pt, i) => {
-        if      (i < session.currentPointIndex)  stateMap[pt.id] = 'completed';
-        else if (i === session.currentPointIndex) stateMap[pt.id] = 'discovered';
-        else                                      stateMap[pt.id] = 'undiscovered';
-      });
-      return stateMap;
     }
 
     // ── 「继续 →」按钮（V1-14：进发现文案后的地图/答题引导流程）──
@@ -279,9 +277,8 @@
       await startQuiz();
     }
 
-    /** 正式进入答题：创建 pointRecord + 加载第一道题 */
+    /** 正式进入答题：加载第一道题（startChallenge 已在 init 中调用）*/
     async function startQuiz() {
-      await startChallenge(sessionId);
       await loadAndShowQuizScreen();
     }
 
@@ -590,7 +587,7 @@
       const container = document.getElementById('map-view-container');
       renderMapOverlay(
         container, currentLevel, currentAllPoints,
-        buildStateMap(currentData.session),
+        buildPointStateMap(currentData.session, currentAllPoints),
         { naturalHeight: true, maxHeight: '70vh' }
       );
       document.getElementById('map-view-overlay').style.display = 'block';

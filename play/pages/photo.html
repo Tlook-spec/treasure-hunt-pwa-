@@ -91,7 +91,7 @@
   <script type="module">
     import db from '../../shared/db/play-db.js';
     import { generateId } from '../../shared/utils/id.js';
-    import { renderMapOverlay, injectMapAnimStyles } from '../scripts/map-overlay.js?v=V1-15c';
+    import { renderMapOverlay, injectMapAnimStyles, buildPointStateMap } from '../scripts/map-overlay.js?v=V1-17';
 
     const sessionId = new URLSearchParams(location.search).get('sessionId');
     if (!sessionId) location.href = 'select-level.html';
@@ -144,17 +144,15 @@
           ct.style.display = 'block';
         }
 
-        // 地图：当前站及之前所有站 → completed；之后站 → undiscovered
-        // 注意：此时 session.currentPointIndex 仍指向本站（继续按钮才推进）
+        // 地图：用 buildPointStateMap 从 pointRecords 推断三态。
+        // 进拍照页时本站所有题已答完，pointRecords[currentPointIndex].questionResults 已满
+        // → 本站自动判 completed（五角星盖章）；之前的站同样 completed；之后的站 undiscovered。
+        // （原先用 i<=currentPointIndex 的 index 绕道已统一改为共用函数）
         const level = await db.levels.get(levelId);
         if (level && level.mapImage) {
-          const stateMap = {};
-          allPoints.forEach((pt, i) => {
-            stateMap[pt.id] = i <= currentPointIndex ? 'completed' : 'undiscovered';
-          });
           injectMapAnimStyles();
           const mapEl = document.getElementById('photo-map-container');
-          renderMapOverlay(mapEl, level, allPoints, stateMap, {
+          renderMapOverlay(mapEl, level, allPoints, buildPointStateMap(session, allPoints), {
             naturalHeight:   true,
             animatePointId:  currentPoint.id,
             animateType:     'stamp',

@@ -10,7 +10,7 @@
 
 **阶段**：🟦 **V1-A 单人打磨（进行中）**
 
-**下一个任务**：V1-17（地图 · 结局故事后显示地图全览）
+**下一个任务**：V1-18（海报 · victory.html 通关海报）
 
 详见：[任务清单_V1.md](../任务清单_V1.md)
 
@@ -109,6 +109,7 @@
 - [x] V1-14 ✅ 发现文案弹窗 + 地图浮现动画（新建 map-overlay.js 共享渲染模块，quiz.html 三阶段过渡流程，SW v2.14）+ 五处调整：地图容器高度自适应/无黑边、discovered 标记可见性、答题引导合并到发现页、开场故事加地图全览、版本号 V1，SW v2.15；修 bug：坐标单位 0~1→×100 转百分比 + img.onload 时序修复，SW v2.16
 - [x] V1-15 ✅ 拍照页内嵌地图盖章动画（photo.html 完成区加 completionText 内嵌 + 地图容器，复用 map-overlay.js stamp 动画 0.8s 落点震动，stateMap 当前站=completed，SW v2.16）；V1-15b 地图一屏适配（max-height 55vh + 容器 fit-content 贴合图片，任何尺寸地图整图一屏可见、标记不错位，SW v2.17）；V1-15c 坐标锚点对齐（标记改 translate(-50%,-50%) 图标中心对齐坐标点、名字 absolute 挂下方，与 admin 一致，修复 play 圆圈比 admin 偏上，SW v2.18）
 - [x] V1-16 ✅ 浮动地图按钮（hint.html + quiz.html 答题屏右下角 🗺️ 圆按钮，有 mapImage 才显示；点击 → 全屏黑色覆盖层 + naturalHeight 地图纯查看，无动画；右上 ✕ 关闭；发现屏已内嵌不显示 FAB；hint 的 stateMap=前站 completed/其余 undiscovered；quiz 复用 buildStateMap；SW v2.19）
+- [x] V1-17 ✅ 地图三态统一（map-overlay.js 新增 buildPointStateMap 共用函数，依据 pointRecords 推三态，消除各页自写 index 绕道；quiz.html 提前调 startChallenge 使 discover 屏能正确显示 discovered；photo.html 去掉 i<=current 绕道改走共用函数；hint.html 同；SW v2.20）
 ### 🟩 C 区 收尾杂项（V1-21 ~ V1-24）待开始
 ### 🟥 D 区 多人 + 题型增强（V1-25 ~ V1-34）待定（玩过 A/B/C 再确认）
 ### 🟪 E 区 真机测试 + 修 bug（V1-35 ~ V1-38）待开始
