@@ -27,7 +27,6 @@ export function renderMapOverlay(container, level, points, stateMap, opts = {}) 
 
   // ── 底图 ──────────────────────────────────────────────────────
   const img = document.createElement('img');
-  img.src = level.mapImage;
   img.alt = '探险地图';
   // naturalHeight:true → 高度随图片真实比例（内嵌使用，无黑边）
   // 默认模式         → 撑满容器固定高度（全屏覆盖层使用）
@@ -40,23 +39,38 @@ export function renderMapOverlay(container, level, points, stateMap, opts = {}) 
   const nameColor     = level.mapNameColor || '#ffffff';
   const nameColorDone = level.mapNameColorCompleted || '#FFD700';
 
-  // ── 遍历点位：只渲染 discovered / completed 的（未发现不显示）──
-  points.forEach((pt) => {
-    if (pt.mapX == null || pt.mapY == null) return; // 未设坐标，跳过
+  // ── 放置点位标记 ──────────────────────────────────────────────
+  // naturalHeight 模式下，容器高度由图片决定。图片未加载时 container.height=0，
+  // 此时 top:N% 全部解析为 0px，标记叠在顶部被 overflow:hidden 裁掉。
+  // 必须等 img.onload 之后再插入标记，才能拿到正确的容器高度。
+  function placeMarkers() {
+    points.forEach((pt) => {
+      if (pt.mapX == null || pt.mapY == null) return; // 未设坐标，跳过
 
-    const state = stateMap[pt.id] || 'undiscovered';
-    if (state === 'undiscovered') return;
+      const state = stateMap[pt.id] || 'undiscovered';
+      if (state === 'undiscovered') return;
 
-    const marker = buildMarker(pt, state, fontSize, nameColor, nameColorDone);
+      const marker = buildMarker(pt, state, fontSize, nameColor, nameColorDone);
 
-    // 是否需要播动画
-    if (opts.animatePointId === pt.id) {
-      if (opts.animateType === 'reveal') marker.classList.add('map-anim-reveal');
-      else if (opts.animateType === 'stamp') marker.classList.add('map-anim-stamp');
-    }
+      // 是否需要播动画
+      if (opts.animatePointId === pt.id) {
+        if (opts.animateType === 'reveal') marker.classList.add('map-anim-reveal');
+        else if (opts.animateType === 'stamp') marker.classList.add('map-anim-stamp');
+      }
 
-    container.appendChild(marker);
-  });
+      container.appendChild(marker);
+    });
+  }
+
+  if (opts.naturalHeight) {
+    // 先注册 onload，再赋 src——避免 base64 图片同步触发 load 时回调还没挂上
+    img.onload = placeMarkers;
+    img.src = level.mapImage;
+  } else {
+    // 固定高度容器：同步放置即可（容器高度已由调用方写死）
+    img.src = level.mapImage;
+    placeMarkers();
+  }
 }
 
 /**
@@ -65,10 +79,11 @@ export function renderMapOverlay(container, level, points, stateMap, opts = {}) 
 function buildMarker(pt, state, fontSize, nameColor, nameColorDone) {
   const marker = document.createElement('div');
   // transform: translate(-50%, -100%) 让标记的底部中心对齐坐标点
+  // mapX/mapY 以 0~1 小数存储（admin 端 clamp01），渲染时转成百分比
   marker.style.cssText = [
     'position:absolute',
-    `left:${pt.mapX}%`,
-    `top:${pt.mapY}%`,
+    `left:${pt.mapX * 100}%`,
+    `top:${pt.mapY * 100}%`,
     'transform:translate(-50%,-100%)',
     'display:flex',
     'flex-direction:column',
@@ -158,15 +173,17 @@ export function injectMapAnimStyles() {
       65%  { opacity:1; transform:translate(-50%,-100%) scale(1.1); }
       100% { opacity:1; transform:translate(-50%,-100%) scale(1); }
     }
-    /* 盖章：五角星从中心弹出（约 0.6s），V1-15 用 */
+    /* 盖章：五角星从上方"咚"砸下 + 落点轻微震动（约 0.8s）*/
     @keyframes mapStamp {
       0%   { opacity:0; transform:translate(-50%,-100%) scale(0.1); }
-      55%  { opacity:1; transform:translate(-50%,-100%) scale(1.3); }
-      80%  {            transform:translate(-50%,-100%) scale(0.92); }
+      45%  { opacity:1; transform:translate(-50%,-100%) scale(1.3); }
+      60%  {            transform:translate(-50%,-97%)  scale(0.88); }
+      72%  {            transform:translate(-50%,-102%) scale(1.05); }
+      84%  {            transform:translate(-50%,-99%)  scale(0.98); }
       100% { opacity:1; transform:translate(-50%,-100%) scale(1); }
     }
     .map-anim-reveal { animation: mapReveal 0.5s ease-out forwards; }
-    .map-anim-stamp  { animation: mapStamp  0.6s cubic-bezier(.36,.07,.19,.97) forwards; }
+    .map-anim-stamp  { animation: mapStamp  0.8s ease-out forwards; }
   `;
   document.head.appendChild(style);
 }

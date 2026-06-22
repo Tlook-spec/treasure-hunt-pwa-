@@ -25,6 +25,14 @@
         <h2 class="completion-title" id="completion-title">第 N 站完成！</h2>
         <p class="completion-subtitle">拍一张通关合影作纪念吧！</p>
       </div>
+      <!-- 通关文案（completionText 非空时内嵌显示，不弹窗）-->
+      <p id="completion-text"
+         style="display:none; padding:0 16px 8px; color:#555; font-size:17px;
+                line-height:1.8; white-space:pre-wrap; text-align:center;"></p>
+      <!-- 地图盖章（有 mapImage 时内嵌；当前站播盖章动画，留在页面上不消失）-->
+      <div id="photo-map-container"
+           style="display:none; margin:0 0 12px; border-radius:12px; overflow:hidden;
+                  background:transparent; position:relative;"></div>
     </main>
     <!-- 隐藏的 file input：点击后调系统相机（capture="environment" = 后置摄像头）-->
     <input type="file" id="photo-input" accept="image/*" capture="environment"
@@ -83,6 +91,7 @@
   <script type="module">
     import db from '../../shared/db/play-db.js';
     import { generateId } from '../../shared/utils/id.js';
+    import { renderMapOverlay, injectMapAnimStyles } from '../scripts/map-overlay.js?v=V1-15';
 
     const sessionId = new URLSearchParams(location.search).get('sessionId');
     if (!sessionId) location.href = 'select-level.html';
@@ -125,6 +134,32 @@
         // 最后一站时改变继续按钮文案
         if (isLastStation) {
           document.getElementById('btn-continue').textContent = '🏆 查看通关成绩！';
+        }
+
+        // V1-15：通关文案 + 地图盖章
+        // completionText 内嵌在文案区，不弹窗
+        if (currentPoint.completionText) {
+          const ct = document.getElementById('completion-text');
+          ct.textContent = currentPoint.completionText;
+          ct.style.display = 'block';
+        }
+
+        // 地图：当前站及之前所有站 → completed；之后站 → undiscovered
+        // 注意：此时 session.currentPointIndex 仍指向本站（继续按钮才推进）
+        const level = await db.levels.get(levelId);
+        if (level && level.mapImage) {
+          const stateMap = {};
+          allPoints.forEach((pt, i) => {
+            stateMap[pt.id] = i <= currentPointIndex ? 'completed' : 'undiscovered';
+          });
+          injectMapAnimStyles();
+          const mapEl = document.getElementById('photo-map-container');
+          renderMapOverlay(mapEl, level, allPoints, stateMap, {
+            naturalHeight:   true,
+            animatePointId:  currentPoint.id,
+            animateType:     'stamp',
+          });
+          mapEl.style.display = 'block';
         }
 
         document.getElementById('screen-prompt').style.display = 'block';

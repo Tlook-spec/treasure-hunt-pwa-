@@ -116,7 +116,7 @@
       consumeHelp,
     } from '../scripts/quiz-logic.js';
     import db from '../../shared/db/play-db.js';
-    import { renderMapOverlay, injectMapAnimStyles } from '../scripts/map-overlay.js?v=V1-14';
+    import { renderMapOverlay, injectMapAnimStyles } from '../scripts/map-overlay.js?v=V1-15';
 
     const sessionId = new URLSearchParams(location.search).get('sessionId');
     if (!sessionId) location.href = 'select-level.html';
@@ -211,12 +211,15 @@
         introTextEl.style.display = 'none';
       }
 
-      // 地图：有底图就渲染在文案下方（静态展示，高度随图片比例）
+      // 地图：有底图就渲染在文案下方，高度随图片比例（去黑边）
+      // 对【当前这个点位】播放「浮现」动画：圆圈+名字从透明淡入弹一下
       const mapEl = document.getElementById('discovery-map-container');
       if (currentLevel && currentLevel.mapImage) {
         injectMapAnimStyles();
         renderMapOverlay(mapEl, currentLevel, currentAllPoints, buildStateMap(session), {
           naturalHeight: true,
+          animatePointId: point.id,
+          animateType: 'reveal',
         });
         mapEl.style.display = 'block';
       } else {
