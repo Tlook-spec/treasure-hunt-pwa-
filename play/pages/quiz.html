@@ -237,6 +237,7 @@
         renderMapOverlay(mapEl, currentLevel, currentAllPoints,
           buildPointStateMap(currentData.session, currentAllPoints), {
           naturalHeight: true,
+          maxHeight: '66vh',        // 答题引导页地图放大约 20%（默认 55vh × 1.2）
           animatePointId: point.id,
           animateType: 'reveal',
         });

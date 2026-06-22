@@ -51,8 +51,14 @@
   <script type="module">
     import db from '../../shared/db/play-db.js';
 
-    // 轮换图标，按探险在列表中的顺序分配
+    // 轮换图标，按探险 ID 哈希分配（与 start-level.html 的 pickIcon 完全一致，
+    // 保证同一探险在「选择列表」和「开始页」显示同一个图标，不随排序变化）
     const ICONS = ['🗺️', '🌲', '🔍', '🏆', '⭐', '🎯', '🧩', '🏃'];
+    function pickIcon(id) {
+      let hash = 0;
+      for (const ch of String(id)) hash = (hash * 31 + ch.charCodeAt(0)) & 0xFFFFFFFF;
+      return ICONS[Math.abs(hash) % ICONS.length];
+    }
 
     async function renderLevels() {
       const levels = await db.levels.orderBy('name').toArray();
@@ -86,7 +92,7 @@
           lastPlayText  = formatDate(latest.startedAt);
         }
 
-        return { level, pointCount, lastPlayText, icon: ICONS[idx % ICONS.length] };
+        return { level, pointCount, lastPlayText, icon: pickIcon(level.id) };
       }));
 
       list.innerHTML = cards.map(({ level, pointCount, lastPlayText, icon }) => `

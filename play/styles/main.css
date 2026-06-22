@@ -821,15 +821,15 @@ body {
 /* 通关庆典卡：居中大图标 + 标题 + 副标题 */
 .completion-card {
   text-align: center;
-  padding: var(--space-lg) var(--space-md);
+  padding: var(--space-sm) var(--space-md);  /* 上方留白减半，整块上移 */
 }
 .completion-icon {
-  font-size: 72px;
+  font-size: 56px;   /* 调小（原 72px）*/
   line-height: 1.2;
   margin-bottom: var(--space-sm);
 }
 .completion-title {
-  font-size: 32px;
+  font-size: 26px;   /* 调小（原 32px）*/
   font-weight: 900;
   color: var(--color-primary);
   margin-bottom: 8px;
@@ -931,7 +931,7 @@ body {
 /* ── 通关大标题区 ── */
 .victory-hero {
   text-align: center;
-  padding: var(--space-lg) var(--space-md) var(--space-md);
+  padding: 20px var(--space-md) var(--space-sm);  /* 收紧上下留白 */
 }
 
 @keyframes trophy-bounce {
@@ -941,14 +941,14 @@ body {
 }
 
 .victory-trophy {
-  font-size: 88px;
+  font-size: 64px;   /* 调小（原 88px）*/
   line-height: 1.2;
   margin-bottom: 8px;
   animation: trophy-bounce 0.7s cubic-bezier(.34,1.56,.64,1) both;
 }
 
 .victory-title {
-  font-size: 42px;
+  font-size: 34px;   /* 调小（原 42px）*/
   font-weight: 900;
   color: var(--color-primary);
   letter-spacing: 2px;
@@ -974,7 +974,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 4px;
+  padding: 11px 4px;   /* 收紧每行上下间距（原 16px）*/
 }
 
 .score-label {
@@ -983,13 +983,13 @@ body {
 }
 
 .score-value {
-  font-size: 28px;
+  font-size: 24px;   /* 调小（原 28px）*/
   font-weight: 900;
   color: var(--color-text);
 }
 
 .score-value-sm {
-  font-size: 22px;
+  font-size: 20px;   /* 调小（原 22px）*/
 }
 
 .score-divider {
