@@ -86,17 +86,15 @@ export function renderMapOverlay(container, level, points, stateMap, opts = {}) 
  */
 function buildMarker(pt, state, fontSize, nameColor, nameColorDone) {
   const marker = document.createElement('div');
-  // transform: translate(-50%, -100%) 让标记的底部中心对齐坐标点
-  // mapX/mapY 以 0~1 小数存储（admin 端 clamp01），渲染时转成百分比
+  // transform: translate(-50%, -50%) 让【图标中心】对齐坐标点
+  //   —— 必须和 admin 标记编辑器一致（admin 的 .marker-dot 也是 translate(-50%,-50%)
+  //   圆心对齐，名字 absolute 挂圆下方不影响圆心定位）。否则两端同一坐标显示位置不同。
+  // mapX/mapY 以 0~1 小数存储（admin 端 clamp01），渲染时转成百分比。
   marker.style.cssText = [
     'position:absolute',
     `left:${pt.mapX * 100}%`,
     `top:${pt.mapY * 100}%`,
-    'transform:translate(-50%,-100%)',
-    'display:flex',
-    'flex-direction:column',
-    'align-items:center',
-    'gap:3px',
+    'transform:translate(-50%,-50%)',
     'pointer-events:none',
   ].join(';');
 
@@ -124,11 +122,16 @@ function buildMarker(pt, state, fontSize, nameColor, nameColorDone) {
 
 /**
  * 生成点位名字标签（黑色阴影确保在任何底图上都清晰）。
+ * absolute 挂在图标正下方，不参与图标的中心定位（与 admin 的 .marker-label 一致）。
  */
 function makeLabel(name, fontSize, color) {
   const label = document.createElement('span');
   label.textContent = name;
   label.style.cssText = [
+    'position:absolute',
+    'top:calc(100% + 3px)',
+    'left:50%',
+    'transform:translateX(-50%)',
     `font-size:${fontSize}px`,
     `color:${color}`,
     'font-weight:700',
@@ -150,9 +153,9 @@ function makeStarSvg() {
   svg.setAttribute('height',  '28');
   // 旋转挂在 SVG 本身（不影响父 marker div 的动画 transform）
   svg.style.cssText = [
+    'display:block',
     'transform:rotate(-15deg)',
     'filter:drop-shadow(0 1px 4px rgba(0,0,0,0.6))',
-    'flex-shrink:0',
   ].join(';');
 
   const poly = document.createElementNS(NS, 'polygon');
@@ -175,20 +178,21 @@ export function injectMapAnimStyles() {
   const style = document.createElement('style');
   style.id = 'map-overlay-styles';
   style.textContent = `
-    /* 浮现：空心圆+名字从透明淡入并弹一下（约 0.5s）*/
+    /* 浮现：空心圆+名字从透明淡入并弹一下（约 0.5s）。
+       transform 基准与 buildMarker 一致：translate(-50%,-50%) 图标中心对齐坐标点 */
     @keyframes mapReveal {
-      0%   { opacity:0; transform:translate(-50%,-100%) scale(0.5); }
-      65%  { opacity:1; transform:translate(-50%,-100%) scale(1.1); }
-      100% { opacity:1; transform:translate(-50%,-100%) scale(1); }
+      0%   { opacity:0; transform:translate(-50%,-50%) scale(0.5); }
+      65%  { opacity:1; transform:translate(-50%,-50%) scale(1.1); }
+      100% { opacity:1; transform:translate(-50%,-50%) scale(1); }
     }
-    /* 盖章：五角星从上方"咚"砸下 + 落点轻微震动（约 0.8s）*/
+    /* 盖章：五角星从上方"咚"砸下 + 落点轻微震动（约 0.8s），围绕 -50% 抖 */
     @keyframes mapStamp {
-      0%   { opacity:0; transform:translate(-50%,-100%) scale(0.1); }
-      45%  { opacity:1; transform:translate(-50%,-100%) scale(1.3); }
-      60%  {            transform:translate(-50%,-97%)  scale(0.88); }
-      72%  {            transform:translate(-50%,-102%) scale(1.05); }
-      84%  {            transform:translate(-50%,-99%)  scale(0.98); }
-      100% { opacity:1; transform:translate(-50%,-100%) scale(1); }
+      0%   { opacity:0; transform:translate(-50%,-50%) scale(0.1); }
+      45%  { opacity:1; transform:translate(-50%,-50%) scale(1.3); }
+      60%  {            transform:translate(-50%,-47%) scale(0.88); }
+      72%  {            transform:translate(-50%,-52%) scale(1.05); }
+      84%  {            transform:translate(-50%,-49%) scale(0.98); }
+      100% { opacity:1; transform:translate(-50%,-50%) scale(1); }
     }
     .map-anim-reveal { animation: mapReveal 0.5s ease-out forwards; }
     .map-anim-stamp  { animation: mapStamp  0.8s ease-out forwards; }
