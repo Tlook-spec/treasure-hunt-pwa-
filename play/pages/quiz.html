@@ -77,16 +77,26 @@
     </main>
   </div>
 
-  <!-- ── V1-14：地图覆盖层（扫码后若有地图则全屏弹出，动画结束后关闭）── -->
-  <div id="map-overlay-layer"
-       style="display:none; position:fixed; inset:0; z-index:500;
-              background:rgba(0,0,0,0.90); flex-direction:column; align-items:center;
-              justify-content:center; padding:20px;">
-    <div id="map-overlay-container"
-         style="width:min(90vw,560px); height:min(75vw,480px); border-radius:14px;
-                overflow:hidden; background:#1a1a2e; position:relative;"></div>
-    <p style="color:#fff; margin-top:14px; font-size:16px; font-weight:600;
-              opacity:0.9; text-align:center;">✨ 发现了这个地点！</p>
+  <!-- V1-16 浮动地图按钮（答题屏显示；有 mapImage 才显示；避开右上角求助按钮）-->
+  <button id="btn-map-fab"
+          aria-label="查看地图"
+          style="display:none; position:fixed; right:20px; bottom:20px; z-index:100;
+                 width:60px; height:60px; border-radius:50%; border:none;
+                 background:#4A90E2; color:#fff; font-size:26px;
+                 box-shadow:0 4px 14px rgba(0,0,0,0.35); cursor:pointer;
+                 align-items:center; justify-content:center;">🗺️</button>
+
+  <!-- V1-16 地图查看全屏覆盖层 -->
+  <div id="map-view-overlay"
+       style="display:none; position:fixed; inset:0; z-index:300;
+              background:rgba(0,0,0,0.88); overflow-y:auto;">
+    <button id="btn-close-map-view"
+            aria-label="关闭地图"
+            style="position:fixed; top:16px; right:16px; z-index:301;
+                   width:44px; height:44px; border-radius:50%; border:none;
+                   background:rgba(255,255,255,0.18); color:#fff; font-size:20px;
+                   font-weight:700; cursor:pointer;">✕</button>
+    <div id="map-view-container" style="margin:60px auto 40px; position:relative;"></div>
   </div>
 
   <!-- ── 兜底：数据加载失败 ──────────────────────────────────── -->
@@ -116,7 +126,7 @@
       consumeHelp,
     } from '../scripts/quiz-logic.js';
     import db from '../../shared/db/play-db.js';
-    import { renderMapOverlay, injectMapAnimStyles } from '../scripts/map-overlay.js?v=V1-15c';
+    import { renderMapOverlay, injectMapAnimStyles } from '../scripts/map-overlay.js?v=V1-16';
 
     const sessionId = new URLSearchParams(location.search).get('sessionId');
     if (!sessionId) location.href = 'select-level.html';
@@ -228,6 +238,7 @@
 
       document.getElementById('screen-discovery').style.display = 'block';
       document.getElementById('screen-quiz').style.display = 'none';
+      document.getElementById('btn-map-fab').style.display = 'none'; // 发现页已内嵌地图，不需 FAB
     }
 
     /** 根据 session 当前进度构建点位状态图 */
@@ -336,6 +347,9 @@
       hideFeedback();
       document.getElementById('screen-discovery').style.display = 'none';
       document.getElementById('screen-quiz').style.display = 'block';
+      // 有地图才显示浮动地图按钮（答题屏专属，发现屏已内嵌）
+      const fab = document.getElementById('btn-map-fab');
+      fab.style.display = (currentLevel && currentLevel.mapImage) ? 'flex' : 'none';
     }
 
     // ── 选项点击 ──────────────────────────────────────────
@@ -562,13 +576,30 @@
 
     // ── 兜底错误 ──────────────────────────────────────────
     function showError() {
-      document.getElementById('quiz-banner').style.display = 'none';
+      document.getElementById('quiz-banner').style.display      = 'none';
       document.getElementById('screen-discovery').style.display = 'none';
-      document.getElementById('screen-quiz').style.display = 'none';
-      document.getElementById('map-overlay-layer').style.display = 'none';
-      document.getElementById('intro-modal').style.display = 'none';
-      document.getElementById('error-state').style.display = 'block';
+      document.getElementById('screen-quiz').style.display      = 'none';
+      document.getElementById('map-view-overlay').style.display = 'none';
+      document.getElementById('btn-map-fab').style.display      = 'none';
+      document.getElementById('error-state').style.display      = 'block';
     }
+
+    // ── V1-16 FAB 点击：打开覆盖层，渲染纯查看地图（无动画）──
+    document.getElementById('btn-map-fab').addEventListener('click', () => {
+      if (!currentLevel || !currentAllPoints.length) return;
+      const container = document.getElementById('map-view-container');
+      renderMapOverlay(
+        container, currentLevel, currentAllPoints,
+        buildStateMap(currentData.session),
+        { naturalHeight: true, maxHeight: '70vh' }
+      );
+      document.getElementById('map-view-overlay').style.display = 'block';
+    });
+
+    // ── V1-16 关闭覆盖层 ──
+    document.getElementById('btn-close-map-view').addEventListener('click', () => {
+      document.getElementById('map-view-overlay').style.display = 'none';
+    });
 
     init();
   </script>

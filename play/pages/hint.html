@@ -47,6 +47,30 @@
     </button>
   </div>
 
+  <!-- V1-16 浮动地图按钮（有 mapImage 才显示；right 20px bottom 96px 避开扫码底栏）-->
+  <button id="btn-map-fab"
+          aria-label="查看地图"
+          style="display:none; position:fixed; right:20px; bottom:96px; z-index:100;
+                 width:60px; height:60px; border-radius:50%; border:none;
+                 background:#4A90E2; color:#fff; font-size:26px;
+                 box-shadow:0 4px 14px rgba(0,0,0,0.35); cursor:pointer;
+                 align-items:center; justify-content:center;">🗺️</button>
+
+  <!-- V1-16 地图查看全屏覆盖层 -->
+  <div id="map-view-overlay"
+       style="display:none; position:fixed; inset:0; z-index:300;
+              background:rgba(0,0,0,0.88); overflow-y:auto;">
+    <!-- 右上角关闭按钮 -->
+    <button id="btn-close-map-view"
+            aria-label="关闭地图"
+            style="position:fixed; top:16px; right:16px; z-index:301;
+                   width:44px; height:44px; border-radius:50%; border:none;
+                   background:rgba(255,255,255,0.18); color:#fff; font-size:20px;
+                   font-weight:700; cursor:pointer;">✕</button>
+    <!-- 地图容器（renderMapOverlay 在此渲染，每次打开前清空重绘）-->
+    <div id="map-view-container" style="margin:60px auto 40px; position:relative;"></div>
+  </div>
+
   <!-- Eruda 调试 -->
   <script>
     if (new URLSearchParams(location.search).get('debug') === '1') {
@@ -60,39 +84,47 @@
   <!-- ES Module：以 session 为唯一数据源，展示当前点位提示 -->
   <script type="module">
     import db from '../../shared/db/play-db.js';
+    import { renderMapOverlay, injectMapAnimStyles } from '../scripts/map-overlay.js?v=V1-16';
 
-    // 从 URL 获取 sessionId（session 是游戏进度的唯一数据源）
     const sessionId = new URLSearchParams(location.search).get('sessionId');
     if (!sessionId) {
       location.href = 'select-level.html';
     }
 
+    // 模块级：供 FAB 点击时使用
+    let currentLevel     = null;
+    let currentAllPoints = [];
+    let currentSession   = null;
+
     async function init() {
       // 读取会话
       const session = await db.sessions.get(sessionId);
       if (!session) {
-        // session 不存在（可能已被清除），退回探险选择
         location.href = 'select-level.html';
         return;
       }
 
+      currentSession = session;
       const { levelId, currentPointIndex } = session;
 
-      // 读取该探险所有点位，按 order 升序（sortBy 做内存排序）
+      // 读取该探险所有点位，按 order 升序
       const allPoints = await db.points
         .where('levelId').equals(levelId)
         .sortBy('order');
 
+      currentAllPoints = allPoints;
       const totalStations = allPoints.length;
       const currentPoint  = allPoints[currentPointIndex];
 
       if (!currentPoint) {
-        // 点位数据异常
         console.error('[提示页] 找不到点位，currentPointIndex=', currentPointIndex,
                       'allPoints.length=', totalStations);
         showError();
         return;
       }
+
+      // 加载 level 对象（地图渲染需要）
+      currentLevel = await db.levels.get(levelId);
 
       // ── 渲染进度横幅 ──
       const stationNum = currentPointIndex + 1;
@@ -101,7 +133,6 @@
       document.getElementById('station-banner').style.display = 'flex';
 
       // ── 渲染提示卡片 ──
-      // locationHint 为空时显示通用提示文案
       document.getElementById('hint-text').textContent =
         currentPoint.locationHint || '仔细看二维码贴在哪里';
       document.getElementById('hint-card').style.display = 'block';
@@ -110,14 +141,47 @@
       const btnScan = document.getElementById('btn-scan');
       btnScan.style.display = 'flex';
       btnScan.addEventListener('click', () => {
-        // M20 实现 scan.html；现在点击会 404（正常，M20 修复）
         location.href = `scan.html?sessionId=${encodeURIComponent(sessionId)}`;
       });
+
+      // ── V1-16：有地图才显示浮动按钮 ──
+      if (currentLevel && currentLevel.mapImage) {
+        injectMapAnimStyles();
+        document.getElementById('btn-map-fab').style.display = 'flex';
+      }
     }
+
+    // hint.html 的 stateMap：正在寻找第 currentPointIndex 站（还没扫码）
+    //   → 之前的站已完成；当前及之后还没发现
+    function buildStateMap(session) {
+      const stateMap = {};
+      currentAllPoints.forEach((pt, i) => {
+        stateMap[pt.id] = (i < session.currentPointIndex) ? 'completed' : 'undiscovered';
+      });
+      return stateMap;
+    }
+
+    // ── V1-16 FAB 点击：打开覆盖层，渲染纯查看地图（无动画）──
+    document.getElementById('btn-map-fab').addEventListener('click', () => {
+      if (!currentLevel || !currentSession) return;
+      const container = document.getElementById('map-view-container');
+      renderMapOverlay(
+        container, currentLevel, currentAllPoints,
+        buildStateMap(currentSession),
+        { naturalHeight: true, maxHeight: '70vh' }
+      );
+      document.getElementById('map-view-overlay').style.display = 'block';
+    });
+
+    // ── V1-16 关闭覆盖层 ──
+    document.getElementById('btn-close-map-view').addEventListener('click', () => {
+      document.getElementById('map-view-overlay').style.display = 'none';
+    });
 
     function showError() {
       document.getElementById('hint-card').style.display   = 'none';
       document.getElementById('btn-scan').style.display    = 'none';
+      document.getElementById('btn-map-fab').style.display = 'none';
       document.getElementById('error-state').style.display = 'block';
     }
 
