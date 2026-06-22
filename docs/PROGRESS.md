@@ -8,9 +8,11 @@
 
 ## 当前状态
 
-**阶段**：🟦 **V1-A 单人打磨（进行中）**
+**阶段**：🟩 **V1 A 区 + B 区已完成 → 准备进入 C 区**
 
-**下一个任务**：V1-20（B 区联调 + iPad 三态验收，V1-09~19 全部跑一遍）
+**部署**：已搭好**双分支双部署**（2026-06-22）——`release`→网站根目录（孩子玩的稳定版），`main`→`/dev/`（开发版，名字「寻宝-DEV」+ 橙图标）。GitHub Actions 自动部署。以后改 main 不影响孩子。详见 [双分支发布说明.md](双分支发布说明.md)。
+
+**下一个任务**：V1-21（C 区 收尾杂项）
 
 详见：[任务清单_V1.md](../任务清单_V1.md)
 
@@ -100,7 +102,7 @@
 - [x] V1-07 ✅出题用字指南（文档）
 - [x] V1-08 ✅A 区联调 + 真机三态验收
 
-### 🟨 B 区 地图 + 故事 + 海报（V1-09 ~ V1-20）进行中
+### 🟨 B 区 地图 + 故事 + 海报（V1-09 ~ V1-20）✅ 已完成
 - [x] V1-09 ✅ 编辑端 L1 表单解锁地图字段 UI（上传底图压缩 1600px + 字号/颜色配置）
 - [x] V1-10 ✅ 编辑端地图标记编辑器（新标签页独立页，点击放置/拖动调整/删除/预览/保存）
 - [x] V1-11 ✅ 编辑端 L2 三段文案（答题引导 questionIntroText + 通关庆祝 completionText）
@@ -112,7 +114,10 @@
 - [x] V1-17 ✅ 地图三态统一（map-overlay.js 新增 buildPointStateMap 共用函数，依据 pointRecords 推三态，消除各页自写 index 绕道；quiz.html 提前调 startChallenge 使 discover 屏能正确显示 discovered；photo.html 去掉 i<=current 绕道改走共用函数；hint.html 同；SW v2.20）
 - [x] V1-18 ✅ 成就海报（victory.html Canvas 生成 1080px 竖版海报：蓝色渐变头部/站点列表/16:9 合影网格/全亮地图红星盖章；按钮触发，长按保存；无地图/无照片向下兼容；SW v2.21）
 - [x] V1-19 ✅ schemaVersion 升 1.1 + 放宽校验（导出改写 "1.1"；validateJson 改为主版本号 === '1' 即接受，1.0/1.1 均通过，2.0 拒绝，无字段拒绝；exportFull/importFull 整对象倒出/写入，地图故事字段自然包含，无需补字段）
+- [x] V1-20 ✅ B 区联调 + iPad 三态验收（V1-09~19 地图/故事/海报/导入全流程真机走通）
 - [x] UI 微调（非编号）✅ 答题引导页地图 +20%(66vh)；photo「第N站完成」🎉+标题调小并整块上移；victory 庆祝🏆+概况调小、间距收紧；select/start 探险图标规则统一为 pickIcon(id)；新增 `docs/外观微调操作文档.md`（图标/地图/文案自助调整 + 推 GitHub 详细步骤）；SW v2.22
+- [x] 双分支双部署（基建·非编号）✅ release→根目录（孩子玩）/ main→/dev（开发版「寻宝-DEV」橙图标，DEV 标记部署时注入不进源码）；GitHub Actions 工作流 `.github/workflows/deploy-pages.yml`；github-pages 环境放开 main+release 两分支；新增 `docs/双分支发布说明.md`
+
 ### 🟩 C 区 收尾杂项（V1-21 ~ V1-24）待开始
 ### 🟥 D 区 多人 + 题型增强（V1-25 ~ V1-34）待定（玩过 A/B/C 再确认）
 ### 🟪 E 区 真机测试 + 修 bug（V1-35 ~ V1-38）待开始

@@ -245,7 +245,7 @@ MVP 范围对零基础开发者来说较紧凑。**严禁同时推进多条线**
 
 ### 4.1 编辑端(admin/)
 
-> **编辑端是普通网页,不做 PWA**。家长在浏览器里访问 `https://你的用户名.github.io/treasure-hunt/admin/` 即可使用。
+> **编辑端是普通网页,不做 PWA**。家长在浏览器里访问 `https://tlook-spec.github.io/treasure-hunt-pwa-/admin/`(开发版 `.../treasure-hunt-pwa-/dev/admin/`)即可使用。部署架构见 `docs/双分支发布说明.md`。
 > 
 > **iPad 浏览器访问编辑端也可以**(响应式适配),但 iPad PWA(游戏端)里没有编辑功能。
 >
