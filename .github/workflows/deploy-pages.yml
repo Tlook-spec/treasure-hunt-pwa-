@@ -1,0 +1,77 @@
+name: Deploy GitHub Pages
+
+# ── 双分支部署 ────────────────────────────────────────────────
+#   release 分支 → 网站根目录        （孩子玩的正式版：正常名字 + 蓝色图标）
+#   main    分支 → 根目录下的 /dev/   （开发版：名字「寻宝-DEV」+ 橙色图标）
+#
+# DEV 名字/图标【不写进任何分支的源码】，只在这里部署时往 /dev 副本注入。
+# 好处：将来用 `git reset --hard main` 全量同步 release 时，绝不会把 DEV
+# 标记带给孩子——两个分支的 manifest/index.html 始终是正常版。
+#
+# 网址：
+#   孩子（release）: https://tlook-spec.github.io/treasure-hunt-pwa-/play/
+#   开发（main）   : https://tlook-spec.github.io/treasure-hunt-pwa-/dev/play/
+
+on:
+  push:
+    branches: [main, release]
+  workflow_dispatch:        # 允许在 Actions 页手动触发
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只跑一个部署，避免两次推送打架
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 取出 release 分支（孩子的正式版）
+        uses: actions/checkout@v4
+        with:
+          ref: release
+          path: release
+
+      - name: 取出 main 分支（开发版）
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main
+
+      - name: 组装站点（release 放根目录，main 放 /dev）
+        run: |
+          mkdir -p _site
+          cp -r release/* _site/
+          mkdir -p _site/dev
+          cp -r main/* _site/dev/
+
+      - name: 给 /dev 版打 DEV 标记（仅部署时注入，源码不变）
+        run: |
+          cd _site/dev/play
+          # manifest.json：名字 + 图标换成 DEV 版
+          sed -i 's#"name": "寻宝游戏"#"name": "寻宝-DEV"#' manifest.json
+          sed -i 's#"short_name": "寻宝"#"short_name": "寻宝DEV"#' manifest.json
+          sed -i 's#icon-512.svg#icon-dev-512.svg#g' manifest.json
+          sed -i 's#icon-maskable-192.svg#icon-dev-maskable-192.svg#g' manifest.json
+          sed -i 's#icon-192.svg#icon-dev-192.svg#g' manifest.json
+          # index.html：iOS 主屏名字 + 网页标题 + apple-touch-icon
+          sed -i 's#content="寻宝游戏"#content="寻宝-DEV"#' index.html
+          sed -i 's#<title>寻宝游戏</title>#<title>寻宝-DEV</title>#' index.html
+          sed -i 's#icon-192.svg#icon-dev-192.svg#g' index.html
+
+      - name: 打包 Pages 工件
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: 部署到 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

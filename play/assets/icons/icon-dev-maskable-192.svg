@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <!-- Maskable DEV 图标：内容在中心 80% 安全区内（四周各留 ~10%） -->
+  <defs>
+    <linearGradient id="bgDevMask" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#BF360C"/>
+      <stop offset="100%" stop-color="#FF7043"/>
+    </linearGradient>
+    <linearGradient id="goldDevMask" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFD600"/>
+      <stop offset="100%" stop-color="#FF8F00"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 背景填满（系统会裁切，不要圆角） -->
+  <rect width="192" height="192" fill="url(#bgDevMask)"/>
+
+  <!-- 宝箱（缩小居中，留安全区） -->
+  <rect x="56" y="80" width="80" height="44" rx="8" fill="url(#goldDevMask)"/>
+  <path d="M 56 80 Q 56 52 96 52 Q 136 52 136 80 Z" fill="#FFD600"/>
+  <rect x="56" y="77" width="80" height="6" rx="2" fill="#E65100"/>
+  <rect x="84" y="71" width="24" height="20" rx="5" fill="#7F1D0A"/>
+  <circle cx="96" cy="84" r="6" fill="#FF8F00"/>
+  <circle cx="96" cy="84" r="3" fill="#E65100"/>
+
+  <!-- DEV 字（安全区内） -->
+  <text
+    x="96" y="156"
+    font-size="36"
+    font-weight="800"
+    text-anchor="middle"
+    fill="#FFFFFF"
+    letter-spacing="2"
+    font-family="Arial, Helvetica, sans-serif"
+  >DEV</text>
+</svg>
