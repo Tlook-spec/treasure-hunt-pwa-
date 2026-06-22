@@ -34,10 +34,14 @@
         <div class="discovery-card-icon">💡</div>
         <p class="discovery-card-text" id="discovery-text"></p>
       </div>
-      <!-- 内联地图（有 mapImage 时渲染，浮现动画在这里播，不消失）-->
+      <!-- 答题引导文案（questionIntroText 非空时显示在文案下方，合并到同一页）-->
+      <p id="intro-text"
+         style="display:none; padding:4px 16px 0; color:#555; font-size:17px;
+                line-height:1.8; white-space:pre-wrap; text-align:center;"></p>
+      <!-- 内联地图（有 mapImage 时渲染，高度随图片比例自适应，不写死高度）-->
       <div id="discovery-map-container"
            style="display:none; margin:12px 0 0; border-radius:12px; overflow:hidden;
-                  height:min(55vw,320px); background:#1a1a2e; position:relative;"></div>
+                  background:transparent; position:relative;"></div>
     </main>
     <div class="bottom-action">
       <button class="btn-primary btn-success" id="btn-start-challenge">继续 →</button>
@@ -85,22 +89,6 @@
               opacity:0.9; text-align:center;">✨ 发现了这个地点！</p>
   </div>
 
-  <!-- ── V1-14：答题引导弹窗（questionIntroText 非空时显示）── -->
-  <div id="intro-modal"
-       style="display:none; position:fixed; inset:0; z-index:600;
-              background:rgba(0,0,0,0.72); flex-direction:column; align-items:center;
-              justify-content:center; padding:24px;">
-    <div style="background:#fff; border-radius:20px; padding:28px 24px 24px;
-                max-width:380px; width:100%; text-align:center;">
-      <p id="intro-modal-text"
-         style="font-size:18px; line-height:1.8; color:#2C3E50;
-                margin-bottom:24px; white-space:pre-wrap;"></p>
-      <button id="btn-quiz-from-intro" class="btn-primary btn-success" style="width:100%;">
-        开始答题！
-      </button>
-    </div>
-  </div>
-
   <!-- ── 兜底：数据加载失败 ──────────────────────────────────── -->
   <div id="error-state" style="display:none; padding:48px 24px; text-align:center;
        color:var(--color-error); font-size:17px; line-height:2">
@@ -128,7 +116,7 @@
       consumeHelp,
     } from '../scripts/quiz-logic.js';
     import db from '../../shared/db/play-db.js';
-    import { renderMapOverlay, injectMapAnimStyles } from '../scripts/map-overlay.js';
+    import { renderMapOverlay, injectMapAnimStyles } from '../scripts/map-overlay.js?v=V1-14';
 
     const sessionId = new URLSearchParams(location.search).get('sessionId');
     if (!sessionId) location.href = 'select-level.html';
@@ -184,8 +172,8 @@
         currentAllPoints = await db.points
           .where('levelId').equals(session.levelId).sortBy('order');
 
-        // 有发现文案 OR 有地图 → 显示发现页；两者都没有 → 直接进答题流程
-        const hasDiscovery = point.discoveryText || (currentLevel && currentLevel.mapImage);
+        // 有发现文案 / 答题引导 / 地图 → 显示发现页；三者都没有 → 直接进答题
+        const hasDiscovery = point.discoveryText || point.questionIntroText || (currentLevel && currentLevel.mapImage);
         if (hasDiscovery) {
           showDiscoveryScreen(currentData);
         } else {
@@ -205,7 +193,7 @@
       document.getElementById('discovery-station-text').textContent =
         `第 ${stationNumber} 站 · 共 ${totalStations} 站`;
 
-      // 发现文案：有就显示，没有就隐藏（不显示兜底文案）
+      // 发现文案
       const textSection = document.getElementById('discovery-text-section');
       if (point.discoveryText) {
         document.getElementById('discovery-text').textContent = point.discoveryText;
@@ -214,13 +202,21 @@
         textSection.style.display = 'none';
       }
 
-      // 地图：有底图就渲染在文案下方，对当前点位播浮现动画，之后一直可见
+      // 答题引导文案（合并到发现页，不再单独弹窗）
+      const introTextEl = document.getElementById('intro-text');
+      if (point.questionIntroText) {
+        introTextEl.textContent = point.questionIntroText;
+        introTextEl.style.display = 'block';
+      } else {
+        introTextEl.style.display = 'none';
+      }
+
+      // 地图：有底图就渲染在文案下方（静态展示，高度随图片比例）
       const mapEl = document.getElementById('discovery-map-container');
       if (currentLevel && currentLevel.mapImage) {
         injectMapAnimStyles();
         renderMapOverlay(mapEl, currentLevel, currentAllPoints, buildStateMap(session), {
-          animatePointId: point.id,
-          animateType: 'reveal',
+          naturalHeight: true,
         });
         mapEl.style.display = 'block';
       } else {
@@ -266,18 +262,7 @@
     /** 发现页「继续 →」后（或无发现内容时 init 直接调用）的衔接逻辑 */
     async function afterDiscovery() {
       document.getElementById('screen-discovery').style.display = 'none';
-
-      if (currentData.point.questionIntroText) {
-        showIntroModal(currentData.point.questionIntroText);
-      } else {
-        await startQuiz();
-      }
-    }
-
-    /** 弹出答题引导弹窗 */
-    function showIntroModal(text) {
-      document.getElementById('intro-modal-text').textContent = text;
-      document.getElementById('intro-modal').style.display = 'flex';
+      await startQuiz();
     }
 
     /** 正式进入答题：创建 pointRecord + 加载第一道题 */
@@ -285,22 +270,6 @@
       await startChallenge(sessionId);
       await loadAndShowQuizScreen();
     }
-
-    // 「开始答题！」按钮（答题引导弹窗）
-    document.getElementById('btn-quiz-from-intro').addEventListener('click', async () => {
-      // iOS 音频解锁（当没有发现文案直接进引导弹窗时，这是第一个用户手势）
-      [sfxCorrect, sfxWrong].forEach(s => {
-        s.muted = true;
-        s.play().then(() => { s.pause(); s.currentTime = 0; s.muted = false; }).catch(() => {});
-      });
-      document.getElementById('intro-modal').style.display = 'none';
-      try {
-        await startQuiz();
-      } catch (err) {
-        console.error('[答题页] 开始答题失败', err);
-        showError();
-      }
-    });
 
     // ── 屏 2：从 DB 加载当前题并渲染 ─────────────────────
     async function loadAndShowQuizScreen() {

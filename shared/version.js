@@ -9,7 +9,7 @@
  * 两者对比即可判断「主屏幕图标是否还在跑旧版本」。
  */
 
-export const APP_VERSION = 'V1-A';
+export const APP_VERSION = 'V1';
 
 // 推送标识：格式「任务号 · 日期」，每次推 GitHub 前更新这一行
-export const BUILD_TAG = 'V1-14-发现浮现 · 2026-06-21';
+export const BUILD_TAG = 'V1-14-地图调整 · 2026-06-22';

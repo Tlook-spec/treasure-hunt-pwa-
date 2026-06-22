@@ -2,7 +2,7 @@
 
 > 这个文件是给 Claude Code 看的「项目说明书」。每次启动新对话时 Claude Code 会自动读取这个文件,了解项目背景和约定。**不要删除这个文件**。
 >
-> > **当前版本:v1.7.3**(详见文末更新记录)
+> > **当前版本:v1.9**(详见文末更新记录)
 
 ---
 
@@ -65,6 +65,7 @@ L1 探险(Level)              一次完整的户外活动
 | 二维码生成 | qrcode-generator | `https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.js` |
 | CSV 解析 | PapaParse | `https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js` |
 | 调试 | Eruda | `https://cdn.jsdelivr.net/npm/eruda@3.0.1/eruda.min.js`(?debug=1 时加载) |
+| 拼音标注 | pinyin-pro | `https://cdn.jsdelivr.net/npm/pinyin-pro@3.18.2/dist/index.js`（全局名 `pinyinPro`，V1-A 起） |
 
 **CDN + Service Worker 离线工作原理**:
 - 第一次访问游戏端(有网):浏览器从 CDN 下载库 → SW 自动缓存
@@ -120,7 +121,7 @@ treasure-hunt/
 │   ├── PRD.md
 │   ├── PROGRESS.md
 │   ├── 版本路线图.md
-│   ├── 任务清单_MVP_v1.7.md
+│   ├── 任务清单_V1.md  
 │   └── test-checklists/        # 真机测试检查清单(v1.7 新增,见 §5.7)
 │
 ├── README.md
@@ -359,7 +360,7 @@ self.addEventListener('fetch', (event) => {
 - 使用次数实时计算(扫描所有 Point.questionIds),不存储,不随导入更新
 - **不做 snapshot 机制**——session 直接引用当前 L1 数据
 - **导入数据保护**:导入前检查未完成游戏并二次确认
-- **JSON 版本检查**:MVP 只检查 schemaVersion === "1.0",简单 OK
+- **JSON 版本检查**:MVP / V1-A 严格检查 schemaVersion === "1.0";V1-B(任务 V1-19)加地图字段升 1.1 时,放宽为「主版本号为 1 即接受」(详见 PRD §7.5)。注:explanation 自 MVP 起就在 1.0 文件里,**非** 1.1 新增字段
 
 ---
 
@@ -403,21 +404,11 @@ self.addEventListener('fetch', (event) => {
 
 > 每完成一个任务后,请更新 `docs/PROGRESS.md`。新对话开始时先读 PROGRESS.md。
 
-**当前阶段**:阶段 1 设计末 - 即将进入 MVP 开发
+**当前阶段**：🎉 MVP 已完成 → V1-A 单人打磨（进行中）
 
-**已完成**:
-- T01-T03(GitHub 注册、VS Code+Claude Code 安装、项目初始化)
-- T04(Hello World PWA)
-- T05(部署到 GitHub Pages)
-- T06(iPad 添加到主屏幕)
-- T07(扫码功能 + Eruda 调试,已在 iPad 真机验证)
-- T08(架构调整为双站点结构)
-
-**进行中**:T09-T13 阶段 1 设计任务
-
-**待处理**:
-- 阶段 1 设计完成后进入 MVP 开发(详见 `任务清单_MVP_v1.7.md`)
-
+**已完成**：T01-T13（环境 + 设计）、M01-M30（MVP 全部）
+**进行中**：V1 A 区 单人打磨（V1-01~08：展示解析 / 通关错题本 / 音效 / 拼音 / 修 bug，详见 `任务清单_V1.md`）
+**待处理**：B 区 地图+故事+海报 → C 区 收尾杂项 → D 区 多人+题型增强（待定）→ E 区 真机验收
 ---
 
 ## 9. 视觉规范
@@ -542,6 +533,7 @@ self.addEventListener('fetch', (event) => {
 - ❌ MVP 实现 V1 探险地图功能(数据字段可预留,但所有 UI / 交互 / 弹窗 / 动画一律推到 V1,**包括编辑端的「上传地图」表单字段也不要显示**)
 - ❌ MVP 实现 V1 故事背景文本(数据字段可预留,但游戏端启动不读 openingStory)
 - ❌ 实现 v1.7 已删除的功能:朗读、完整 PDF 批量打印、JSON 智能合并、退出玩家重新加入、头像贴纸滤镜、最近删除回收站、编辑端密码保护、拖拽排序、L1 zip 包导出、CSV 编码自动检测
+- ✅ **拼音标注是纯显示**（<ruby> 标注），**不等于朗读**。朗读（Web Speech）仍永久不做；拼音功能允许。
 
 ### 11.4 流程禁止
 
@@ -577,6 +569,10 @@ self.addEventListener('fetch', (event) => {
 | MVP M01 中 | v1.7.1 | 用户 + Claude | 二维码库由 qrcode@1.5.3 换为 qrcode-generator@2.0.4，原 node-qrcode 浏览器构建无法作为普通脚本暴露全局变量 |
 | MVP M09 后 | v1.7.2 | 用户 + Claude | usedCount 由存储累计值改为实时计算的当前引用数，消除列表与删除提示不一致；§6 和规则 14 同步更新 |
 | MVP 阶段C前 | v1.7.3 | 用户 + Claude | §5.7 增加游戏端「local 草稿 / iPad 验收」分档表 + 始终用中文回复约定 |
+| MVP 完成后 | v1.8 | 用户 + Claude | 进入 V1-A；新增 pinyin-pro CDN 库；澄清拼音≠朗读；当前状态更新为 V1 |
+| V1-A 规划 | v1.9 | 用户 + 3 AI Reviewer + Claude | V1 改流水码 V1-01~38;海报并入 B 区一次到位;故事(开场/结局+三段文案)全归 B 区;多人+题型合并为 D 区并标待定;音效默认开取消开关;拼音加性能护栏;单 L1 导入走覆盖确认;放宽 validateJson 写入 V1-19 |
+
+
 
 ---
 

@@ -14,11 +14,11 @@ const FONT_SIZE_MAP = { small: 12, medium: 15, large: 19 };
 /**
  * 清空 container 并渲染地图底图 + 有状态的点位标记。
  *
- * @param {HTMLElement} container  地图放置的容器（需有固定宽高，position:relative）
+ * @param {HTMLElement} container  地图放置的容器（position:relative；naturalHeight 时高度由图片自决）
  * @param {object}      level      Level 对象（mapImage / mapFontSize / mapNameColor / mapNameColorCompleted）
  * @param {object[]}    points     所有点位数组（含 id / mapX / mapY / name）
  * @param {object}      stateMap   { [pointId]: 'undiscovered' | 'discovered' | 'completed' }
- * @param {object}      [opts]     可选：{ animatePointId, animateType: 'reveal' | 'stamp' }
+ * @param {object}      [opts]     可选：{ animatePointId, animateType: 'reveal'|'stamp', naturalHeight: bool }
  */
 export function renderMapOverlay(container, level, points, stateMap, opts = {}) {
   container.innerHTML = '';
@@ -29,7 +29,11 @@ export function renderMapOverlay(container, level, points, stateMap, opts = {}) 
   const img = document.createElement('img');
   img.src = level.mapImage;
   img.alt = '探险地图';
-  img.style.cssText = 'width:100%;height:100%;object-fit:contain;display:block;';
+  // naturalHeight:true → 高度随图片真实比例（内嵌使用，无黑边）
+  // 默认模式         → 撑满容器固定高度（全屏覆盖层使用）
+  img.style.cssText = opts.naturalHeight
+    ? 'width:100%;height:auto;display:block;'
+    : 'width:100%;height:100%;object-fit:contain;display:block;';
   container.appendChild(img);
 
   const fontSize      = FONT_SIZE_MAP[level.mapFontSize] || 15;
@@ -74,13 +78,13 @@ function buildMarker(pt, state, fontSize, nameColor, nameColorDone) {
   ].join(';');
 
   if (state === 'discovered') {
-    // 白色空心圆 + 点位名（刚发现时的样子）
+    // 实心白圆（深色描边）：在亮色地图和深色地图上都清晰可见
     const circle = document.createElement('div');
     circle.style.cssText = [
-      'width:20px', 'height:20px',
+      'width:22px', 'height:22px',
       'border-radius:50%',
-      'border:2.5px solid #fff',
-      'background:rgba(255,255,255,0.2)',
+      'background:rgba(255,255,255,0.92)',
+      'border:2.5px solid rgba(0,0,0,0.50)',
       'box-shadow:0 0 8px rgba(0,0,0,0.5)',
     ].join(';');
     marker.appendChild(circle);

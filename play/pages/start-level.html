@@ -47,6 +47,10 @@
     <div id="story-section" class="story-section" style="display:none">
       <p id="story-text" class="story-text"></p>
     </div>
+    <!-- 地图全览（有 mapImage 时，故事显示后同步展示；所有点位都未发现，只显示底图）-->
+    <div id="story-map-container"
+         style="display:none; margin:0 16px 16px; border-radius:12px; overflow:hidden;
+                background:transparent; position:relative;"></div>
   </main>
 
   <!-- 底部固定：开始按钮（加载完成前禁用）-->
@@ -68,6 +72,7 @@
   <script type="module">
     import db from '../../shared/db/play-db.js';
     import { generateId } from '../../shared/utils/id.js';
+    import { renderMapOverlay, injectMapAnimStyles } from '../scripts/map-overlay.js?v=V1-14';
 
     // 轮换图标，同一探险 ID 永远映射到同一个图标
     const ICONS = ['🗺️', '🌲', '🔍', '🏆', '⭐', '🎯', '🧩', '🏃'];
@@ -87,6 +92,9 @@
     let levelOpeningStory = '';
     // 是否已经切换到故事视图（防止二次点击再切一次）
     let storyShown = false;
+    // 地图渲染用（地图全览：开场故事显示后同步展示）
+    let levelData  = null;  // 完整 Level 对象
+    let allPoints  = [];    // 本探险所有点位
 
     async function init() {
       const level = await db.levels.get(levelId);
@@ -96,8 +104,10 @@
         return;
       }
 
-      // 保存开场故事，供按钮点击事件使用
+      // 保存 level 对象和全部点位，供故事页地图渲染使用
+      levelData         = level;
       levelOpeningStory = level.openingStory || '';
+      allPoints = await db.points.where('levelId').equals(levelId).sortBy('order');
 
       // 渲染探险信息
       document.getElementById('level-icon').textContent = pickIcon(level.id);
@@ -127,6 +137,15 @@
         document.getElementById('level-overview').style.display = 'none';
         document.getElementById('story-text').textContent = levelOpeningStory;
         document.getElementById('story-section').style.display = 'block';
+
+        // 如果有地图底图，在故事下方显示地图全览（所有点位均未发现，只展示底图）
+        if (levelData && levelData.mapImage) {
+          injectMapAnimStyles();
+          const storyMapEl = document.getElementById('story-map-container');
+          renderMapOverlay(storyMapEl, levelData, allPoints, {}, { naturalHeight: true });
+          storyMapEl.style.display = 'block';
+        }
+
         btn.textContent = '🚀 开始冒险！';
         storyShown = true;
         return; // 等待孩子读完故事再点一次
