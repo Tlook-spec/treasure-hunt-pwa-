@@ -95,21 +95,38 @@
         </a>
       </div>
 
-      <!-- 文件选择器（隐藏，由按钮触发）-->
+      <!-- 文件选择器（隐藏，整库 full 用）-->
       <input type="file" id="file-input" accept=".json"
-             style="display:none" aria-label="选择 JSON 文件">
+             style="display:none" aria-label="选择整库 JSON 文件">
 
-      <!-- 导入按钮 -->
+      <!-- 导入按钮：整库覆盖 -->
       <button class="btn-primary btn-warning" id="btn-import">
-        📥 完整覆盖导入
+        📥 整库覆盖导入
       </button>
 
       <!-- 简明三步说明 -->
       <p class="import-note">
-        ① 电脑端导出 JSON &nbsp;→&nbsp;
+        ① 电脑端导出整库 JSON &nbsp;→&nbsp;
         ② AirDrop / 邮件传到 iPad &nbsp;→&nbsp;
         ③ 在这里选择文件
       </p>
+
+      <!-- 分割线：追加单个探险 -->
+      <div style="border-top:1px solid #e5e5e5;margin-top:16px;padding-top:16px">
+        <p style="font-size:13px;color:#555;margin-bottom:10px;line-height:1.5">
+          或者只追加/更新<strong>单个探险</strong>（不替换其他探险）：
+        </p>
+        <!-- 文件选择器（隐藏，single-level 用）-->
+        <input type="file" id="file-input-single" accept=".json"
+               style="display:none" aria-label="选择单个探险 JSON 文件">
+        <button class="btn-primary" id="btn-import-single"
+                style="background:#4A90E2">
+          📥 追加单个探险
+        </button>
+        <!-- 追加导入结果提示 -->
+        <div id="single-import-result" style="display:none;margin-top:10px;padding:12px 14px;
+             border-radius:10px;font-size:14px;line-height:1.6"></div>
+      </div>
 
     </div>
 
@@ -255,35 +272,33 @@
         ts ? formatTs(ts) : '尚未导入';
     }
 
-    // ====== 导入按钮：控制忙碌状态 ======
+    // ====== 整库覆盖导入：按钮 + 忙碌状态 ======
 
     const btnImport = document.getElementById('btn-import');
 
     function setBusy(busy) {
       btnImport.disabled = busy;
-      btnImport.textContent = busy ? '⏳ 导入中…' : '📥 完整覆盖导入';
+      btnImport.textContent = busy ? '⏳ 导入中…' : '📥 整库覆盖导入';
     }
 
-    // ====== 显示导入成功 ======
+    // ====== 显示整库导入成功 ======
 
     function showSuccess(levelCount, questionCount) {
-      // 隐藏按钮和警示
       document.querySelector('.import-warning-box').style.display = 'none';
       btnImport.style.display = 'none';
       document.querySelector('.import-note').style.display = 'none';
+      document.getElementById('single-import-section') &&
+        (document.getElementById('single-import-section').style.display = 'none');
 
-      // 显示成功卡片
       const card = document.getElementById('import-success');
       document.getElementById('import-success-detail').textContent =
         `成功导入 ${levelCount} 个探险、${questionCount} 道题目`;
       card.style.display = 'block';
 
-      // 刷新统计数字
       renderStats();
     }
 
-    // ====== 完整导入流程 ======
-
+    // ── 整库覆盖：点按钮 → 选文件 ──
     document.getElementById('btn-import').addEventListener('click', () => {
       document.getElementById('file-input').click();
     });
@@ -291,9 +306,8 @@
     document.getElementById('file-input').addEventListener('change', async (e) => {
       const file = e.target.files[0];
       if (!file) return;
-      e.target.value = ''; // 重置，允许重复选同一文件
+      e.target.value = '';
 
-      // ── 步骤 1：读取文件 ──
       let text;
       try {
         text = await readFile(file);
@@ -302,64 +316,21 @@
         return;
       }
 
-      // ── 步骤 2：校验 JSON 格式 ──
       const result = validateJson(text);
       if (!result.ok) {
         await showAlert('文件校验失败\n\n' + result.error);
         return;
       }
-      const { data, exportType } = result;
 
-      // ── 单 L1 追加导入流程 ──────────────────────────────────
-      if (exportType === 'single-level') {
-        const level    = data.levels[0];
-        const levelName = level?.name || '未知探险';
-
-        // 检查该 L1 是否有未完成的存档
-        const inProgressForLevel = await db.sessions
-          .where('levelId').equals(level.id)
-          .filter(s => s.status === 'in_progress')
-          .toArray();
-        if (inProgressForLevel.length > 0) {
-          const go = await showConfirm(
-            `探险《${levelName}》有没玩完的存档，覆盖会影响续玩，确定继续？`,
-            '继续导入',
-            true
-          );
-          if (!go) return;
-        }
-
-        // 检查是否已存在同 ID 探险，决定确认文案
-        const existing = await db.levels.get(level.id);
-        const confirmMsg = existing
-          ? `探险《${levelName}》已存在，覆盖它（连同点位和题目）吗？\n\n` +
-            `注意：它引用的题目会按导入版本更新，可能影响其它用到这些题的探险。`
-          : `将添加探险《${levelName}》（${data.points.length} 个点位、${data.questions.length} 道题目）。\n\n` +
-            `注意：它引用的题目会按导入版本更新，可能影响其它用到这些题的探险。`;
-
-        const confirmed = await showConfirm(confirmMsg, existing ? '确认覆盖' : '确认添加', true);
-        if (!confirmed) return;
-
-        setBusy(true);
-        try {
-          // 清除该探险旧的游戏记录（覆盖后旧存档可能不一致）
-          await db.sessions.where('levelId').equals(level.id).delete();
-
-          await importSingleLevel(db, data);
-          localStorage.setItem('lastImportAt', String(Date.now()));
-          showSuccess(1, data.questions.length);
-        } catch (err) {
-          console.error('[设置] 单 L1 导入失败', err);
-          await showAlert('导入失败，请重试\n\n' + err.message);
-        } finally {
-          setBusy(false);
-        }
+      // 如果用户不小心把单个探险文件塞给整库按钮，给友好提示
+      if (result.exportType === 'single-level') {
+        await showAlert('这是单个探险文件，请点击下方「追加单个探险」按钮导入。');
         return;
       }
 
-      // ── 整库覆盖导入流程（full）──────────────────────────────
+      const { data } = result;
 
-      // ── 步骤 3：检查未完成游戏（PRD §7.4 游戏端专项检查）──
+      // 检查未完成游戏
       const inProgress = await db.sessions.where('status').equals('in_progress').toArray();
       if (inProgress.length > 0) {
         const go = await showConfirm(
@@ -370,7 +341,6 @@
         if (!go) return;
       }
 
-      // ── 步骤 4：二次确认导入数量 ──
       const confirmed = await showConfirm(
         `将导入 ${data.levels.length} 个探险、${data.points.length} 个点位、` +
         `${data.questions.length} 道题目，并替换当前所有数据。\n\n这个操作无法撤销，确定吗？`,
@@ -379,26 +349,115 @@
       );
       if (!confirmed) return;
 
-      // ── 步骤 5-6：执行导入 ──
       setBusy(true);
       try {
-        // 单独清空 sessions（importFull 只处理 levels/points/questions）
         await db.sessions.clear();
-
-        // 整库覆盖（内部原子事务，失败自动回滚）
         await importFull(db, data);
-
-        // ── 步骤 7：记录导入时间 ──
         localStorage.setItem('lastImportAt', String(Date.now()));
-
-        // ── 步骤 8：显示成功 ──
         showSuccess(data.levels.length, data.questions.length);
-
       } catch (err) {
         console.error('[设置] 导入失败', err);
         await showAlert('导入失败，请重试\n\n' + err.message);
       } finally {
         setBusy(false);
+      }
+    });
+
+    // ====== 追加单个探险：独立按钮 + 文件选择器 ======
+
+    const btnImportSingle = document.getElementById('btn-import-single');
+
+    function setSingleBusy(busy) {
+      btnImportSingle.disabled = busy;
+      btnImportSingle.textContent = busy ? '⏳ 导入中…' : '📥 追加单个探险';
+    }
+
+    function showSingleResult(msg, isError) {
+      const el = document.getElementById('single-import-result');
+      el.style.display = 'block';
+      el.style.background  = isError ? '#fdecea' : '#eafaf1';
+      el.style.border      = isError ? '1px solid #f5c6cb' : '1px solid #a9dfbf';
+      el.style.color       = isError ? '#721c24' : '#1a5c38';
+      el.innerHTML = msg;
+      renderStats();
+    }
+
+    document.getElementById('btn-import-single').addEventListener('click', () => {
+      document.getElementById('file-input-single').click();
+    });
+
+    document.getElementById('file-input-single').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      e.target.value = '';
+
+      // 重置上一次结果
+      document.getElementById('single-import-result').style.display = 'none';
+
+      let text;
+      try {
+        text = await readFile(file);
+      } catch (err) {
+        await showAlert('读取文件失败：' + err.message);
+        return;
+      }
+
+      const result = validateJson(text);
+      if (!result.ok) {
+        await showAlert('文件校验失败\n\n' + result.error);
+        return;
+      }
+
+      // 如果是整库文件，提示用另一个按钮
+      if (result.exportType !== 'single-level') {
+        await showAlert('这是整库备份文件，请点击上方「整库覆盖导入」按钮导入。');
+        return;
+      }
+
+      const { data } = result;
+      const level     = data.levels[0];
+      const levelName = level?.name || '未知探险';
+
+      // 检查该探险有无未完成存档
+      const inProgressForLevel = await db.sessions
+        .where('levelId').equals(level.id)
+        .filter(s => s.status === 'in_progress')
+        .toArray();
+      if (inProgressForLevel.length > 0) {
+        const go = await showConfirm(
+          `探险《${levelName}》有没玩完的存档，覆盖会影响续玩，确定继续？`,
+          '继续导入',
+          true
+        );
+        if (!go) return;
+      }
+
+      // 检查是否已存在同 ID 探险
+      const existing   = await db.levels.get(level.id);
+      const confirmMsg = existing
+        ? `探险《${levelName}》已存在，覆盖它（连同点位和题目）吗？\n\n` +
+          `注意：它引用的题目会按导入版本更新，可能影响其它用到这些题的探险。`
+        : `将添加探险《${levelName}》（${data.points.length} 个点位、${data.questions.length} 道题目）。\n\n` +
+          `注意：它引用的题目会按导入版本更新，可能影响其它用到这些题的探险。`;
+
+      const confirmed = await showConfirm(confirmMsg, existing ? '确认覆盖' : '确认添加', true);
+      if (!confirmed) return;
+
+      setSingleBusy(true);
+      try {
+        await db.sessions.where('levelId').equals(level.id).delete();
+        await importSingleLevel(db, data);
+        localStorage.setItem('lastImportAt', String(Date.now()));
+        showSingleResult(
+          `✅ 已导入探险《<strong>${escHtml(levelName)}</strong>》：` +
+          `${data.points.length} 个点位、${data.questions.length} 道题目`,
+          false
+        );
+      } catch (err) {
+        console.error('[设置] 单 L1 导入失败', err);
+        showSingleResult('❌ 导入失败：' + escHtml(err.message), true);
+      } finally {
+        setSingleBusy(false);
       }
     });
 
