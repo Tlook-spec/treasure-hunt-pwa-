@@ -71,7 +71,7 @@
     <div class="q-type-group">
       <button class="q-type-btn active" data-type="single_choice">选择题</button>
       <button class="q-type-btn" data-type="true_false">判断题</button>
-      <button class="q-type-btn" disabled title="V1 功能">填空题【V1】</button>
+      <button class="q-type-btn" data-type="fill">填空题</button>
     </div>
   </div>
 
@@ -97,6 +97,18 @@
   <div class="detail-section">
     <div class="detail-section-title">正确答案（必填）</div>
     <div id="correct-answer-group" class="q-answer-group"><!-- JS 填入 --></div>
+  </div>
+
+  <!-- 填空题答案（fill 题型时显示，选择题/判断题时隐藏）-->
+  <div id="fill-answers-section" class="detail-section" style="display:none">
+    <div class="detail-section-title">填空答案（可填多个可接受的答案，必填）</div>
+    <p style="font-size:13px;color:var(--color-text-muted);margin-bottom:8px">
+      游戏里去除前后空格、不区分大小写匹配。填多个可接受写法（如「北京」「北京市」都行）。
+    </p>
+    <div id="fill-answers-container"><!-- JS 填入 --></div>
+    <button id="btn-add-fill-answer" class="btn btn-secondary btn-sm" style="margin-top:8px">
+      ＋ 添加可接受答案
+    </button>
   </div>
 
   <!-- 分类 -->

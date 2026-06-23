@@ -363,24 +363,30 @@
         qtEl.textContent = question.text;
       }
 
-      // 选项 A/B/C/D（label 字母不标拼音；只对 option-text span 做拼音）
+      // 选项渲染：填空题显示文本框；选择题/判断题显示选项按钮
       const grid = document.getElementById('options-grid');
       grid.innerHTML = '';
-      const labels = ['A', 'B', 'C', 'D'];
-      (question.options || []).forEach((optText, idx) => {
-        const btn = document.createElement('button');
-        btn.className = 'option-btn';
-        const ls = document.createElement('span'); ls.className = 'option-label'; ls.textContent = labels[idx];
-        const ts = document.createElement('span'); ts.className = 'option-text';
-        if (showPinyin) {
-          ts.innerHTML = renderPinyin(optText);
-        } else {
-          ts.textContent = optText;
-        }
-        btn.appendChild(ls); btn.appendChild(ts);
-        btn.addEventListener('click', () => onSelectOption(idx));
-        grid.appendChild(btn);
-      });
+      if (question.type === 'fill') {
+        grid.style.display = 'block';
+        renderFillInput();
+      } else {
+        grid.style.display = '';  // 恢复 CSS 默认的 grid 布局
+        const labels = ['A', 'B', 'C', 'D'];
+        (question.options || []).forEach((optText, idx) => {
+          const btn = document.createElement('button');
+          btn.className = 'option-btn';
+          const ls = document.createElement('span'); ls.className = 'option-label'; ls.textContent = labels[idx];
+          const ts = document.createElement('span'); ts.className = 'option-text';
+          if (showPinyin) {
+            ts.innerHTML = renderPinyin(optText);
+          } else {
+            ts.textContent = optText;
+          }
+          btn.appendChild(ls); btn.appendChild(ts);
+          btn.addEventListener('click', () => onSelectOption(idx));
+          grid.appendChild(btn);
+        });
+      }
 
       hideFeedback();
       document.getElementById('screen-discovery').style.display = 'none';
@@ -388,6 +394,131 @@
       // 有地图才显示浮动地图按钮（答题屏专属，发现屏已内嵌）
       const fab = document.getElementById('btn-map-fab');
       fab.style.display = (currentLevel && currentLevel.mapImage) ? 'flex' : 'none';
+    }
+
+    // ── 填空题：渲染文本框 + 提交按钮 ──────────────────────
+    function renderFillInput() {
+      const grid = document.getElementById('options-grid');
+
+      const input = document.createElement('input');
+      input.id = 'fill-input';
+      input.type = 'text';
+      input.autocomplete = 'off';
+      input.setAttribute('autocorrect', 'off');
+      input.setAttribute('autocapitalize', 'none');
+      input.placeholder = '请在这里输入答案';
+      input.style.cssText =
+        'width:100%;font-size:20px;padding:16px 14px;margin-bottom:16px;' +
+        'border-radius:12px;border:2px solid var(--color-border,#ddd);' +
+        'box-sizing:border-box;outline:none;';
+
+      const submitBtn = document.createElement('button');
+      submitBtn.id = 'btn-fill-submit';
+      submitBtn.className = 'btn btn-primary';
+      submitBtn.textContent = '✓ 提交答案';
+      submitBtn.style.cssText =
+        'width:100%;font-size:18px;padding:16px;border-radius:12px;';
+
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') onSubmitFill();
+      });
+      submitBtn.addEventListener('click', onSubmitFill);
+
+      grid.appendChild(input);
+      grid.appendChild(submitBtn);
+      // 自动聚焦帮孩子弹出键盘
+      requestAnimationFrame(() => input.focus());
+    }
+
+    // 判断填空题是否答对（去前后空格，不区分大小写）
+    function checkFillAnswer(question, userInput) {
+      const normalized = userInput.trim().toLowerCase();
+      return (question.fillAnswers || []).some(a => a.trim().toLowerCase() === normalized);
+    }
+
+    // ── 填空题提交 ────────────────────────────────────────
+    async function onSubmitFill() {
+      if (optionsLocked) return;
+
+      const inputEl   = document.getElementById('fill-input');
+      const submitBtn = document.getElementById('btn-fill-submit');
+      if (!inputEl) return;
+
+      const userInput = inputEl.value;
+      if (!userInput.trim()) return;  // 空的不提交
+
+      optionsLocked    = true;
+      inputEl.disabled = true;
+      if (submitBtn) submitBtn.disabled = true;
+      hideFeedback();
+
+      const { question, questionId, questionNumber, totalQuestions } = currentData;
+      const hasMore   = questionNumber < totalQuestions;
+      const isCorrect = checkFillAnswer(question, userInput);
+
+      if (isCorrect) {
+        playSound(sfxCorrect);
+        const score = computeScore(attemptCount, usedHelpThisQuestion);
+        await recordQuestionResult(
+          sessionId, questionId, attemptCount + 1, usedHelpThisQuestion, score, wrongChoices
+        );
+        showFeedback('correct');
+
+        setTimeout(async () => {
+          hideFeedback();
+          try {
+            if (hasMore) {
+              await advanceQuestionIndex(sessionId);
+              await loadAndShowQuizScreen();
+            } else {
+              location.href = `photo.html?sessionId=${encodeURIComponent(sessionId)}`;
+            }
+          } catch (err) { console.error('[答题页] 切题失败', err); showError(); }
+        }, 1000);
+
+      } else {
+        wrongChoices.push(userInput);  // 记录输入错误的文字（供错题本使用）
+        attemptCount++;
+        playSound(sfxWrong);
+
+        // input 抖动动画（复用选择题的 option-shake CSS）
+        inputEl.classList.add('option-shake');
+        inputEl.addEventListener('animationend',
+          () => inputEl.classList.remove('option-shake'), { once: true });
+
+        if (attemptCount >= 3) {
+          // 第 3 次错：保底通过，显示正确答案
+          const correctText = (question.fillAnswers || [])[0] || '';
+          await recordQuestionResult(
+            sessionId, questionId, 3, usedHelpThisQuestion, 0, wrongChoices
+          );
+          showFeedback('bust', {
+            correctText,
+            explanation: question.explanation,
+            onConfirm: async () => {
+              hideFeedback();
+              try {
+                if (hasMore) {
+                  await advanceQuestionIndex(sessionId);
+                  await loadAndShowQuizScreen();
+                } else {
+                  location.href = `photo.html?sessionId=${encodeURIComponent(sessionId)}`;
+                }
+              } catch (err) { console.error('[答题页] 切题失败', err); showError(); }
+            },
+          });
+        } else {
+          // 第 1-2 次错：提示，0.6s 后恢复输入
+          showFeedback('wrong', { hint: question.hint });
+          setTimeout(() => {
+            inputEl.disabled   = false;
+            if (submitBtn) submitBtn.disabled = false;
+            inputEl.value      = '';  // 清空方便重新输入
+            inputEl.focus();
+            optionsLocked      = false;
+          }, 600);
+        }
+      }
     }
 
     // ── 选项点击 ──────────────────────────────────────────
@@ -568,10 +699,14 @@
           document.getElementById('help-count').textContent = remaining;
           if (remaining <= 0) document.getElementById('btn-help').disabled = true;
           showFeedback('help-ask');
-          // 2 秒后关闭提示，恢复选项
+          // 2 秒后关闭提示，恢复选项（选择题恢复按钮，填空题恢复 input）
           setTimeout(() => {
             hideFeedback();
             [...document.querySelectorAll('.option-btn')].forEach(b => b.disabled = false);
+            const fi = document.getElementById('fill-input');
+            const fs = document.getElementById('btn-fill-submit');
+            if (fi) { fi.disabled = false; fi.focus(); }
+            if (fs) fs.disabled = false;
             optionsLocked = false;
           }, 2000);
         });
@@ -579,6 +714,10 @@
         btnNo.addEventListener('click', () => {
           hideFeedback();
           [...document.querySelectorAll('.option-btn')].forEach(b => b.disabled = false);
+          const fi = document.getElementById('fill-input');
+          const fs = document.getElementById('btn-fill-submit');
+          if (fi) { fi.disabled = false; fi.focus(); }
+          if (fs) fs.disabled = false;
           optionsLocked = false;
         });
 

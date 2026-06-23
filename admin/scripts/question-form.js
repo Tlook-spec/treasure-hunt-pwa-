@@ -1,6 +1,7 @@
 /**
  * admin/scripts/question-form.js
  * 题目新建/编辑表单：题型切换、动态选项行、正确答案选择、保存
+ * V1-24 新增：填空题（type='fill'，fillAnswers[] 可接受答案）
  */
 
 import db from '../../shared/db/admin-db.js';
@@ -11,8 +12,9 @@ const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
 // ── 表单状态（模块级变量）────────────────────────────────
 let editingId        = null;          // null = 新建；string = 编辑中的题目 ID
 let currentType      = 'single_choice';
-let currentOptions   = ['', ''];      // 选项文本数组
+let currentOptions   = ['', ''];      // 选项文本数组（选择题/判断题）
 let currentAnswer    = '';            // 'A' / 'B' / 'C' / 'D'
+let currentFillAnswers = [''];        // 填空题可接受答案数组（fill 题型）
 
 // ── 初始化（只绑一次静态按钮）───────────────────────────
 export function initQuestionForm() {
@@ -28,7 +30,7 @@ export function initQuestionForm() {
     btn.addEventListener('click', () => switchType(btn.dataset.type));
   });
 
-  // 添加选项按钮
+  // 添加选项按钮（选择题）
   document.getElementById('btn-add-option')
     .addEventListener('click', () => {
       if (currentType === 'single_choice' && currentOptions.length < 4) {
@@ -38,14 +40,22 @@ export function initQuestionForm() {
         updateAddOptionBtn();
       }
     });
+
+  // 添加填空答案按钮（填空题）
+  document.getElementById('btn-add-fill-answer')
+    .addEventListener('click', () => {
+      currentFillAnswers.push('');
+      renderFillAnswers();
+    });
 }
 
 // ── 打开表单（外部调用）─────────────────────────────────
 export async function showQuestionForm(questionId) {
-  editingId      = questionId;
-  currentType    = 'single_choice';
-  currentOptions = ['', ''];
-  currentAnswer  = '';
+  editingId          = questionId;
+  currentType        = 'single_choice';
+  currentOptions     = ['', ''];
+  currentAnswer      = '';
+  currentFillAnswers = [''];
 
   // 切换面板
   document.getElementById('questions-list-panel').style.display = 'none';
@@ -66,9 +76,10 @@ export async function showQuestionForm(questionId) {
     const q = await db.questions.get(questionId);
     if (!q) { alert('找不到该题目'); goBackToList(); return; }
 
-    currentType    = q.type    || 'single_choice';
-    currentOptions = q.options ? [...q.options] : ['', ''];
-    currentAnswer  = q.correctAnswer || '';
+    currentType        = q.type    || 'single_choice';
+    currentOptions     = q.options ? [...q.options] : ['', ''];
+    currentAnswer      = q.correctAnswer || '';
+    currentFillAnswers = q.fillAnswers ? [...q.fillAnswers] : [''];
 
     document.getElementById('input-question-text').value        = q.text        || '';
     document.getElementById('select-question-subject').value    = q.subject      || '';
@@ -80,9 +91,16 @@ export async function showQuestionForm(questionId) {
     resetTypeBtns(currentType);
   }
 
-  renderOptions();
-  renderAnswerBtns();
-  updateAddOptionBtn();
+  // 按题型渲染相应区块
+  if (currentType === 'fill') {
+    showFillMode();
+    renderFillAnswers();
+  } else {
+    showChoiceMode();
+    renderOptions();
+    renderAnswerBtns();
+    updateAddOptionBtn();
+  }
 }
 
 // ── 题型切换 ─────────────────────────────────────────────
@@ -90,18 +108,24 @@ function switchType(type) {
   currentType = type;
   resetTypeBtns(type);
 
-  if (type === 'true_false') {
-    currentOptions = ['对', '错'];
-    // 非 A/B 的答案在判断题里无效，清空
-    if (currentAnswer !== 'A' && currentAnswer !== 'B') currentAnswer = '';
+  if (type === 'fill') {
+    currentFillAnswers = [''];  // 切到填空时重置答案
+    showFillMode();
+    renderFillAnswers();
   } else {
-    // 切回单选题：选项已有值则保留，否则至少 2 个空
-    if (currentOptions.length < 2) currentOptions = ['', ''];
+    showChoiceMode();
+    if (type === 'true_false') {
+      currentOptions = ['对', '错'];
+      // 非 A/B 的答案在判断题里无效，清空
+      if (currentAnswer !== 'A' && currentAnswer !== 'B') currentAnswer = '';
+    } else {
+      // 切回单选题：选项已有值则保留，否则至少 2 个空
+      if (currentOptions.length < 2) currentOptions = ['', ''];
+    }
+    renderOptions();
+    renderAnswerBtns();
+    updateAddOptionBtn();
   }
-
-  renderOptions();
-  renderAnswerBtns();
-  updateAddOptionBtn();
 }
 
 function resetTypeBtns(activeType) {
@@ -109,7 +133,28 @@ function resetTypeBtns(activeType) {
     b.classList.toggle('active', b.dataset.type === activeType));
 }
 
-// ── 渲染选项行 ───────────────────────────────────────────
+// ── 显示/隐藏选择题区块 vs 填空题区块 ──────────────────
+function showFillMode() {
+  // 隐藏选项和正确答案两个 section
+  document.getElementById('options-container')
+    .closest('.detail-section').style.display = 'none';
+  document.getElementById('correct-answer-group')
+    .closest('.detail-section').style.display = 'none';
+  // 显示填空答案 section
+  document.getElementById('fill-answers-section').style.display = '';
+}
+
+function showChoiceMode() {
+  // 恢复选项和正确答案两个 section
+  document.getElementById('options-container')
+    .closest('.detail-section').style.display = '';
+  document.getElementById('correct-answer-group')
+    .closest('.detail-section').style.display = '';
+  // 隐藏填空答案 section
+  document.getElementById('fill-answers-section').style.display = 'none';
+}
+
+// ── 渲染选项行（选择题/判断题）─────────────────────────
 function renderOptions() {
   const container   = document.getElementById('options-container');
   const isTrueFalse = currentType === 'true_false';
@@ -155,7 +200,42 @@ function renderOptions() {
   });
 }
 
-// ── 渲染正确答案按钮 ─────────────────────────────────────
+// ── 渲染填空题答案行 ─────────────────────────────────────
+function renderFillAnswers() {
+  const container = document.getElementById('fill-answers-container');
+  container.innerHTML = '';
+
+  currentFillAnswers.forEach((text, idx) => {
+    const row = document.createElement('div');
+    row.className = 'q-option-row';
+    // 第 0 行（至少保留 1 个）不显示删除按钮
+    const canDelete = currentFillAnswers.length > 1;
+    row.innerHTML = `
+      <input class="form-input q-option-input" type="text"
+             value="${escapeAttr(text)}"
+             placeholder="可接受答案 ${idx + 1}"
+             data-idx="${idx}">
+      ${canDelete
+        ? `<button class="btn-q-remove-option" data-idx="${idx}" title="删除">✕</button>`
+        : ''}`;
+
+    row.querySelector('.q-option-input').addEventListener('input', e => {
+      currentFillAnswers[parseInt(e.target.dataset.idx)] = e.target.value;
+    });
+
+    const delBtn = row.querySelector('.btn-q-remove-option');
+    if (delBtn) {
+      delBtn.addEventListener('click', () => {
+        currentFillAnswers.splice(parseInt(delBtn.dataset.idx), 1);
+        renderFillAnswers();
+      });
+    }
+
+    container.appendChild(row);
+  });
+}
+
+// ── 渲染正确答案按钮（选择题/判断题）────────────────────
 function renderAnswerBtns() {
   const group = document.getElementById('correct-answer-group');
   group.innerHTML = '';
@@ -189,9 +269,21 @@ async function saveQuestion() {
   const subject = document.getElementById('select-question-subject').value;
   if (!subject) { alert('请选择学科'); return; }
 
-  const filledOptions = currentOptions.map(o => o.trim());
-  if (filledOptions.some(o => !o)) { alert('请填写所有选项内容'); return; }
-  if (!currentAnswer) { alert('请选择正确答案'); return; }
+  let filledOptions = [];
+  let correctAnswer = '';
+  let fillAnswers   = [];
+
+  if (currentType === 'fill') {
+    // 填空题：只校验 fillAnswers，选项和正确答案留空
+    fillAnswers = currentFillAnswers.map(a => a.trim()).filter(Boolean);
+    if (fillAnswers.length === 0) { alert('请至少填写一个可接受答案'); return; }
+  } else {
+    // 选择题/判断题：校验选项和正确答案
+    filledOptions = currentOptions.map(o => o.trim());
+    if (filledOptions.some(o => !o)) { alert('请填写所有选项内容'); return; }
+    if (!currentAnswer) { alert('请选择正确答案'); return; }
+    correctAnswer = currentAnswer;
+  }
 
   const difficultyRaw = document.getElementById('select-question-difficulty').value;
   const ageGroup      = document.getElementById('select-question-age').value;
@@ -205,7 +297,8 @@ async function saveQuestion() {
     type:          currentType,
     text,
     options:       filledOptions,
-    correctAnswer: currentAnswer,
+    correctAnswer,
+    fillAnswers,
     hint,
     explanation,
     textImagePath: null,
