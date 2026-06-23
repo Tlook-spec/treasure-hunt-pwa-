@@ -322,7 +322,8 @@
         }
 
         // ⑤ 用时（用结算后的 endedAt，不用读进来时可能为 null 的原始值）
-        const elapsed  = session.endedAt - session.startedAt;
+        // V1-21：扣掉累计暂停时长 pausedMs（老存档无此字段 → 当 0）
+        const elapsed  = session.endedAt - session.startedAt - (session.pausedMs || 0);
         const totalSec = Math.max(0, Math.floor(elapsed / 1000));
         const mins     = Math.floor(totalSec / 60);
         const secs     = totalSec % 60;

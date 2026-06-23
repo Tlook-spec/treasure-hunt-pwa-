@@ -12,7 +12,7 @@
 
 **部署**：已搭好**双分支双部署**（2026-06-22）——`release`→网站根目录（孩子玩的稳定版），`main`→`/dev/`（开发版，名字「寻宝-DEV」+ 橙图标）。GitHub Actions 自动部署。以后改 main 不影响孩子。详见 [双分支发布说明.md](双分支发布说明.md)。
 
-**下一个任务**：V1-21（C 区 收尾杂项）
+**下一个任务**：V1-22（题目插图）
 
 详见：[任务清单_V1.md](../任务清单_V1.md)
 
@@ -118,7 +118,8 @@
 - [x] UI 微调（非编号）✅ 答题引导页地图 +20%(66vh)；photo「第N站完成」🎉+标题调小并整块上移；victory 庆祝🏆+概况调小、间距收紧；select/start 探险图标规则统一为 pickIcon(id)；新增 `docs/外观微调操作文档.md`（图标/地图/文案自助调整 + 推 GitHub 详细步骤）；SW v2.22
 - [x] 双分支双部署（基建·非编号）✅ release→根目录（孩子玩）/ main→/dev（开发版「寻宝-DEV」橙图标，DEV 标记部署时注入不进源码）；GitHub Actions 工作流 `.github/workflows/deploy-pages.yml`；github-pages 环境放开 main+release 两分支；新增 `docs/双分支发布说明.md`
 
-### 🟩 C 区 收尾杂项（V1-21 ~ V1-24）待开始
+### 🟩 C 区 收尾杂项（V1-21 ~ V1-24）进行中
+- [x] V1-21 ✅ 主动暂停按钮（quiz 答题屏 + hint 找站屏 顶部条最左端 ⏸；点击 → 全屏遮罩盖住题目 + 「继续游戏」；pauseStartedAt/pausedMs 存 session 不进导出；继续时累加 pausedMs；暂停着关 App 重开续玩仍是暂停态；victory 用时扣掉 pausedMs；老存档容错；main.css 共享样式；SW v2.23）
 ### 🟥 D 区 多人 + 题型增强（V1-25 ~ V1-34）待定（玩过 A/B/C 再确认）
 ### 🟪 E 区 真机测试 + 修 bug（V1-35 ~ V1-38）待开始
 

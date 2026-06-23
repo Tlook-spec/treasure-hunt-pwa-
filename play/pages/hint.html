@@ -13,6 +13,8 @@
 
   <!-- 站点进度横幅：sticky 顶部，蓝色背景（JS 渲染完成后才显示）-->
   <div class="station-banner" id="station-banner" style="display:none">
+    <!-- V1-21 暂停按钮：顶部条最左端，避开右下地图 FAB -->
+    <button id="btn-pause" class="btn-pause" aria-label="暂停">⏸</button>
     <div class="station-banner-dot"></div>
     <span id="station-text">加载中…</span>
   </div>
@@ -69,6 +71,16 @@
                    font-weight:700; cursor:pointer;">✕</button>
     <!-- 地图容器（renderMapOverlay 在此渲染，每次打开前清空重绘）-->
     <div id="map-view-container" style="margin:60px auto 40px; position:relative;"></div>
+  </div>
+
+  <!-- V1-21 暂停遮罩（盖住整屏；点继续才回到游戏）-->
+  <div id="pause-overlay" class="pause-overlay" style="display:none">
+    <div class="pause-card">
+      <div class="pause-card-icon">⏸</div>
+      <div class="pause-card-title">已暂停</div>
+      <div class="pause-card-sub">休息一下，准备好再继续吧</div>
+      <button id="btn-resume" class="btn-resume">▶ 继续游戏</button>
+    </div>
   </div>
 
   <!-- Eruda 调试 -->
@@ -149,7 +161,34 @@
         injectMapAnimStyles();
         document.getElementById('btn-map-fab').style.display = 'flex';
       }
+
+      // ── V1-21：若上次是「暂停着关 App」→ 直接显示暂停遮罩 ──
+      if (session.pauseStartedAt != null) {
+        document.getElementById('pause-overlay').style.display = 'flex';
+      }
     }
+
+    // ── V1-21 主动暂停：暂停计时 + 全屏遮挡；继续时累加 pausedMs ──
+    // pausedMs / pauseStartedAt 只存 session(IndexedDB)，不进导出、不动 schema。
+    async function pauseGame() {
+      const s = await db.sessions.get(sessionId);
+      if (!s || s.status === 'completed') return;
+      if (s.pauseStartedAt == null) {
+        await db.sessions.update(sessionId, { pauseStartedAt: Date.now() });
+      }
+      document.getElementById('pause-overlay').style.display = 'flex';
+    }
+    async function resumeGame() {
+      const s = await db.sessions.get(sessionId);
+      if (s && s.pauseStartedAt != null) {
+        const add      = Math.max(0, Date.now() - s.pauseStartedAt);
+        const pausedMs = (s.pausedMs || 0) + add;
+        await db.sessions.update(sessionId, { pausedMs, pauseStartedAt: null });
+      }
+      document.getElementById('pause-overlay').style.display = 'none';
+    }
+    document.getElementById('btn-pause').addEventListener('click', pauseGame);
+    document.getElementById('btn-resume').addEventListener('click', resumeGame);
 
     // ── V1-16 FAB 点击：打开覆盖层，渲染纯查看地图（无动画）──
     // hint.html 场景：还没扫码当前站 → pointRecord 不存在 → buildPointStateMap 返回 undiscovered
