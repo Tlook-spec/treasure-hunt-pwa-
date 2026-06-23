@@ -28,6 +28,7 @@ let pickerAllQuestions = [];    // 选题面板加载的全部题目
 let pickerSearch       = '';    // 选题面板当前关键字搜索词
 let pickerSelectedIds  = new Set(); // 已选题目 ID，独立于筛选条件，换筛选不清空
 let pickerOccupiedIds  = new Set(); // 同探险内其他点位已占用的题目 ID（按 levelId 过滤）
+let pickerRefCount     = new Map(); // 题目 ID → 实时引用数（扫所有点位算，usedCount 字段已遗留）
 
 // ── 入口 ────────────────────────────────────────────────
 
@@ -51,6 +52,10 @@ export function initPointForm() {
   document.getElementById('picker-filter-subject')
     .addEventListener('change', renderPickerList);
   document.getElementById('picker-filter-difficulty')
+    .addEventListener('change', renderPickerList);
+  document.getElementById('picker-filter-age')
+    .addEventListener('change', renderPickerList);
+  document.getElementById('picker-filter-used')
     .addEventListener('change', renderPickerList);
   document.getElementById('picker-filter-search')
     .addEventListener('input', e => { pickerSearch = e.target.value.trim(); renderPickerList(); });
@@ -270,6 +275,8 @@ async function openPicker() {
   pickerSelectedIds = new Set(); // 每次打开面板重置已选，不跨点位保留
   document.getElementById('picker-filter-subject').value    = '';
   document.getElementById('picker-filter-difficulty').value = '';
+  document.getElementById('picker-filter-age').value        = '';
+  document.getElementById('picker-filter-used').value       = '';
   document.getElementById('picker-filter-search').value    = '';
   pickerSearch = '';
 
@@ -277,18 +284,28 @@ async function openPicker() {
   document.getElementById('picker-random-count').value = '3';
   document.getElementById('picker-random-hint').textContent = '';
 
-  // 并行加载：题库全量 + 同探险内所有点位（用于计算占用集合）
-  const [questions, siblingPoints] = await Promise.all([
-    db.questions.orderBy('usedCount').toArray(),
-    db.points.where('levelId').equals(currentLevelId).toArray(),
+  // 并行加载：题库全量 + 全部点位（算实时引用数 + 同探险占用）
+  const [questions, allPoints] = await Promise.all([
+    db.questions.toArray(),
+    db.points.toArray(),
   ]);
+
+  // 实时引用数：扫所有点位的 questionIds（与题库主页同口径；usedCount 字段已遗留不用）
+  pickerRefCount = new Map();
+  for (const pt of allPoints) {
+    for (const qId of (pt.questionIds || [])) {
+      pickerRefCount.set(qId, (pickerRefCount.get(qId) || 0) + 1);
+    }
+  }
+
+  // 按实时引用数升序排，少用的题排前面
+  questions.sort((a, b) => (pickerRefCount.get(a.id) || 0) - (pickerRefCount.get(b.id) || 0));
   pickerAllQuestions = questions;
 
   // 收集同探险内「其他」点位已占用的题目 ID（当前点位自己的不算占用）
-  // 复用 findQuestionReferences 的同等逻辑，但加 levelId 过滤，避免全局去重
   pickerOccupiedIds = new Set(
-    siblingPoints
-      .filter(pt => pt.id !== currentPointId)
+    allPoints
+      .filter(pt => pt.levelId === currentLevelId && pt.id !== currentPointId)
       .flatMap(pt => pt.questionIds || [])
   );
 
@@ -301,17 +318,29 @@ function closePicker() {
 }
 
 /**
- * 按当前筛选条件（学科/难度/搜索）+ 排除已绑定，算出选题面板要显示的题目。
+ * 按当前筛选条件（学科/难度/年龄/使用次数 + 题干搜索）+ 排除已绑定，
+ * 算出选题面板要显示的题目。使用次数按实时引用数（pickerRefCount）判断。
  * 注意：占用题（pickerOccupiedIds）仍会包含在内（列表里显示为禁用项）。
  * 随机抽题时需另外排除占用题和已选题。
  */
 function getFilteredPickerQuestions() {
   const subject    = document.getElementById('picker-filter-subject').value;
   const difficulty = document.getElementById('picker-filter-difficulty').value;
+  const age        = document.getElementById('picker-filter-age').value;
+  const used       = document.getElementById('picker-filter-used').value;
   const bound      = new Set(currentQuestionIds); // 已绑定的不重复显示
   return pickerAllQuestions.filter(q => {
     if (bound.has(q.id)) return false;
-    return matchesQuestionFilter(q, { subject, difficulty, search: pickerSearch });
+    if (!matchesQuestionFilter(q, { subject, difficulty, search: pickerSearch })) return false;
+    if (age && q.ageGroup !== age) return false;
+    // 使用次数按实时引用数判断（与题库主页同口径）：0=未用 / 1=正好1次 / 2=2次及以上
+    if (used) {
+      const rc = pickerRefCount.get(q.id) || 0;
+      if (used === '0' && rc !== 0) return false;
+      if (used === '1' && rc !== 1) return false;
+      if (used === '2' && rc < 2)   return false;
+    }
+    return true;
   });
 }
 
@@ -346,8 +375,9 @@ function renderPickerList() {
     const stars    = '★'.repeat(q.difficulty || 1) + '☆'.repeat(3 - (q.difficulty || 1));
     const label    = SUBJECT_LABELS[q.subject] || q.subject || '其他';
     const text50   = q.text.length > 50 ? q.text.slice(0, 50) + '…' : q.text;
-    const usedTag  = q.usedCount > 0
-      ? `<span class="tag tag-used">已用 ${q.usedCount} 次</span>`
+    const refCount = pickerRefCount.get(q.id) || 0;
+    const usedTag  = refCount > 0
+      ? `<span class="tag tag-used">已用 ${refCount} 次</span>`
       : '';
     // 占用提示：让家长一眼看懂为何不可勾选（只在同探险内有占用时显示）
     const occupiedHint = isOccupied
@@ -417,9 +447,9 @@ function drawRandomQuestions() {
     return;
   }
 
-  // 分两组：少用题优先，已用多的兜底
-  const preferred = shuffle(pool.filter(q => (q.usedCount || 0) < 2));
-  const fallback  = shuffle(pool.filter(q => (q.usedCount || 0) >= 2));
+  // 分两组：少用题优先，已用多的兜底（按实时引用数）
+  const preferred = shuffle(pool.filter(q => (pickerRefCount.get(q.id) || 0) < 2));
+  const fallback  = shuffle(pool.filter(q => (pickerRefCount.get(q.id) || 0) >= 2));
   const picked    = preferred.concat(fallback).slice(0, n);
 
   // 加入勾选集合并重渲（renderPickerList 会自动恢复勾选状态）
@@ -428,7 +458,7 @@ function drawRandomQuestions() {
   updatePickerCount();
 
   // 结果提示：数量不足 / 用到了高频题都要说明
-  const heavyCount = picked.filter(q => (q.usedCount || 0) >= 2).length;
+  const heavyCount = picked.filter(q => (pickerRefCount.get(q.id) || 0) >= 2).length;
   let msg = `已随机选中 ${picked.length} 道（已加入勾选，可再手动调整）`;
   if (picked.length < n) {
     msg = `只抽到 ${picked.length} 道（符合条件的题不够 ${n} 道）`;
