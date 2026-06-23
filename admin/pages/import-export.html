@@ -97,12 +97,13 @@
 </div>
 
 <script type="module">
-  import db           from '../shared/db/admin-db.js';
-  import { exportFull, validateJson, importFull } from '../shared/utils/json-io.js';
+  import db from '../shared/db/admin-db.js';
+  import { exportFull, validateJson, importFull, importSingleLevel } from '../shared/utils/json-io.js';
 
   // 校验通过后暂存，等用户二次确认后再写入
-  let pendingData     = null;
-  let pendingFileName = '';
+  let pendingData       = null;
+  let pendingFileName   = '';
+  let pendingExportType = '';  // 'full' 或 'single-level'
 
   // ── 导出 ─────────────────────────────────────────────────
 
@@ -150,7 +151,8 @@
     if (!file) return;
 
     // 重置上次状态
-    pendingData = null;
+    pendingData       = null;
+    pendingExportType = '';
     hideEl('import-preview');
     hideEl('import-success');
     hideEl('import-error');
@@ -172,7 +174,8 @@
       return;
     }
 
-    pendingData = result.data;
+    pendingData       = result.data;
+    pendingExportType = result.exportType;
 
     // 显示文件信息（步骤 2）
     const { levels, points, questions } = result.data;
@@ -183,8 +186,16 @@
       : '未知';
 
     document.getElementById('preview-export-date').textContent = exportDate;
-    document.getElementById('preview-counts').textContent =
-      `${levels.length} 个探险、${points.length} 个点位、${questions.length} 道题目`;
+
+    // 根据类型显示不同摘要
+    if (pendingExportType === 'single-level') {
+      const levelName = levels[0]?.name || '未知';
+      document.getElementById('preview-counts').textContent =
+        `探险《${levelName}》· ${points.length} 个点位、${questions.length} 道题目`;
+    } else {
+      document.getElementById('preview-counts').textContent =
+        `${levels.length} 个探险、${points.length} 个点位、${questions.length} 道题目`;
+    }
 
     showEl('import-preview');
   });
@@ -194,27 +205,68 @@
   document.getElementById('btn-confirm-import').addEventListener('click', async () => {
     if (!pendingData) return;
 
-    // 读当前 DB 数量，填入弹窗
-    const [curLevels, curPoints, curQuestions] = await Promise.all([
-      db.levels.count(),
-      db.points.count(),
-      db.questions.count(),
-    ]);
     const { levels, points, questions } = pendingData;
+    const modalTitle   = document.querySelector('#import-confirm-modal .modal-title');
+    const confirmBtn   = document.getElementById('btn-io-modal-confirm');
+    const bodyContent  = document.getElementById('modal-body-content');
 
-    document.getElementById('modal-body-content').innerHTML = `
-      <p style="margin-bottom:8px">即将替换当前数据库：</p>
-      <div style="background:var(--color-bg-card);border-radius:8px;padding:10px 14px;
-                  margin-bottom:12px;font-size:13px;color:var(--color-text-muted)">
-        当前：${curLevels} 个探险、${curPoints} 个点位、${curQuestions} 道题目
-      </div>
-      <p style="margin-bottom:8px">
-        写入新数据（来自 <strong>${escapeHtml(pendingFileName)}</strong>）：
-      </p>
-      <div style="background:#eaf4ff;border-radius:8px;padding:10px 14px;font-size:13px">
-        ${levels.length} 个探险、${points.length} 个点位、${questions.length} 道题目
-      </div>
-    `;
+    if (pendingExportType === 'single-level') {
+      // 单 L1：检查是否已存在同 ID 探险
+      const level    = levels[0];
+      const existing = level ? await db.levels.get(level.id) : null;
+      const isOverwrite = !!existing;
+
+      modalTitle.textContent = isOverwrite
+        ? `⚠️ 探险《${level?.name || ''}》已存在`
+        : '📥 添加探险';
+      confirmBtn.textContent = isOverwrite ? '确认覆盖' : '确认添加';
+
+      bodyContent.innerHTML = isOverwrite
+        ? `<p style="margin-bottom:8px">
+             探险《<strong>${escapeHtml(level?.name || '')}</strong>》已存在，将覆盖它的全部数据：
+           </p>
+           <div style="background:#eaf4ff;border-radius:8px;padding:10px 14px;
+                       font-size:13px;margin-bottom:8px">
+             ${points.length} 个点位、${questions.length} 道题目（将写入）
+           </div>
+           <p style="font-size:12px;color:#888;line-height:1.7">
+             注意：它引用的题目会按导入版本更新，可能影响其它用到这些题的探险。
+           </p>`
+        : `<p style="margin-bottom:8px">
+             将添加探险《<strong>${escapeHtml(level?.name || '')}</strong>》：
+           </p>
+           <div style="background:#eaf4ff;border-radius:8px;padding:10px 14px;
+                       font-size:13px;margin-bottom:8px">
+             ${points.length} 个点位、${questions.length} 道题目
+           </div>
+           <p style="font-size:12px;color:#888;line-height:1.7">
+             注意：它引用的题目会按导入版本更新，可能影响其它用到这些题的探险。
+           </p>`;
+    } else {
+      // 整库覆盖：原有逻辑
+      const [curLevels, curPoints, curQuestions] = await Promise.all([
+        db.levels.count(),
+        db.points.count(),
+        db.questions.count(),
+      ]);
+
+      modalTitle.textContent = '⚠️ 确认替换所有数据';
+      confirmBtn.textContent = '确定替换';
+
+      bodyContent.innerHTML = `
+        <p style="margin-bottom:8px">即将替换当前数据库：</p>
+        <div style="background:var(--color-bg-card);border-radius:8px;padding:10px 14px;
+                    margin-bottom:12px;font-size:13px;color:var(--color-text-muted)">
+          当前：${curLevels} 个探险、${curPoints} 个点位、${curQuestions} 道题目
+        </div>
+        <p style="margin-bottom:8px">
+          写入新数据（来自 <strong>${escapeHtml(pendingFileName)}</strong>）：
+        </p>
+        <div style="background:#eaf4ff;border-radius:8px;padding:10px 14px;font-size:13px">
+          ${levels.length} 个探险、${points.length} 个点位、${questions.length} 道题目
+        </div>
+      `;
+    }
 
     document.getElementById('import-confirm-modal').classList.remove('hidden');
   });
@@ -230,7 +282,7 @@
     if (e.target === e.currentTarget) closeModal();
   });
 
-  // ── 弹窗：确定替换 ────────────────────────────────────────
+  // ── 弹窗：确定替换 / 添加 ────────────────────────────────
 
   document.getElementById('btn-io-modal-confirm').addEventListener('click', async () => {
     if (!pendingData) return;
@@ -241,22 +293,36 @@
     btn.textContent = '导入中…';
 
     try {
-      const result = await importFull(db, pendingData);
+      let successHtml;
+
+      if (pendingExportType === 'single-level') {
+        const result    = await importSingleLevel(db, pendingData);
+        const levelName = pendingData.levels[0]?.name || '探险';
+        successHtml =
+          `✅ 已导入探险《<strong>${escapeHtml(levelName)}</strong>》：` +
+          `<strong>${result.points} 个点位</strong>、` +
+          `<strong>${result.questions} 道题目</strong>。<br>` +
+          `<span style="font-size:13px">现在可以前往「探险管理」查看数据。</span>`;
+      } else {
+        const result = await importFull(db, pendingData);
+        successHtml =
+          `✅ 导入成功！已写入 <strong>${result.levels} 个探险</strong>、` +
+          `<strong>${result.points} 个点位</strong>、` +
+          `<strong>${result.questions} 道题目</strong>。<br>` +
+          `<span style="font-size:13px">现在可以前往「探险管理」查看数据。</span>`;
+      }
 
       hideEl('import-preview');
       hideEl('import-error');
-      document.getElementById('import-success').innerHTML =
-        `✅ 导入成功！已写入 <strong>${result.levels} 个探险</strong>、` +
-        `<strong>${result.points} 个点位</strong>、` +
-        `<strong>${result.questions} 道题目</strong>。<br>` +
-        `<span style="font-size:13px">现在可以前往「探险管理」查看数据。</span>`;
+      document.getElementById('import-success').innerHTML = successHtml;
       showEl('import-success');
 
       // 重置文件输入和暂存数据
       document.getElementById('file-input').value = '';
       document.getElementById('file-name-display').textContent = '未选择文件';
-      pendingData = null;
-      pendingFileName = '';
+      pendingData       = null;
+      pendingFileName   = '';
+      pendingExportType = '';
     } catch (err) {
       showImportError('导入失败：' + err.message);
     } finally {

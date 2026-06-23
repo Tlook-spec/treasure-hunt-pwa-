@@ -157,7 +157,7 @@
   <!-- ES Module：统计显示 + 完整导入逻辑 -->
   <script type="module">
     import db from '../../shared/db/play-db.js';
-    import { validateJson, importFull } from '../../shared/utils/json-io.js';
+    import { validateJson, importFull, importSingleLevel } from '../../shared/utils/json-io.js';
     import { APP_VERSION, BUILD_TAG } from '../../shared/version.js?v=V1-15c';
 
     // 显示版本标识（PWA 图标显示的可能是缓存的旧版，可据此判断是否需刷新）
@@ -308,7 +308,56 @@
         await showAlert('文件校验失败\n\n' + result.error);
         return;
       }
-      const { data } = result;
+      const { data, exportType } = result;
+
+      // ── 单 L1 追加导入流程 ──────────────────────────────────
+      if (exportType === 'single-level') {
+        const level    = data.levels[0];
+        const levelName = level?.name || '未知探险';
+
+        // 检查该 L1 是否有未完成的存档
+        const inProgressForLevel = await db.sessions
+          .where('levelId').equals(level.id)
+          .filter(s => s.status === 'in_progress')
+          .toArray();
+        if (inProgressForLevel.length > 0) {
+          const go = await showConfirm(
+            `探险《${levelName}》有没玩完的存档，覆盖会影响续玩，确定继续？`,
+            '继续导入',
+            true
+          );
+          if (!go) return;
+        }
+
+        // 检查是否已存在同 ID 探险，决定确认文案
+        const existing = await db.levels.get(level.id);
+        const confirmMsg = existing
+          ? `探险《${levelName}》已存在，覆盖它（连同点位和题目）吗？\n\n` +
+            `注意：它引用的题目会按导入版本更新，可能影响其它用到这些题的探险。`
+          : `将添加探险《${levelName}》（${data.points.length} 个点位、${data.questions.length} 道题目）。\n\n` +
+            `注意：它引用的题目会按导入版本更新，可能影响其它用到这些题的探险。`;
+
+        const confirmed = await showConfirm(confirmMsg, existing ? '确认覆盖' : '确认添加', true);
+        if (!confirmed) return;
+
+        setBusy(true);
+        try {
+          // 清除该探险旧的游戏记录（覆盖后旧存档可能不一致）
+          await db.sessions.where('levelId').equals(level.id).delete();
+
+          await importSingleLevel(db, data);
+          localStorage.setItem('lastImportAt', String(Date.now()));
+          showSuccess(1, data.questions.length);
+        } catch (err) {
+          console.error('[设置] 单 L1 导入失败', err);
+          await showAlert('导入失败，请重试\n\n' + err.message);
+        } finally {
+          setBusy(false);
+        }
+        return;
+      }
+
+      // ── 整库覆盖导入流程（full）──────────────────────────────
 
       // ── 步骤 3：检查未完成游戏（PRD §7.4 游戏端专项检查）──
       const inProgress = await db.sessions.where('status').equals('in_progress').toArray();

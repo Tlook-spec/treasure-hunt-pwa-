@@ -6,6 +6,7 @@
 
 import db from '../../shared/db/admin-db.js';
 import { initPointList, renderPointList } from './point-list.js?v=V1-11';
+import { exportSingleLevel } from '../../shared/utils/json-io.js?v=V1-23';
 
 /**
  * 初始化详情面板（绑定「返回」按钮 + 初始化点位列表）
@@ -31,6 +32,38 @@ export function initLevelDetail() {
   document.getElementById('btn-map-marker').addEventListener('click', () => {
     const levelId = document.getElementById('levels-detail-panel').dataset.levelId;
     if (levelId) window.open(`pages/map-marker.html?levelId=${levelId}`, '_blank');
+  });
+
+  // 单 L1 导出：下载当前探险的 JSON 文件
+  document.getElementById('btn-export-level').addEventListener('click', async () => {
+    const levelId = document.getElementById('levels-detail-panel').dataset.levelId;
+    if (!levelId) return;
+
+    const btn = document.getElementById('btn-export-level');
+    btn.disabled = true;
+    btn.textContent = '导出中…';
+
+    try {
+      const json  = await exportSingleLevel(db, levelId);
+      const level = await db.levels.get(levelId);
+      // 去掉文件名里的非法字符
+      const safeName = (level?.name || 'level').replace(/[<>:"/\\|?*\s]/g, '_');
+      const dateStr  = new Date().toISOString().slice(0, 10);
+      const fileName = `treasure-hunt-${safeName}-${dateStr}.json`;
+
+      const blob = new Blob([json], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('导出失败：' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '📤 导出这个探险';
+    }
   });
 
   initPointList();
