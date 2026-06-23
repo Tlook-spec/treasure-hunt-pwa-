@@ -55,6 +55,10 @@ export function initPointForm() {
   document.getElementById('picker-filter-search')
     .addEventListener('input', e => { pickerSearch = e.target.value.trim(); renderPickerList(); });
 
+  // 随机抽取按钮
+  document.getElementById('btn-picker-random')
+    .addEventListener('click', drawRandomQuestions);
+
   // 点击遮罩关闭选题面板
   document.getElementById('question-picker-modal')
     .addEventListener('click', e => { if (e.target === e.currentTarget) closePicker(); });
@@ -269,6 +273,10 @@ async function openPicker() {
   document.getElementById('picker-filter-search').value    = '';
   pickerSearch = '';
 
+  // 复位随机抽题控件
+  document.getElementById('picker-random-count').value = '3';
+  document.getElementById('picker-random-hint').textContent = '';
+
   // 并行加载：题库全量 + 同探险内所有点位（用于计算占用集合）
   const [questions, siblingPoints] = await Promise.all([
     db.questions.orderBy('usedCount').toArray(),
@@ -292,16 +300,23 @@ function closePicker() {
   document.getElementById('question-picker-modal').classList.add('hidden');
 }
 
-function renderPickerList() {
+/**
+ * 按当前筛选条件（学科/难度/搜索）+ 排除已绑定，算出选题面板要显示的题目。
+ * 注意：占用题（pickerOccupiedIds）仍会包含在内（列表里显示为禁用项）。
+ * 随机抽题时需另外排除占用题和已选题。
+ */
+function getFilteredPickerQuestions() {
   const subject    = document.getElementById('picker-filter-subject').value;
   const difficulty = document.getElementById('picker-filter-difficulty').value;
   const bound      = new Set(currentQuestionIds); // 已绑定的不重复显示
-
-  const filtered = pickerAllQuestions.filter(q => {
+  return pickerAllQuestions.filter(q => {
     if (bound.has(q.id)) return false;
     return matchesQuestionFilter(q, { subject, difficulty, search: pickerSearch });
   });
+}
 
+function renderPickerList() {
+  const filtered  = getFilteredPickerQuestions();
   const container = document.getElementById('picker-question-list');
 
   if (pickerAllQuestions.length === 0) {
@@ -376,6 +391,62 @@ function confirmPickerSelection() {
     renderQuestionList();
   }
   closePicker();
+}
+
+// ── 随机抽题 ─────────────────────────────────────────────
+
+/**
+ * 按当前筛选条件随机抽 N 道题加入勾选。
+ * 优先抽 usedCount < 2 的「少用题」，不够再补 ≥2 次的（软避让，不硬排除）。
+ * 抽到的只加进 pickerSelectedIds（自动勾选），家长仍需点「确认添加」。
+ */
+function drawRandomQuestions() {
+  const hintEl = document.getElementById('picker-random-hint');
+
+  // 读取数量，clamp 到 1-10
+  const raw = parseInt(document.getElementById('picker-random-count').value, 10);
+  const n   = Math.max(1, Math.min(10, isNaN(raw) ? 3 : raw));
+
+  // 候选池：符合筛选 + 排除占用题 + 排除已勾选的（避免重复抽到）
+  const pool = getFilteredPickerQuestions().filter(q =>
+    !pickerOccupiedIds.has(q.id) && !pickerSelectedIds.has(q.id)
+  );
+
+  if (pool.length === 0) {
+    hintEl.textContent = '没有可抽的题（调整筛选，或先清空已选）';
+    return;
+  }
+
+  // 分两组：少用题优先，已用多的兜底
+  const preferred = shuffle(pool.filter(q => (q.usedCount || 0) < 2));
+  const fallback  = shuffle(pool.filter(q => (q.usedCount || 0) >= 2));
+  const picked    = preferred.concat(fallback).slice(0, n);
+
+  // 加入勾选集合并重渲（renderPickerList 会自动恢复勾选状态）
+  picked.forEach(q => pickerSelectedIds.add(q.id));
+  renderPickerList();
+  updatePickerCount();
+
+  // 结果提示：数量不足 / 用到了高频题都要说明
+  const heavyCount = picked.filter(q => (q.usedCount || 0) >= 2).length;
+  let msg = `已随机选中 ${picked.length} 道（已加入勾选，可再手动调整）`;
+  if (picked.length < n) {
+    msg = `只抽到 ${picked.length} 道（符合条件的题不够 ${n} 道）`;
+  }
+  if (heavyCount > 0) {
+    msg += `；其中 ${heavyCount} 道是已用较多的题`;
+  }
+  hintEl.textContent = msg;
+}
+
+/** Fisher-Yates 洗牌，返回新数组（不改原数组）*/
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 // ── 二维码预览 ────────────────────────────────────────────

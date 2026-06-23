@@ -11,7 +11,7 @@ import {
   showLevelDetail,
   hideLevelDetail,
 } from './level-detail.js?v=V1-11';
-import { initPointForm } from './point-form.js?v=V1-11';
+import { initPointForm } from './point-form.js?v=V1-25';
 
 // ── 常量 ───────────────────────────────────────────────────
 

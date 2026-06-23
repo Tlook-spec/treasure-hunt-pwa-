@@ -343,6 +343,21 @@
         <input id="picker-filter-search" class="form-input" type="text"
                placeholder="🔍 搜索题干..." style="flex:1;min-width:120px">
       </div>
+
+      <!-- 随机抽题条：按上方筛选条件随机抽 N 道，优先抽少用的题 -->
+      <div class="picker-random-bar"
+           style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+                  margin:8px 0;padding:8px;background:var(--color-bg-subtle,#f5f7fa);
+                  border-radius:8px">
+        <span style="font-size:13px;color:var(--color-text-muted)">随机抽</span>
+        <input id="picker-random-count" class="form-input" type="number"
+               value="3" min="1" max="10" style="width:64px">
+        <span style="font-size:13px;color:var(--color-text-muted)">道</span>
+        <button id="btn-picker-random" class="btn btn-secondary btn-sm">🎲 随机抽取</button>
+        <span id="picker-random-hint"
+              style="font-size:12px;color:var(--color-text-muted);flex:1;min-width:120px"></span>
+      </div>
+
       <div id="picker-question-list" style="max-height:380px;overflow-y:auto">
         <!-- JS 填入 -->
       </div>
