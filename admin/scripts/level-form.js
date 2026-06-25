@@ -26,10 +26,11 @@ const THEME_COLORS = [
 
 // ── 模块状态 ────────────────────────────────────────────────
 
-let currentColor      = THEME_COLORS[0]; // 表单当前选中的主题色
-let editingLevelId    = null;             // null=新建，有值=编辑
-let currentMapImage   = null;             // base64 压缩后的地图底图，null=未上传
-let currentCoverImage = null;             // base64 压缩后的封面图，null=未上传
+let currentColor           = THEME_COLORS[0]; // 表单当前选中的主题色
+let editingLevelId         = null;             // null=新建，有值=编辑
+let currentMapImage        = null;             // base64 压缩后的地图底图，null=未上传
+let currentCoverImage      = null;             // base64 压缩后的封面图，null=未上传
+let currentGroupAwardImage = null;             // base64 压缩后的小组奖图，null=未上传（V1-28）
 
 // ── 入口 ────────────────────────────────────────────────────
 
@@ -195,6 +196,21 @@ function bindFormButtons() {
     document.getElementById('input-cover-image').value = '';
     hideCoverPreview();
   });
+
+  // 小组奖图（V1-28）：选图后压缩（长边 ≤800px，JPEG 0.8）并显示预览
+  document.getElementById('input-group-award-image').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    currentGroupAwardImage = await compressMapImage(file, 800);
+    showGroupAwardPreview(currentGroupAwardImage);
+  });
+
+  // 移除小组奖图按钮
+  document.getElementById('btn-remove-group-award-image').addEventListener('click', () => {
+    currentGroupAwardImage = null;
+    document.getElementById('input-group-award-image').value = '';
+    hideGroupAwardPreview();
+  });
 }
 
 /**
@@ -226,6 +242,7 @@ function openCreateForm() {
   updateColorSwatches();
   resetMapSection(); // 清空地图字段，恢复默认值
   resetCoverSection(); // 清空封面图
+  resetGroupAwardSection(); // 清空小组奖（V1-28）
   // 故事文本框置空
   document.getElementById('input-opening-story').value = '';
   document.getElementById('input-ending-story').value  = '';
@@ -248,6 +265,7 @@ async function openEditForm(levelId) {
   updateColorSwatches();
   loadMapSection(level); // 把地图字段填入表单
   loadCoverSection(level); // 把封面图填入表单
+  loadGroupAwardSection(level); // 把小组奖填入表单（V1-28）
   // 故事文本框：老数据可能没有此字段，用 || '' 兜底显示为空
   document.getElementById('input-opening-story').value = level.openingStory || '';
   document.getElementById('input-ending-story').value  = level.endingStory  || '';
@@ -281,6 +299,9 @@ async function saveForm() {
     // 探险故事（V1-12 新增）：留空时为空串，不报错
     openingStory:             document.getElementById('input-opening-story').value.trim(),
     endingStory:              document.getElementById('input-ending-story').value.trim(),
+    // 通关小组奖（V1-28）：奖名留空=空串、奖图未传=null，游戏端走内置默认
+    groupAwardName:           document.getElementById('input-group-award-name').value.trim(),
+    groupAwardImage:          currentGroupAwardImage,
     updatedAt:                now,
   };
 
@@ -482,6 +503,38 @@ function hideCoverPreview() {
   document.getElementById('cover-preview-img').src = '';
   document.getElementById('cover-preview-container').style.display = 'none';
   document.getElementById('btn-remove-cover').style.display = 'none';
+}
+
+// ── 小组奖区域辅助函数（V1-28）─────────────────────────────
+
+/** 新建表单时清空小组奖（奖名 + 奖图）*/
+function resetGroupAwardSection() {
+  currentGroupAwardImage = null;
+  document.getElementById('input-group-award-name').value = '';
+  document.getElementById('input-group-award-image').value = '';
+  hideGroupAwardPreview();
+}
+
+/** 编辑表单时把小组奖填入 UI（老数据无此字段 → 空 / null）*/
+function loadGroupAwardSection(level) {
+  document.getElementById('input-group-award-name').value = level.groupAwardName || '';
+  currentGroupAwardImage = level.groupAwardImage || null;
+  if (currentGroupAwardImage) showGroupAwardPreview(currentGroupAwardImage);
+  else hideGroupAwardPreview();
+}
+
+/** 显示奖图缩略图 + 「移除」按钮 */
+function showGroupAwardPreview(base64) {
+  document.getElementById('group-award-image-preview-img').src = base64;
+  document.getElementById('group-award-image-preview-container').style.display = 'block';
+  document.getElementById('btn-remove-group-award-image').style.display = 'inline-flex';
+}
+
+/** 隐藏奖图预览并清空 src */
+function hideGroupAwardPreview() {
+  document.getElementById('group-award-image-preview-img').src = '';
+  document.getElementById('group-award-image-preview-container').style.display = 'none';
+  document.getElementById('btn-remove-group-award-image').style.display = 'none';
 }
 
 /**

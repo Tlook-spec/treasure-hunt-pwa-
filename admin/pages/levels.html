@@ -306,6 +306,42 @@
         </div>
       </div>
 
+      <!-- 通关小组奖（可选）分组（V1-28 新增） -->
+      <div class="form-group" style="margin-top:var(--space-md)">
+        <div style="font-weight:600;font-size:13px;color:var(--color-text-muted);
+                    border-top:1px solid var(--color-border);padding-top:var(--space-sm);
+                    margin-bottom:var(--space-sm)">
+          🏆 通关小组奖（可选）
+        </div>
+
+        <!-- 奖项名字 -->
+        <label class="form-label" for="input-group-award-name">奖项名字</label>
+        <p style="font-size:12px;color:var(--color-text-muted);margin:-4px 0 6px;line-height:1.5">
+          全队通关后颁发的奖。名字最好和这个探险主题呼应，比如「丛林勇士勋章」。留空就用默认奖名。
+        </p>
+        <input id="input-group-award-name" class="form-input" type="text"
+               placeholder="如「勇敢探险家奖」" maxlength="30">
+
+        <!-- 奖项图片 -->
+        <label class="form-label" style="margin-top:var(--space-sm)">奖项图片</label>
+        <p style="font-size:12px;color:var(--color-text-muted);margin:-4px 0 8px;line-height:1.5">
+          一张奖杯/奖牌/徽章图，和探险主题搭。留空就用默认奖杯。
+        </p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
+            🏆 选择奖图
+            <input id="input-group-award-image" type="file" accept="image/*" style="display:none">
+          </label>
+          <button id="btn-remove-group-award-image" type="button"
+                  class="btn btn-secondary btn-sm" style="display:none">🗑️ 移除奖图</button>
+        </div>
+        <div id="group-award-image-preview-container" style="display:none;margin-top:8px">
+          <img id="group-award-image-preview-img"
+               style="width:110px;height:110px;border-radius:12px;
+                      border:1px solid var(--color-border);object-fit:contain;display:block">
+        </div>
+      </div>
+
       <!-- 探险故事（可选）分组（V1-12 新增） -->
       <div class="form-group" style="margin-top:var(--space-md)">
         <div style="font-weight:600;font-size:13px;color:var(--color-text-muted);
@@ -454,6 +490,6 @@
 </div>
 
 <script type="module">
-  import { initLevelsPage } from './scripts/level-form.js?v=V1-12';
+  import { initLevelsPage } from './scripts/level-form.js?v=V1-28';
   initLevelsPage();
 </script>
