@@ -151,9 +151,9 @@ body {
 }
 
 .level-icon {
-  font-size: 40px;
+  font-size: 48px;
   flex-shrink: 0;
-  width: 52px;
+  width: 60px;
   text-align: center;
   line-height: 1;
 }

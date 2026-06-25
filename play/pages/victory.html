@@ -1040,24 +1040,19 @@
         ctx.drawImage(mapImg, PAD, y, MAP_W, MAP_H);
         ctx.restore();
 
-        // 所有点位：红星 + 金色站名（全部 completed 态）
-        const fontSize  = ({ small: 12, medium: 15, large: 19 })[_posterLevel.mapFontSize] || 15;
-        const goldColor = _posterLevel.mapNameColorCompleted || '#FFD700';
-        const labelPx   = Math.max(18, Math.round(fontSize * MAP_W / 350));
-        const starOuter = Math.max(12, Math.round(MAP_W / 52));
-        const starInner = Math.round(starOuter * 0.42);
+        // 所有点位：绿圆白勾 + 金色站名（全部 completed 态，和屏幕地图标记一致）
+        const fontSize   = ({ small: 12, medium: 15, large: 19 })[_posterLevel.mapFontSize] || 15;
+        const goldColor  = _posterLevel.mapNameColorCompleted || '#FFD700';
+        const labelPx    = Math.max(18, Math.round(fontSize * MAP_W / 350));
+        const markerR    = Math.max(12, Math.round(MAP_W / 52));
 
         for (const pt of _posterPoints) {
           if (pt.mapX == null || pt.mapY == null) continue;
           const mx = PAD + pt.mapX * MAP_W;
           const my = y   + pt.mapY * MAP_H;
 
-          // 旋转 -15° 模拟印章感（同 map-overlay.js 的 SVG 旋转）
-          ctx.save();
-          ctx.translate(mx, my);
-          ctx.rotate(-15 * Math.PI / 180);
-          _posterStar5(ctx, 0, 0, starOuter, starInner, '#E74C3C');
-          ctx.restore();
+          // 绿色圆 + 白色对勾（替换原红色五角星）
+          _posterCheckCircle(ctx, mx, my, markerR);
 
           // 站名：黑色阴影 + 金色文字
           ctx.save();
@@ -1067,7 +1062,7 @@
           ctx.shadowColor  = 'rgba(0,0,0,0.85)';
           ctx.shadowBlur   = 5;
           ctx.fillStyle    = goldColor;
-          ctx.fillText(pt.name, mx, my + starOuter + 4);
+          ctx.fillText(pt.name, mx, my + markerR + 4);
           ctx.restore();
         }
         y += MAP_H + 20;
@@ -1130,6 +1125,28 @@
       ctx.fill();
       ctx.strokeStyle = '#C0392B';
       ctx.lineWidth   = 1.5;
+      ctx.stroke();
+    }
+
+    // 绿色圆 + 白色对勾（已通关标记，和屏幕地图 map-overlay.js 的 completed 一致）
+    function _posterCheckCircle(ctx, cx, cy, r) {
+      // 绿圆 + 白描边
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle   = '#27AE60';
+      ctx.fill();
+      ctx.lineWidth   = Math.max(2, r * 0.16);
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+      // 白色对勾（三点折线，按半径缩放）
+      ctx.beginPath();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth   = Math.max(2.5, r * 0.26);
+      ctx.lineCap     = 'round';
+      ctx.lineJoin    = 'round';
+      ctx.moveTo(cx - r * 0.42, cy + r * 0.02);
+      ctx.lineTo(cx - r * 0.10, cy + r * 0.34);
+      ctx.lineTo(cx + r * 0.46, cy - r * 0.34);
       ctx.stroke();
     }
 

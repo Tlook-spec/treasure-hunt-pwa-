@@ -32,12 +32,20 @@
       font-size: 15px; font-weight: 700; letter-spacing: 1px;
       color: #C2651F;
     }
-    /* ── 提示图片 ── */
+    /* ── 提示图片（尺寸约束同地图：整图一屏内、不撑满、居中）── */
     .hint-image-wrap {
-      margin: 12px 16px 0; border-radius: 12px; overflow: hidden;
+      margin: 12px auto 0;
+      width: -webkit-fit-content;   /* iOS Safari 前缀兜底 */
+      width: fit-content;
+      max-width: calc(100% - 32px);
+      border-radius: 12px; overflow: hidden;
       box-shadow: 0 1px 8px rgba(0,0,0,0.1);
     }
-    .hint-image-wrap img { width: 100%; display: block; }
+    .hint-image-wrap img {
+      display: block;
+      width: auto; height: auto;
+      max-width: 100%; max-height: 55vh;   /* 和地图默认 55vh 一致 */
+    }
   </style>
   <!-- CDN 库（普通 script，必须在 type="module" 之前）-->
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
