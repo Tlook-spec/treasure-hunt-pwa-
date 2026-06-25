@@ -39,13 +39,13 @@ export function renderMapOverlay(container, level, points, stateMap, opts = {}) 
   // 此时 top:N% 全部解析为 0px，标记叠在顶部被 overflow:hidden 裁掉。
   // 必须等 img.onload 之后再插入标记，才能拿到正确的容器高度。
   function placeMarkers() {
-    points.forEach((pt) => {
+    points.forEach((pt, i) => {
       if (pt.mapX == null || pt.mapY == null) return; // 未设坐标，跳过
 
       const state = stateMap[pt.id] || 'undiscovered';
-      if (state === 'undiscovered') return;
+      // 未到的站点也显示（灰色圆 + 站点编号），不再隐藏
 
-      const marker = buildMarker(pt, state, fontSize, nameColor, nameColorDone);
+      const marker = buildMarker(pt, i + 1, state, fontSize, nameColor, nameColorDone);
 
       // 是否需要播动画
       if (opts.animatePointId === pt.id) {
@@ -83,8 +83,12 @@ export function renderMapOverlay(container, level, points, stateMap, opts = {}) 
 
 /**
  * 构造单个点位标记 div（图标 + 名字标签）。
+ *
+ * @param {object} pt            点位
+ * @param {number} stationNumber 站点编号（1 起，未到状态显示在灰圈里）
+ * @param {string} state         'undiscovered' | 'discovered' | 'completed'
  */
-function buildMarker(pt, state, fontSize, nameColor, nameColorDone) {
+function buildMarker(pt, stationNumber, state, fontSize, nameColor, nameColorDone) {
   const marker = document.createElement('div');
   // transform: translate(-50%, -50%) 让【图标中心】对齐坐标点
   //   —— 必须和 admin 标记编辑器一致（admin 的 .marker-dot 也是 translate(-50%,-50%)
@@ -98,33 +102,96 @@ function buildMarker(pt, state, fontSize, nameColor, nameColorDone) {
     'pointer-events:none',
   ].join(';');
 
-  if (state === 'discovered') {
-    // 实心白圆（深色描边）：在亮色地图和深色地图上都清晰可见
-    const circle = document.createElement('div');
-    circle.style.cssText = [
-      'width:22px', 'height:22px',
-      'border-radius:50%',
-      'background:rgba(255,255,255,0.92)',
-      'border:2.5px solid rgba(0,0,0,0.50)',
-      'box-shadow:0 0 8px rgba(0,0,0,0.5)',
-    ].join(';');
-    marker.appendChild(circle);
+  if (state === 'completed') {
+    // 已通关：绿色圆 + 白色对勾 + 名字变金色
+    marker.appendChild(makeCheckCircle());
+    marker.appendChild(makeLabel(pt.name, fontSize, nameColorDone));
+
+  } else if (state === 'discovered') {
+    // 答题中：红色圆 + 白色定位图钉 + 名字
+    marker.appendChild(makePinCircle());
     marker.appendChild(makeLabel(pt.name, fontSize, nameColor));
 
-  } else if (state === 'completed') {
-    // 红色五角星印章（SVG）+ 名字变金色
-    marker.appendChild(makeStarSvg());
-    marker.appendChild(makeLabel(pt.name, fontSize, nameColorDone));
+  } else {
+    // 未到：只显示灰色圆 + 站点编号（不显示站名，避免剧透下一站）
+    marker.appendChild(makeNumberCircle(stationNumber));
   }
 
   return marker;
+}
+
+/** 圆形图标基础样式（三态共用，30px 圆 + 白描边 + 投影，居中放内容）。 */
+function makeCircleBase(bgColor) {
+  const circle = document.createElement('div');
+  circle.style.cssText = [
+    'width:30px', 'height:30px',
+    'border-radius:50%',
+    `background:${bgColor}`,
+    'border:2.5px solid #fff',
+    'box-shadow:0 1px 5px rgba(0,0,0,0.45)',
+    'display:flex', 'align-items:center', 'justify-content:center',
+    'box-sizing:border-box',
+  ].join(';');
+  return circle;
+}
+
+/** 未到：灰色圆 + 站点编号数字。 */
+function makeNumberCircle(num) {
+  const circle = makeCircleBase('rgba(150,150,150,0.85)');
+  const span = document.createElement('span');
+  span.textContent = String(num);
+  span.style.cssText = 'color:#fff;font-size:15px;font-weight:700;line-height:1;';
+  circle.appendChild(span);
+  return circle;
+}
+
+/** 答题中：红色圆 + 白色定位图钉 SVG。 */
+function makePinCircle() {
+  const circle = makeCircleBase('#E74C3C');
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '17');
+  svg.setAttribute('height', '17');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', '#fff');
+  svg.setAttribute('stroke-width', '2.4');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('d', 'M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z');
+  const dot = document.createElementNS(NS, 'circle');
+  dot.setAttribute('cx', '12'); dot.setAttribute('cy', '10'); dot.setAttribute('r', '3');
+  svg.appendChild(path); svg.appendChild(dot);
+  circle.appendChild(svg);
+  return circle;
+}
+
+/** 已通关：绿色圆 + 白色对勾 SVG。 */
+function makeCheckCircle() {
+  const circle = makeCircleBase('#27AE60');
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '18');
+  svg.setAttribute('height', '18');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('stroke', '#fff');
+  svg.setAttribute('stroke-width', '3.2');
+  svg.setAttribute('stroke-linecap', 'round');
+  svg.setAttribute('stroke-linejoin', 'round');
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('d', 'M20 6 9 17l-5-5');
+  svg.appendChild(path);
+  circle.appendChild(svg);
+  return circle;
 }
 
 /**
  * 生成点位名字标签（黑色阴影确保在任何底图上都清晰）。
  * absolute 挂在图标正下方，不参与图标的中心定位（与 admin 的 .marker-label 一致）。
  */
-function makeLabel(name, fontSize, color) {
+function makeLabel(name, fontSize, color, opacity = 1) {
   const label = document.createElement('span');
   label.textContent = name;
   label.style.cssText = [
@@ -134,39 +201,13 @@ function makeLabel(name, fontSize, color) {
     'transform:translateX(-50%)',
     `font-size:${fontSize}px`,
     `color:${color}`,
+    `opacity:${opacity}`,
     'font-weight:700',
     'text-shadow:0 1px 4px rgba(0,0,0,0.8)',
     'white-space:nowrap',
     'font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif',
   ].join(';');
   return label;
-}
-
-/**
- * 生成红色五角星 SVG（内联 SVG，旋转 -15° 模拟印章感）。
- */
-function makeStarSvg() {
-  const NS  = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('width',   '28');
-  svg.setAttribute('height',  '28');
-  // 旋转挂在 SVG 本身（不影响父 marker div 的动画 transform）
-  svg.style.cssText = [
-    'display:block',
-    'transform:rotate(-15deg)',
-    'filter:drop-shadow(0 1px 4px rgba(0,0,0,0.6))',
-  ].join(';');
-
-  const poly = document.createElementNS(NS, 'polygon');
-  // 24×24 标准五角星顶点
-  poly.setAttribute('points',
-    '12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26');
-  poly.setAttribute('fill',         '#E74C3C');
-  poly.setAttribute('stroke',       '#C0392B');
-  poly.setAttribute('stroke-width', '0.5');
-  svg.appendChild(poly);
-  return svg;
 }
 
 /**

@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#4A90E2">
+  <meta name="theme-color" content="#F4EAD5">
   <link rel="stylesheet" href="../styles/main.css">
   <title>开始冒险 - 寻宝游戏</title>
   <style>
-    /* 开场故事文字区（给孩子读的：字大、留白足、保留换行）*/
+    /* ── 开场故事文字区 ── */
     .story-section {
       padding: 32px 16px;
       display: flex;
@@ -17,9 +17,195 @@
       font-size: 20px;
       line-height: 1.9;
       color: var(--color-text, #1a1a2e);
-      white-space: pre-wrap;   /* 保留家长填写的换行符 */
+      white-space: pre-wrap;
       text-align: center;
       max-width: 560px;
+    }
+
+    /* ── 通用卡片（单屏各区块）：暖白底 + 淡棕边，跟米色底拉开层次 ── */
+    .white-card {
+      background: #fffdf6;
+      border: 1.5px solid #ece1c4;
+      border-radius: 18px;
+      box-shadow: 0 2px 10px rgba(120,100,60,0.07);
+      padding: 16px;
+      margin: 0 16px 12px;
+    }
+
+    /* ── 封面横幅（有 coverImage 时显示）── */
+    .cover-banner {
+      position: relative;
+      width: calc(100% - 32px);
+      height: 170px;
+      margin: 12px 16px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    }
+    .cover-banner img {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+    }
+    .cover-banner-overlay {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      padding: 28px 16px 14px;
+      background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+    }
+    .cover-banner-name {
+      margin: 0; color: #fff; font-size: 26px; font-weight: 800;
+      text-shadow: 0 1px 6px rgba(0,0,0,0.55);
+    }
+
+    /* ── 简介卡（描述 + 站点数 chip）── */
+    .info-card-desc {
+      margin: 0 0 10px;
+      font-size: 16px; line-height: 1.7;
+      color: var(--color-text, #1a1a2e);
+    }
+    .info-card-desc.empty { color: var(--color-text-muted, #999); }
+    .info-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .info-chip {
+      font-size: 14px; font-weight: 600;
+      color: var(--color-text-muted, #666);
+      background: var(--color-bg, #f3f4f6);
+      border-radius: 999px; padding: 5px 12px;
+    }
+
+    /* ── 人数选择区 ── */
+    .player-count-label {
+      font-size: 16px; font-weight: 700;
+      color: var(--color-text, #1a1a2e);
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    .player-count-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .player-count-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid var(--color-border, #ddd);
+      background: transparent;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--color-text-muted, #666);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .player-count-btn.active {
+      background: var(--color-primary, #E0772F);
+      border-color: var(--color-primary, #E0772F);
+      color: #fff;
+    }
+
+    /* ── 玩家创建（队伍详情，内嵌在白卡里）── */
+    .player-create-title {
+      font-size: 19px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      color: var(--color-text, #5c5240);
+      text-align: left;
+    }
+    .team-name-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 16px;
+    }
+    .team-name-label {
+      font-size: 13px;
+      color: var(--color-text-muted, #666);
+    }
+    .player-cards-container {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    /* 单张队员卡：暖白底 + 淡棕边 */
+    .player-card {
+      background: #fffdf6;
+      border: 1.5px solid #ece1c4;
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .player-card-main {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    /* 头像方块（圆角方形，点按拍照）*/
+    .player-avatar-box { position: relative; flex-shrink: 0; }
+    .player-avatar-tap {
+      display: block;
+      width: 76px; height: 76px;
+      border-radius: 16px;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+    }
+    .avatar-fallback {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 30px; font-weight: 800;
+      border-radius: 16px;
+    }
+    .avatar-photo {
+      width: 100%; height: 100%; object-fit: cover; border-radius: 16px;
+    }
+    .avatar-cam-badge {
+      position: absolute; right: 4px; bottom: 4px;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: rgba(0,0,0,0.45); color: #fff; font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .avatar-del-btn {
+      position: absolute; top: -6px; right: -6px;
+      width: 24px; height: 24px; border-radius: 50%;
+      border: 2px solid #fff; background: #E74C3C; color: #fff;
+      font-size: 13px; font-weight: 700; cursor: pointer; padding: 0;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    }
+    /* 右侧：编号 + 名字 */
+    .player-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+    .player-num-row { display: flex; align-items: center; gap: 6px; }
+    .player-num-input {
+      width: 52px; text-align: center;
+      font-size: 16px; font-weight: 700;
+      padding: 6px 4px; border-radius: 8px;
+      border: 1.5px solid #ddd; box-sizing: border-box;
+    }
+    .player-num-suffix { font-size: 14px; color: var(--color-text-muted, #888); font-weight: 600; }
+    .player-name-input {
+      width: 100%; font-size: 17px; font-weight: 600;
+      padding: 8px 10px; border-radius: 8px;
+      border: 1.5px solid #ddd; box-sizing: border-box;
+    }
+    /* 颜色行（名字下方，选中打勾）*/
+    .player-color-row {
+      margin-top: 12px;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .player-color-label { font-size: 13px; color: var(--color-text-muted, #888); }
+    .color-swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+    .color-swatch {
+      width: 32px; height: 32px; border-radius: 50%;
+      cursor: pointer; border: 2px solid #fff;
+      box-shadow: 0 0 0 1.5px rgba(0,0,0,0.12);
+      box-sizing: border-box; transition: transform 0.1s;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 16px; font-weight: 800;
+    }
+    .color-swatch.selected {
+      box-shadow: 0 0 0 2.5px #5c5240;
+      transform: scale(1.12);
     }
   </style>
   <!-- CDN 库（普通 script，必须在 type="module" 之前）-->
@@ -32,28 +218,59 @@
     <a href="select-level.html" class="btn-back">← 返回</a>
   </header>
 
-  <!-- 主内容 -->
+  <!-- 主内容（单屏滚动：封面/概览 → 简介 → 人数 → 队伍详情）-->
   <main class="page-content has-bottom-action">
-    <!-- 探险概览（默认显示；有故事时点「开始冒险」后隐藏，切到故事视图）-->
-    <div class="level-overview" id="level-overview">
-      <!-- 探险图标（JS 根据 ID 哈希选 emoji，保证同一探险图标稳定）-->
-      <div class="level-overview-icon" id="level-icon">🗺️</div>
-      <h1 class="level-overview-name" id="level-name">加载中…</h1>
-      <!-- 探险简介卡片 -->
-      <div class="level-overview-desc" id="level-desc"></div>
+
+    <!-- ① 封面横幅（有 coverImage 时显示，名字叠在图上）-->
+    <div class="cover-banner" id="cover-banner" style="display:none">
+      <img id="cover-banner-img" alt="">
+      <div class="cover-banner-overlay">
+        <h1 class="cover-banner-name" id="cover-banner-name"></h1>
+      </div>
     </div>
 
-    <!-- 开场故事（openingStory 非空时，点「开始冒险」后显示；默认隐藏）-->
+    <!-- ① 探险概览（无封面图时显示 emoji + 名字）-->
+    <div class="level-overview" id="level-overview">
+      <div class="level-overview-icon" id="level-icon">🗺️</div>
+      <h1 class="level-overview-name" id="level-name">加载中…</h1>
+    </div>
+
+    <!-- ② 简介卡（描述 + 站点数）-->
+    <div class="white-card" id="info-card" style="display:none">
+      <p class="info-card-desc" id="level-desc"></p>
+      <div class="info-chips">
+        <span class="info-chip" id="chip-points">📍 — 个站点</span>
+      </div>
+    </div>
+
+    <!-- ③ 人数选择白卡（加载完成后显示）-->
+    <div class="white-card player-count-section" id="player-count-section" style="display:none">
+      <div class="player-count-label">👥 几个人一起玩？</div>
+      <div class="player-count-buttons" id="player-count-buttons"></div>
+    </div>
+
+    <!-- ④ 队伍详情白卡（人数≥2 时在下方直接展开，不切屏）-->
+    <div class="white-card" id="player-create-section" style="display:none">
+      <div class="player-create-title">👥 队伍信息</div>
+      <div class="team-name-group">
+        <label class="team-name-label" for="team-name-input">队名（可选）</label>
+        <input type="text" id="team-name-input" class="form-input"
+               placeholder="不填就叫「我们队」" maxlength="20">
+      </div>
+      <div id="player-cards-container" class="player-cards-container"></div>
+    </div>
+
+    <!-- ⑤ 开场故事（openingStory 非空时显示，显示时盖住上面所有区块）-->
     <div id="story-section" class="story-section" style="display:none">
       <p id="story-text" class="story-text"></p>
     </div>
-    <!-- 地图全览（有 mapImage 时，故事显示后同步展示；所有点位都未发现，只显示底图）-->
+    <!-- ⑥ 地图全览（有 mapImage 时，故事显示后同步展示）-->
     <div id="story-map-container"
          style="display:none; margin:0 16px 16px; border-radius:12px; overflow:hidden;
                 background:transparent; position:relative;"></div>
   </main>
 
-  <!-- 底部固定：开始按钮（加载完成前禁用）-->
+  <!-- 底部固定按钮（加载完成前禁用）-->
   <div class="bottom-action">
     <button class="btn-primary" id="btn-start" disabled>⏳ 加载中…</button>
   </div>
@@ -68,13 +285,13 @@
     }
   </script>
 
-  <!-- ES Module：加载探险信息 + 创建 GameSession 并跳转 -->
+  <!-- ES Module：开局流程（探险信息 + 多人创建 + 创建 GameSession）-->
   <script type="module">
     import db from '../../shared/db/play-db.js';
     import { generateId } from '../../shared/utils/id.js';
-    import { renderMapOverlay, injectMapAnimStyles } from '../scripts/map-overlay.js?v=V1-17';
+    import { renderMapOverlay, injectMapAnimStyles } from '../scripts/map-overlay.js?v=V1-27';
 
-    // 轮换图标，同一探险 ID 永远映射到同一个图标
+    // 探险图标轮换（同一 ID 永远映射到同一图标）
     const ICONS = ['🗺️', '🌲', '🔍', '🏆', '⭐', '🎯', '🧩', '🏃'];
     function pickIcon(id) {
       let hash = 0;
@@ -82,81 +299,340 @@
       return ICONS[Math.abs(hash) % ICONS.length];
     }
 
-    // 从 URL 获取 levelId
+    // 6 个常见玩家颜色
+    const PLAYER_COLORS = ['#FF6B6B', '#F5A623', '#FBD437', '#4CAF50', '#4A90E2', '#9B59B6'];
+
+    // URL 参数
     const levelId = new URLSearchParams(location.search).get('levelId');
-    if (!levelId) {
-      location.href = 'select-level.html';
-    }
+    if (!levelId) location.href = 'select-level.html';
 
-    // 开场故事文本（模块级，供 init 赋值、点击事件读取）
+    // ── 模块级状态 ──
     let levelOpeningStory = '';
-    // 是否已经切换到故事视图（防止二次点击再切一次）
-    let storyShown = false;
-    // 地图渲染用（地图全览：开场故事显示后同步展示）
-    let levelData  = null;  // 完整 Level 对象
-    let allPoints  = [];    // 本探险所有点位
+    let storyShown        = false;
+    let levelData         = null;
+    let allPoints         = [];
 
+    let playerCount        = 1;     // 选择的人数（默认 1 = 单人，流程不变）
+    let playersCollected   = false; // 是否已收集并保存玩家（含头像写库）
+    let createdPlayers     = [];    // 最终 players 数组（写进 session）
+    let createdTeamName    = '';    // 队名（写进 session，空就用「我们队」）
+    let avatarBlobs        = [];    // 每位玩家的头像 Blob（null = 没拍头像）
+
+    // ── 初始化：加载探险信息，显示人数选择器 ──
     async function init() {
       const level = await db.levels.get(levelId);
-      if (!level) {
-        // 找不到探险（可能被删除了），退回选择页
-        location.href = 'select-level.html';
-        return;
-      }
+      if (!level) { location.href = 'select-level.html'; return; }
 
-      // 保存 level 对象和全部点位，供故事页地图渲染使用
       levelData         = level;
       levelOpeningStory = level.openingStory || '';
       allPoints = await db.points.where('levelId').equals(levelId).sortBy('order');
 
-      // 渲染探险信息
-      document.getElementById('level-icon').textContent = pickIcon(level.id);
-      document.getElementById('level-name').textContent = level.name;
+      // 顶部：有封面图显示横幅（名字叠图上）；否则用 emoji 概览
+      if (level.coverImage) {
+        document.getElementById('cover-banner-img').src = level.coverImage;
+        document.getElementById('cover-banner-name').textContent = level.name;
+        document.getElementById('cover-banner').style.display = '';
+        document.getElementById('level-overview').style.display = 'none';
+      } else {
+        document.getElementById('level-icon').textContent = pickIcon(level.id);
+        document.getElementById('level-name').textContent = level.name;
+      }
 
+      // 简介卡：描述（空给提示）+ 站点数 chip
       const descEl = document.getElementById('level-desc');
       if (level.description) {
         descEl.textContent = level.description;
+        descEl.classList.remove('empty');
       } else {
-        descEl.innerHTML = '<span class="level-overview-desc-empty">（暂无简介）</span>';
+        descEl.textContent = '（暂无简介）';
+        descEl.classList.add('empty');
       }
+      document.getElementById('chip-points').textContent = `📍 ${allPoints.length} 个站点`;
+      document.getElementById('info-card').style.display = '';
 
-      // 激活开始按钮
+      // 人数选择器加载完成后才显示，避免闪烁
+      initPlayerCountButtons();
+      document.getElementById('player-count-section').style.display = '';
+
       const btn = document.getElementById('btn-start');
       btn.textContent = '🚀 开始冒险！';
-      btn.disabled = false;
+      btn.disabled    = false;
     }
 
-    // 点击「开始冒险！」：
-    //   第一阶段（有开场故事）→ 切换到故事视图
-    //   第二阶段（或无故事）  → 创建 GameSession，跳转到提示页
+    // ── 初始化人数选择按钮（1~6 小圆按钮）──
+    function initPlayerCountButtons() {
+      const container = document.getElementById('player-count-buttons');
+      for (let i = 1; i <= 6; i++) {
+        const btn = document.createElement('button');
+        btn.type        = 'button';
+        btn.className   = 'player-count-btn' + (i === 1 ? ' active' : '');
+        btn.textContent = String(i);
+        btn.addEventListener('click', () => {
+          playerCount = i;
+          document.querySelectorAll('.player-count-btn')
+            .forEach(b => b.classList.toggle('active', b === btn));
+          onPlayerCountChange();
+        });
+        container.appendChild(btn);
+      }
+    }
+
+    // 人数变化：≥2 在下方展开队伍详情白卡，=1 收起；改人数后需重新收集
+    function onPlayerCountChange() {
+      const section = document.getElementById('player-create-section');
+      if (playerCount >= 2) {
+        renderPlayerCards();
+        section.style.display = '';
+      } else {
+        section.style.display = 'none';
+      }
+      playersCollected = false; // 人数变了，之前收集的玩家作废
+    }
+
+    // ── 渲染 N 张玩家卡片（进入玩家创建视图时调用）──
+    function renderPlayerCards() {
+      avatarBlobs = Array(playerCount).fill(null);
+      const container = document.getElementById('player-cards-container');
+      container.innerHTML = '';
+      for (let i = 0; i < playerCount; i++) {
+        container.appendChild(buildPlayerCard(i));
+      }
+    }
+
+    // 构建单张队员卡片（头像方块 + 编号/名字 + 颜色行）
+    function buildPlayerCard(idx) {
+      const defaultColor = PLAYER_COLORS[idx % PLAYER_COLORS.length];
+      const num          = idx + 1;
+      const card         = document.createElement('div');
+      card.className     = 'player-card';
+      card.innerHTML = `
+        <div class="player-card-main">
+          <div class="player-avatar-box">
+            <label class="player-avatar-tap">
+              <div class="avatar-fallback" id="avatar-fallback-${idx}" style="background:${defaultColor}">
+                <span id="avatar-fallback-num-${idx}">${num}</span>
+              </div>
+              <img id="avatar-img-${idx}" class="avatar-photo" style="display:none" alt="">
+              <span class="avatar-cam-badge">📷</span>
+              <input type="file" id="avatar-input-${idx}"
+                     accept="image/*" capture="environment" style="display:none">
+            </label>
+            <button type="button" class="avatar-del-btn" id="avatar-delete-${idx}"
+                    style="display:none">✕</button>
+          </div>
+          <div class="player-fields">
+            <div class="player-num-row">
+              <input type="number" id="player-number-${idx}" class="player-num-input"
+                     value="${num}" min="1" max="99">
+              <span class="player-num-suffix">号队员</span>
+            </div>
+            <input type="text" id="player-name-${idx}" class="player-name-input"
+                   placeholder="队员${num}的名字" maxlength="10">
+          </div>
+        </div>
+        <div class="player-color-row">
+          <span class="player-color-label">颜色</span>
+          <div class="color-swatches" id="color-swatches-${idx}"></div>
+        </div>
+      `;
+
+      // 渲染 6 个色块，默认选中该玩家的默认色（选中显示 ✓）
+      const swatchBox = card.querySelector(`#color-swatches-${idx}`);
+      PLAYER_COLORS.forEach(color => {
+        const isSel     = color === defaultColor;
+        const sw        = document.createElement('div');
+        sw.className    = 'color-swatch' + (isSel ? ' selected' : '');
+        sw.style.background = color;
+        sw.dataset.color    = color;
+        sw.textContent      = isSel ? '✓' : '';
+        sw.addEventListener('click', () => onSelectColor(idx, color));
+        swatchBox.appendChild(sw);
+      });
+
+      // 头像文件变化 → 压缩并预览
+      card.querySelector(`#avatar-input-${idx}`)
+          .addEventListener('change', e => onAvatarChange(idx, e));
+      // 删除头像（阻止冒泡到 label，避免又弹文件选择）
+      card.querySelector(`#avatar-delete-${idx}`)
+          .addEventListener('click', e => { e.preventDefault(); onAvatarDelete(idx); });
+      // 编号变化 → 同步更新头像方块里的数字
+      card.querySelector(`#player-number-${idx}`)
+          .addEventListener('input', e => {
+            document.getElementById(`avatar-fallback-num-${idx}`).textContent =
+              e.target.value.trim() || String(idx + 1);
+          });
+
+      return card;
+    }
+
+    // 选颜色：更新色块选中状态（打勾）+ 头像方块背景色
+    function onSelectColor(idx, color) {
+      document.querySelectorAll(`#color-swatches-${idx} .color-swatch`)
+        .forEach(sw => {
+          const sel = sw.dataset.color === color;
+          sw.classList.toggle('selected', sel);
+          sw.textContent = sel ? '✓' : '';
+        });
+      document.getElementById(`avatar-fallback-${idx}`).style.background = color;
+    }
+
+    // 拍/选头像：压缩后存 avatarBlobs[idx]，显示预览图
+    async function onAvatarChange(idx, event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const { blob } = await compressImage(file, 1280);
+        avatarBlobs[idx] = blob;
+        const imgEl = document.getElementById(`avatar-img-${idx}`);
+        imgEl.src           = URL.createObjectURL(blob);
+        imgEl.style.display = '';
+        document.getElementById(`avatar-fallback-${idx}`).style.display = 'none';
+        document.getElementById(`avatar-delete-${idx}`).style.display   = '';
+      } catch (err) {
+        alert('头像处理出错，请重试\n' + err.message);
+      }
+    }
+
+    // 删除头像：清空 Blob，恢复 fallback 颜色圆
+    function onAvatarDelete(idx) {
+      avatarBlobs[idx] = null;
+      document.getElementById(`avatar-input-${idx}`).value  = '';
+      const imgEl = document.getElementById(`avatar-img-${idx}`);
+      imgEl.src           = '';
+      imgEl.style.display = 'none';
+      document.getElementById(`avatar-fallback-${idx}`).style.display = '';
+      document.getElementById(`avatar-delete-${idx}`).style.display   = 'none';
+    }
+
+    // Canvas 压缩（复用 photo.html 的写法，maxPx 可参数化）
+    function compressImage(file, maxPx) {
+      return new Promise((resolve, reject) => {
+        const img    = new Image();
+        const objUrl = URL.createObjectURL(file);
+        img.onload = () => {
+          URL.revokeObjectURL(objUrl);
+          const MAX = maxPx || 1280;
+          let w = img.naturalWidth, h = img.naturalHeight;
+          if (w > MAX || h > MAX) {
+            if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+            else        { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          canvas.toBlob(blob => {
+            if (!blob) { reject(new Error('Canvas toBlob 返回 null')); return; }
+            resolve({ blob, width: w, height: h });
+          }, 'image/jpeg', 0.7);
+        };
+        img.onerror = () => { URL.revokeObjectURL(objUrl); reject(new Error('图片加载失败')); };
+        img.src = objUrl;
+      });
+    }
+
+    // 收集玩家创建视图里的所有数据，对有头像的玩家写 photos 表
+    async function collectAndSavePlayers() {
+      const players = [];
+      for (let idx = 0; idx < playerCount; idx++) {
+        const playerId = generateId('p');
+        const name = (document.getElementById(`player-name-${idx}`).value || '').trim()
+                     || `玩家${idx + 1}`;
+        const playerNumber = (document.getElementById(`player-number-${idx}`).value || '').trim()
+                             || String(idx + 1);
+        const selectedSw = document.querySelector(`#color-swatches-${idx} .color-swatch.selected`);
+        const color      = selectedSw ? selectedSw.dataset.color : PLAYER_COLORS[idx % PLAYER_COLORS.length];
+
+        // 有头像就写进 photos 表
+        let avatarPhotoId = null;
+        const blob = avatarBlobs[idx];
+        if (blob) {
+          const photoId = generateId('ph');
+          await db.photos.add({
+            id:        photoId,
+            blob,
+            type:      'avatar',
+            ownerId:   playerId,
+            createdAt: Date.now(),
+            width:     0,
+            height:    0,
+            sizeBytes: blob.size,
+            format:    'jpeg',
+          });
+          avatarPhotoId = photoId;
+        }
+
+        players.push({ id: playerId, name, playerNumber, color, avatarPhotoId });
+      }
+      return players;
+    }
+
+    // 显示故事时盖住上面所有主区块（封面/概览/简介/人数/队伍）
+    function hidePrimarySections() {
+      ['cover-banner', 'level-overview', 'info-card',
+       'player-count-section', 'player-create-section']
+        .forEach(id => { document.getElementById(id).style.display = 'none'; });
+    }
+
+    // ── 开始按钮点击（单屏：收集玩家 → 故事 → 建 session）──
+    //
+    //  人数=1：直接 故事(可选) → 建 session
+    //  人数≥2：队伍详情一直显示在下方，点击时先收集玩家再走故事/建 session
+    //
     document.getElementById('btn-start').addEventListener('click', async () => {
       const btn = document.getElementById('btn-start');
 
-      // ── 第一阶段：有开场故事且还没显示过 ──
-      if (levelOpeningStory && !storyShown) {
-        document.getElementById('level-overview').style.display = 'none';
-        document.getElementById('story-text').textContent = levelOpeningStory;
-        document.getElementById('story-section').style.display = 'block';
+      // 人数 ≥ 2 且还没收集 → 先校验编号不重复，再收集并保存玩家（含头像写库）
+      if (playerCount >= 2 && !playersCollected) {
+        const nums = [];
+        for (let i = 0; i < playerCount; i++) {
+          nums.push((document.getElementById(`player-number-${i}`).value || '').trim()
+                    || String(i + 1));
+        }
+        if (new Set(nums).size !== nums.length) {
+          alert('队员编号不能重复，请修改后再出发');
+          return;
+        }
+        btn.disabled    = true;
+        btn.textContent = '⏳ 保存中…';
+        try {
+          createdPlayers   = await collectAndSavePlayers();
+          createdTeamName  = (document.getElementById('team-name-input').value || '').trim();
+          playersCollected = true;
+          btn.disabled     = false;
+        } catch (err) {
+          console.error('[玩家创建] 保存头像失败', err);
+          btn.disabled    = false;
+          btn.textContent = '🚀 开始冒险！';
+          alert('保存头像出错，请重试\n' + err.message);
+          return;
+        }
+      }
 
-        // 如果有地图底图，在故事下方显示地图全览（所有点位均未发现，只展示底图）
+      // 有开场故事且还没显示过 → 显示故事（盖住上面所有区块）
+      if (levelOpeningStory && !storyShown) {
+        hidePrimarySections();
+        document.getElementById('story-text').textContent       = levelOpeningStory;
+        document.getElementById('story-section').style.display  = '';
+
+        // 有地图则同步显示全览
         if (levelData && levelData.mapImage) {
           injectMapAnimStyles();
           const storyMapEl = document.getElementById('story-map-container');
           renderMapOverlay(storyMapEl, levelData, allPoints, {}, { naturalHeight: true });
-          storyMapEl.style.display = 'block';
+          storyMapEl.style.display = '';
         }
 
         btn.textContent = '🚀 开始冒险！';
         storyShown = true;
-        return; // 等待孩子读完故事再点一次
+        return;
       }
 
-      // ── 第二阶段：无故事 或 故事已显示，创建 session 并跳转 ──
-      btn.disabled = true;
+      // 创建 GameSession 并跳转到提示页
+      btn.disabled    = true;
       btn.textContent = '⏳ 出发中…';
-
       try {
-        const session = {
+        const teamName = createdTeamName || (createdPlayers.length > 0 ? '我们队' : '');
+        const session  = {
           id:                   generateId('sn'),
           levelId,
           startedAt:            Date.now(),
@@ -167,13 +643,14 @@
           helpUsedCount:        0,
           maxHelpCount:         3,
           pointRecords:         [],
+          players:              createdPlayers,  // 单人时为 []
+          teamName:             teamName,         // 单人时为 ''
         };
         await db.sessions.add(session);
-        // 用 sessionId 跳转，session 是游戏进度的唯一数据源
         location.href = `hint.html?sessionId=${encodeURIComponent(session.id)}`;
       } catch (err) {
         console.error('[开始冒险] 创建会话失败', err);
-        btn.disabled = false;
+        btn.disabled    = false;
         btn.textContent = '🚀 开始冒险！';
         alert('出错了，请刷新页面重试\n\n' + err.message);
       }

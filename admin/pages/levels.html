@@ -126,6 +126,27 @@
       <textarea id="input-location-hint" class="form-textarea"
                 placeholder="如「找到#5号楼邮递员传递信息的地方！」" maxlength="200"></textarea>
     </div>
+
+    <!-- 提示图片（可选）：孩子在「找下一站」页提示文字下方看到 -->
+    <div class="form-group">
+      <label class="form-label">提示图片（可选）</label>
+      <p style="font-size:12px;color:var(--color-text-muted);margin:-4px 0 8px;line-height:1.5">
+        会显示在孩子的「找下一站」提示页。比如拍一张二维码周围环境的照片帮孩子找。不传就留空。
+      </p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
+          📷 选择图片
+          <input id="input-point-hint-image" type="file" accept="image/*" style="display:none">
+        </label>
+        <button id="btn-remove-point-hint-image" type="button"
+                class="btn btn-secondary btn-sm" style="display:none">🗑️ 移除图片</button>
+      </div>
+      <div id="point-hint-image-preview-container" style="display:none;margin-top:8px">
+        <img id="point-hint-image-preview-img"
+             style="max-width:100%;max-height:150px;border-radius:8px;
+                    border:1px solid var(--color-border);object-fit:contain;display:block">
+      </div>
+    </div>
   </div>
 
   <div class="detail-section">
@@ -171,6 +192,28 @@
                   placeholder="可选，给家长看的备注（如「适合雨天室内」）"
                   maxlength="200"></textarea>
       </div>
+
+      <!-- 探险封面图（可选）：孩子端探险列表/开始页顶部展示 -->
+      <div class="form-group">
+        <label class="form-label">封面图（可选）</label>
+        <p style="font-size:12px;color:var(--color-text-muted);margin:-4px 0 8px;line-height:1.5">
+          会显示在孩子的探险列表和开始页顶部。不传就用默认图标。
+        </p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
+            📷 选择封面图
+            <input id="input-cover-image" type="file" accept="image/*" style="display:none">
+          </label>
+          <button id="btn-remove-cover" type="button"
+                  class="btn btn-secondary btn-sm" style="display:none">🗑️ 移除封面</button>
+        </div>
+        <div id="cover-preview-container" style="display:none;margin-top:8px">
+          <img id="cover-preview-img"
+               style="width:160px;height:90px;border-radius:8px;
+                      border:1px solid var(--color-border);object-fit:cover;display:block">
+        </div>
+      </div>
+
       <div class="form-row">
         <div class="form-group">
           <label class="form-label" for="select-player-count">推荐人数</label>

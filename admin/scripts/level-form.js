@@ -26,9 +26,10 @@ const THEME_COLORS = [
 
 // ── 模块状态 ────────────────────────────────────────────────
 
-let currentColor     = THEME_COLORS[0]; // 表单当前选中的主题色
-let editingLevelId   = null;             // null=新建，有值=编辑
-let currentMapImage  = null;             // base64 压缩后的地图底图，null=未上传
+let currentColor      = THEME_COLORS[0]; // 表单当前选中的主题色
+let editingLevelId    = null;             // null=新建，有值=编辑
+let currentMapImage   = null;             // base64 压缩后的地图底图，null=未上传
+let currentCoverImage = null;             // base64 压缩后的封面图，null=未上传
 
 // ── 入口 ────────────────────────────────────────────────────
 
@@ -179,6 +180,21 @@ function bindFormButtons() {
     document.getElementById('input-map-image').value = '';
     hideMapPreview();
   });
+
+  // 封面图：选图后压缩（长边 ≤800px，JPEG 0.8）并显示预览
+  document.getElementById('input-cover-image').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    currentCoverImage = await compressMapImage(file, 800);
+    showCoverPreview(currentCoverImage);
+  });
+
+  // 移除封面按钮
+  document.getElementById('btn-remove-cover').addEventListener('click', () => {
+    currentCoverImage = null;
+    document.getElementById('input-cover-image').value = '';
+    hideCoverPreview();
+  });
 }
 
 /**
@@ -209,6 +225,7 @@ function openCreateForm() {
   currentColor = THEME_COLORS[0];
   updateColorSwatches();
   resetMapSection(); // 清空地图字段，恢复默认值
+  resetCoverSection(); // 清空封面图
   // 故事文本框置空
   document.getElementById('input-opening-story').value = '';
   document.getElementById('input-ending-story').value  = '';
@@ -230,6 +247,7 @@ async function openEditForm(levelId) {
   currentColor = level.themeColor || THEME_COLORS[0];
   updateColorSwatches();
   loadMapSection(level); // 把地图字段填入表单
+  loadCoverSection(level); // 把封面图填入表单
   // 故事文本框：老数据可能没有此字段，用 || '' 兜底显示为空
   document.getElementById('input-opening-story').value = level.openingStory || '';
   document.getElementById('input-ending-story').value  = level.endingStory  || '';
@@ -253,6 +271,8 @@ async function saveForm() {
     recommendedPlayerCount:   parseInt(document.getElementById('select-player-count').value),
     recommendedAge:           document.getElementById('select-age-group').value,
     themeColor:               currentColor,
+    // 探险封面图（孩子端列表/开始页展示，可空）
+    coverImage:               currentCoverImage,
     // 探险地图字段（新建和编辑共用，从表单读取）
     mapImage:                 currentMapImage,
     mapFontSize:              document.querySelector('input[name="map-font-size"]:checked')?.value || 'medium',
@@ -434,18 +454,49 @@ function hideMapPreview() {
   document.getElementById('btn-remove-map').style.display = 'none';
 }
 
+// ── 封面图区域辅助函数 ─────────────────────────────────────
+
+/** 新建表单时清空封面图 */
+function resetCoverSection() {
+  currentCoverImage = null;
+  document.getElementById('input-cover-image').value = '';
+  hideCoverPreview();
+}
+
+/** 编辑表单时把封面图填入 UI（老数据无此字段 → 空） */
+function loadCoverSection(level) {
+  currentCoverImage = level.coverImage || null;
+  if (currentCoverImage) showCoverPreview(currentCoverImage);
+  else hideCoverPreview();
+}
+
+/** 显示封面缩略图 + 「移除」按钮 */
+function showCoverPreview(base64) {
+  document.getElementById('cover-preview-img').src = base64;
+  document.getElementById('cover-preview-container').style.display = 'block';
+  document.getElementById('btn-remove-cover').style.display = 'inline-flex';
+}
+
+/** 隐藏封面预览并清空 src */
+function hideCoverPreview() {
+  document.getElementById('cover-preview-img').src = '';
+  document.getElementById('cover-preview-container').style.display = 'none';
+  document.getElementById('btn-remove-cover').style.display = 'none';
+}
+
 /**
- * 用 Canvas 把图片文件压缩为 base64（长边 ≤1600px，JPEG quality 0.8）
- * @param {File} file - 用户选择的图片文件
+ * 用 Canvas 把图片文件压缩为 base64（长边 ≤maxPx，JPEG quality 0.8）
+ * @param {File}   file    - 用户选择的图片文件
+ * @param {number} [maxPx] - 长边上限，默认 1600（地图）；封面传 800
  * @returns {Promise<string>} base64 字符串
  */
-function compressMapImage(file) {
+function compressMapImage(file, maxPx = 1600) {
   return new Promise((resolve) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
       URL.revokeObjectURL(url);
-      const MAX = 1600;
+      const MAX = maxPx;
       let w = img.width, h = img.height;
       // 只在超出限制时等比缩放
       if (w > MAX || h > MAX) {

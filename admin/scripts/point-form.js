@@ -24,6 +24,7 @@ const SUBJECT_LABELS = {
 let currentLevelId     = null;
 let currentPointId     = null;  // null = 新建
 let currentQuestionIds = [];    // 表单内当前题目 ID 列表（实时变化）
+let currentHintImage   = null;  // 提示图片 base64，null = 未上传
 let pickerAllQuestions = [];    // 选题面板加载的全部题目
 let pickerSearch       = '';    // 选题面板当前关键字搜索词
 let pickerSelectedIds  = new Set(); // 已选题目 ID，独立于筛选条件，换筛选不清空
@@ -84,6 +85,21 @@ export function initPointForm() {
       else            pickerSelectedIds.delete(cb.value);
       updatePickerCount();
     });
+
+  // 提示图片：选图后压缩（长边 ≤800px，JPEG 0.8）并显示预览
+  document.getElementById('input-point-hint-image').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    currentHintImage = await compressHintImage(file);
+    showHintImagePreview(currentHintImage);
+  });
+
+  // 移除提示图片
+  document.getElementById('btn-remove-point-hint-image').addEventListener('click', () => {
+    currentHintImage = null;
+    document.getElementById('input-point-hint-image').value = '';
+    hideHintImagePreview();
+  });
 }
 
 /**
@@ -108,6 +124,10 @@ export async function showPointForm(levelId, pointId) {
     document.getElementById('input-completion-text').value        = pt.completionText || '';
     document.getElementById('input-location-hint').value          = pt.locationHint || '';
     currentQuestionIds = [...(pt.questionIds || [])];
+    // 提示图片（老数据无此字段 → null）
+    currentHintImage = pt.hintImage || null;
+    if (currentHintImage) showHintImagePreview(currentHintImage);
+    else hideHintImagePreview();
   } else {
     // 新建：计算序号 = 当前 L1 内最大 order + 1
     const existing = await db.points.where('levelId').equals(levelId).sortBy('order');
@@ -121,6 +141,10 @@ export async function showPointForm(levelId, pointId) {
     document.getElementById('input-completion-text').value        = '';
     document.getElementById('input-location-hint').value          = '';
     currentQuestionIds = [];
+    // 新建：清空提示图片
+    currentHintImage = null;
+    document.getElementById('input-point-hint-image').value = '';
+    hideHintImagePreview();
   }
 
   await renderQuestionList();
@@ -158,6 +182,7 @@ async function savePointForm() {
     questionIntroText:  document.getElementById('input-question-intro-text').value.trim(),
     completionText:     document.getElementById('input-completion-text').value.trim(),
     locationHint:       document.getElementById('input-location-hint').value.trim(),
+    hintImage:          currentHintImage,  // 提示图片 base64，可空
     questionIds:        [...currentQuestionIds],
   };
 
@@ -512,6 +537,53 @@ async function openQrPreview() {
 
 function closeQrModal() {
   document.getElementById('qr-modal').classList.add('hidden');
+}
+
+// ── 提示图片辅助函数 ─────────────────────────────────────
+
+/** 显示提示图片预览 + 「移除」按钮 */
+function showHintImagePreview(base64) {
+  document.getElementById('point-hint-image-preview-img').src = base64;
+  document.getElementById('point-hint-image-preview-container').style.display = 'block';
+  document.getElementById('btn-remove-point-hint-image').style.display = 'inline-flex';
+}
+
+/** 隐藏提示图片预览并清空 src */
+function hideHintImagePreview() {
+  document.getElementById('point-hint-image-preview-img').src = '';
+  document.getElementById('point-hint-image-preview-container').style.display = 'none';
+  document.getElementById('btn-remove-point-hint-image').style.display = 'none';
+}
+
+/**
+ * 用 Canvas 把图片文件压缩为 base64（长边 ≤800px，JPEG quality 0.8）
+ * @param {File} file - 用户选择的图片文件
+ * @returns {Promise<string>} base64 字符串
+ */
+function compressHintImage(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+        else        { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width  = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(null); // 读图失败 → 不存图片
+    };
+    img.src = url;
+  });
 }
 
 // ── 工具函数 ─────────────────────────────────────────────

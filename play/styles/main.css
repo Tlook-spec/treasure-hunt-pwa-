@@ -3,17 +3,20 @@
 
 /* ======== 设计令牌 ======== */
 :root {
-  --color-primary:       #4A90E2;
-  --color-primary-dark:  #3A7BC8;
-  --color-primary-light: #7BB0EE;
-  --color-accent:        #F5A623;   /* 橙：提示/求助/家长语境 */
-  --color-success:       #7ED321;   /* 绿：答对/前进 */
-  --color-error:         #FF9F89;   /* 粉橙：出错 */
-  --color-bg-game:       #FFF9E6;   /* 游戏端暖底 */
-  --color-bg-card:       #FFFFFF;
-  --color-text:          #2C3E50;
-  --color-text-muted:    #6C757D;
-  --color-border:        #E9ECEF;
+  /* V0 暖色配色：橙主色 + 青绿次色 + 金强调 + 米底（OKLCH 的 sRGB 近似）*/
+  --color-primary:        #E0772F;   /* 探险橙：按钮/强调 */
+  --color-primary-dark:   #C2651F;   /* 按钮按下 */
+  --color-primary-light:  #EA9A63;
+  --color-secondary:      #3FAEB8;   /* 海洋青：顶部条/次要强调 */
+  --color-secondary-dark: #359AA3;
+  --color-accent:         #E8B43C;   /* 宝藏金：提示/得分点缀 */
+  --color-success:        #3E9E6E;   /* 草绿：答对/前进 */
+  --color-error:          #D23B2A;   /* 红：答错 */
+  --color-bg-game:        #F4EAD5;   /* 暖奶油底 */
+  --color-bg-card:        #FDF8EE;   /* 近白米卡片 */
+  --color-text:           #52402D;   /* 深褐正文 */
+  --color-text-muted:     #82664B;
+  --color-border:         #D9C9AE;
   --radius-btn:          12px;
   --radius-card:         16px;
   --shadow-card:         0 2px 8px rgba(0,0,0,0.10);
@@ -116,7 +119,7 @@ body {
   background: var(--color-accent);
   color: #fff;
 }
-.btn-warning:active { background: #e09516; }
+.btn-warning:active { background: #CF9A28; }
 
 /* ======== 通用卡片 ======== */
 .card {
@@ -337,13 +340,15 @@ body {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: var(--color-primary);
-  color: #fff;
-  padding: 10px var(--space-sm);
-  font-size: 15px;
+  background: var(--color-bg-card);
+  color: var(--color-primary);
+  border-bottom: 1px solid var(--color-border);
+  padding: 12px var(--space-sm);
+  font-size: 16px;
   font-weight: 700;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 .hint-section-title {
@@ -356,7 +361,7 @@ body {
 .station-banner-dot {
   width: 10px;
   height: 10px;
-  background: #fff;
+  background: var(--color-primary);
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -367,10 +372,10 @@ body {
   flex-shrink: 0;
   width: 40px;
   height: 40px;
-  border: none;
+  border: 1.5px solid var(--color-border);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.22);
-  color: #fff;
+  background: var(--color-bg-card);
+  color: var(--color-primary);
   font-size: 17px;
   line-height: 1;
   cursor: pointer;
@@ -378,7 +383,7 @@ body {
   align-items: center;
   justify-content: center;
 }
-.btn-pause:active { background: rgba(255, 255, 255, 0.38); }
+.btn-pause:active { background: var(--color-border); }
 
 /* 暂停遮罩：盖住整屏（z-index 高于地图覆盖层 300），挡住题目不可点 */
 .pause-overlay {
@@ -461,7 +466,7 @@ body {
   background: var(--color-success);
   color: #fff;
 }
-.btn-success:active { background: #6abd1a; }
+.btn-success:active { background: #348A5F; }
 
 /* ======== 探险概览卡片（开始冒险页）======== */
 .level-overview {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#4A90E2">
+  <meta name="theme-color" content="#F4EAD5">
   <link rel="stylesheet" href="../styles/main.css">
   <title>选择探险 - 寻宝游戏</title>
   <!-- CDN 库（普通 script，必须在 type="module" 之前）-->
@@ -97,7 +97,9 @@
 
       list.innerHTML = cards.map(({ level, pointCount, lastPlayText, icon }) => `
         <div class="level-card">
-          <div class="level-icon">${icon}</div>
+          <div class="level-icon">${level.coverImage
+            ? `<img src="${level.coverImage}" alt="" style="width:52px;height:52px;border-radius:12px;object-fit:cover;display:block;margin:0 auto">`
+            : icon}</div>
           <div class="level-body">
             <div class="level-name">${esc(level.name)}</div>
             ${level.description ? `<div class="level-desc">${esc(level.description)}</div>` : ''}

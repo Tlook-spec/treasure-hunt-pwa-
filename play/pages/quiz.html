@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#4A90E2">
+  <meta name="theme-color" content="#F4EAD5">
   <link rel="stylesheet" href="../styles/main.css">
   <title>答题 - 寻宝游戏</title>
   <!-- Dexie 必须在 type="module" 脚本之前加载 -->
@@ -14,13 +14,30 @@
     /* 拼音 ruby 标注：字号小、颜色淡，不抢眼 */
     ruby { ruby-align: center; }
     rt   { font-size: 0.52em; color: #aaa; line-height: 1.2; }
+
+    /* ── 答题进度 + 当前总分条 ── */
+    .quiz-progress { padding: 8px 16px 10px; }
+    .quiz-progress-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px;
+    }
+    #quiz-progress-text  { font-size: 14px; font-weight: 700; color: #82664B; }
+    #quiz-progress-score { font-size: 14px; font-weight: 700; color: #E0772F; }
+    .quiz-progress-track {
+      height: 10px; border-radius: 999px; background: #EADFC4; overflow: hidden;
+    }
+    .quiz-progress-fill {
+      height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, #E8B43C, #E0772F);
+      transition: width 0.4s ease;
+    }
   </style>
 </head>
 <body>
 
   <!-- ── 顶部进度横幅（屏 1 专用）──────────────────────────── -->
   <div class="station-banner" id="quiz-banner">
-    <div id="banner-discovery" style="display:flex; align-items:center; gap:8px; width:100%">
+    <div id="banner-discovery" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%">
       <div class="station-banner-dot"></div>
       <span id="discovery-station-text">加载中…</span>
     </div>
@@ -59,9 +76,19 @@
         <div class="quiz-top-left">
           <div class="station-banner-dot"></div>
           <span id="quiz-station-text">第 N 站</span>
-          <span class="banner-question-count" id="quiz-question-count">第 1/5 题</span>
         </div>
         <button class="btn-help-inline" id="btn-help">💡 求助 <span id="help-count">3</span></button>
+      </div>
+
+      <!-- 答题进度 + 当前总分条（题号进度 + 已得分 + 橙色进度条）-->
+      <div id="quiz-progress" class="quiz-progress" style="display:none">
+        <div class="quiz-progress-head">
+          <span id="quiz-progress-text">第 1 题 / 共 5 题</span>
+          <span id="quiz-progress-score">已得 0 分</span>
+        </div>
+        <div class="quiz-progress-track">
+          <div id="quiz-progress-fill" class="quiz-progress-fill" style="width:0%"></div>
+        </div>
       </div>
 
       <!-- 中段：题干（大字、居中）-->
@@ -83,8 +110,9 @@
   <button id="btn-map-fab"
           aria-label="查看地图"
           style="display:none; position:fixed; right:20px; bottom:20px; z-index:100;
-                 width:60px; height:60px; border-radius:50%; border:none;
-                 background:#4A90E2; color:#fff; font-size:26px;
+                 width:60px; height:60px; border-radius:50%;
+                 border:1.5px solid #E0D3B0;
+                 background:#FDF8EE; font-size:26px;
                  box-shadow:0 4px 14px rgba(0,0,0,0.35); cursor:pointer;
                  align-items:center; justify-content:center;">🗺️</button>
 
@@ -138,7 +166,7 @@
       consumeHelp,
     } from '../scripts/quiz-logic.js';
     import db from '../../shared/db/play-db.js';
-    import { renderMapOverlay, injectMapAnimStyles, buildPointStateMap } from '../scripts/map-overlay.js?v=V1-17';
+    import { renderMapOverlay, injectMapAnimStyles, buildPointStateMap } from '../scripts/map-overlay.js?v=V1-27';
 
     const sessionId = new URLSearchParams(location.search).get('sessionId');
     if (!sessionId) location.href = 'select-level.html';
@@ -334,6 +362,15 @@
       showQuizScreen(currentData);
     }
 
+    // 整局累计已得分：累加所有站、所有已答题的 score
+    function computeRunningScore(session) {
+      let total = 0;
+      for (const pr of (session.pointRecords || [])) {
+        for (const qr of (pr.questionResults || [])) total += qr.score || 0;
+      }
+      return total;
+    }
+
     function showQuizScreen(data) {
       const { session, question, stationNumber, questionNumber, totalQuestions } = data;
       const remainingHelp = session.maxHelpCount - session.helpUsedCount;
@@ -342,10 +379,17 @@
       document.getElementById('quiz-banner').style.display = 'none';
       document.getElementById('banner-quiz').style.display = 'flex';
       document.getElementById('quiz-station-text').textContent = `第 ${stationNumber} 站`;
-      document.getElementById('quiz-question-count').textContent =
-        `第 ${questionNumber}/${totalQuestions} 题`;
       document.getElementById('help-count').textContent = remainingHelp;
       document.getElementById('btn-help').disabled = (remainingHelp <= 0);
+
+      // 答题进度 + 当前总分条：题号进度 + 整局已得分 + 橙色进度条
+      document.getElementById('quiz-progress-text').textContent =
+        `第 ${questionNumber} 题 / 共 ${totalQuestions} 题`;
+      document.getElementById('quiz-progress-score').textContent =
+        `已得 ${computeRunningScore(session)} 分`;
+      document.getElementById('quiz-progress-fill').style.width =
+        `${Math.round(questionNumber / totalQuestions * 100)}%`;
+      document.getElementById('quiz-progress').style.display = 'block';
 
       // 题目元信息（学科 + 难度星）
       const diff = Math.max(1, Math.min(3, question.difficulty || 1));
@@ -462,7 +506,7 @@
         await recordQuestionResult(
           sessionId, questionId, attemptCount + 1, usedHelpThisQuestion, score, wrongChoices
         );
-        showFeedback('correct');
+        showFeedback('correct', { score });
 
         setTimeout(async () => {
           hideFeedback();
@@ -543,7 +587,7 @@
         await recordQuestionResult(
           sessionId, questionId, attemptCount + 1, usedHelpThisQuestion, score, wrongChoices
         );
-        showFeedback('correct');
+        showFeedback('correct', { score });
 
         setTimeout(async () => {
           hideFeedback();
@@ -626,7 +670,9 @@
 
       if (type === 'correct') {
         area.classList.add('feedback-correct');
-        area.textContent = '🎉 答对啦！';
+        area.textContent = (data.score != null)
+          ? `🎉 答对啦，+${data.score} 分！`
+          : '🎉 答对啦！';
 
       } else if (type === 'wrong') {
         area.classList.add('feedback-wrong');

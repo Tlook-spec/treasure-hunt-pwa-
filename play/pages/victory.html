@@ -3,13 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#4A90E2">
+  <meta name="theme-color" content="#F4EAD5">
   <link rel="stylesheet" href="../styles/main.css">
   <title>通关啦！- 寻宝游戏</title>
   <style>
+    /* ── 通关总结 3 格（图标在上、数字、标签）──────── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 0 0 8px;
+    }
+    .stat-box {
+      background: var(--color-bg-card);
+      border-radius: 16px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+      padding: 16px 6px 14px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .stat-box-icon  { font-size: 26px; line-height: 1; }
+    .stat-box-value {
+      font-size: 22px; font-weight: 800; line-height: 1.15;
+      color: var(--color-text-primary, #1a1a2e);
+      word-break: break-word;
+    }
+    .stat-box-label { font-size: 12px; color: #999; }
+
     /* ── 按站成绩卡 ──────────────────────────── */
     .station-card {
-      background: #fff;
+      background: var(--color-bg-card);
       border-radius: 12px;
       margin-bottom: 12px;
       box-shadow: 0 1px 6px rgba(0,0,0,0.08);
@@ -164,21 +190,22 @@
       <p id="ending-story-text" class="story-text"></p>
     </div>
 
-    <!-- 成绩卡 -->
-    <div class="score-card">
-      <div class="score-row">
-        <span class="score-label">🌟 总分</span>
-        <span class="score-value" id="stat-score">—</span>
+    <!-- 成绩卡：3 格独立框（图标在上、数字、标签）-->
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-box-icon">🌟</div>
+        <div class="stat-box-value" id="stat-score">—</div>
+        <div class="stat-box-label">总得分</div>
       </div>
-      <div class="score-divider"></div>
-      <div class="score-row">
-        <span class="score-label">✅ 答对题数</span>
-        <span class="score-value score-value-sm" id="stat-correct">—</span>
+      <div class="stat-box">
+        <div class="stat-box-icon">✅</div>
+        <div class="stat-box-value" id="stat-correct">—</div>
+        <div class="stat-box-label">答对题数</div>
       </div>
-      <div class="score-divider"></div>
-      <div class="score-row">
-        <span class="score-label">⏱ 用时</span>
-        <span class="score-value score-value-sm" id="stat-time">—</span>
+      <div class="stat-box">
+        <div class="stat-box-icon">⏱</div>
+        <div class="stat-box-value" id="stat-time">—</div>
+        <div class="stat-box-label">用时</div>
       </div>
     </div>
 
@@ -329,8 +356,8 @@
         const secs     = totalSec % 60;
         const timeStr  = mins > 0 ? `${mins} 分 ${secs} 秒` : `${secs} 秒`;
 
-        document.getElementById('stat-score').textContent   = `${totalScore} 分`;
-        document.getElementById('stat-correct').textContent = `${correctQuestions} / ${totalQuestions} 题`;
+        document.getElementById('stat-score').textContent   = `${totalScore}`;
+        document.getElementById('stat-correct').textContent = `${correctQuestions}/${totalQuestions}`;
         document.getElementById('stat-time').textContent    = timeStr;
 
         // ⑥ 合影
@@ -781,15 +808,16 @@
       const ctx      = canvas.getContext('2d');
 
       // ④ 蓝色渐变顶部区
+      // 顶部区：暖白色（不再橙色渐变）
       const hGrad = ctx.createLinearGradient(0, 0, 0, H_HDR);
-      hGrad.addColorStop(0, '#3B82F6');
-      hGrad.addColorStop(1, '#1E40AF');
+      hGrad.addColorStop(0, '#FFFDF6');
+      hGrad.addColorStop(1, '#FBF3E2');
       ctx.fillStyle = hGrad;
       ctx.fillRect(0, 0, W, H_HDR);
 
       ctx.textAlign    = 'center';
       ctx.textBaseline = 'alphabetic';
-      ctx.fillStyle    = '#ffffff';
+      ctx.fillStyle    = '#52402D';   // 深褐字
 
       // 探险名（自动截断防溢出）
       ctx.font = `bold 52px ${FONT}`;
@@ -797,27 +825,51 @@
 
       // "宝藏探险 · 成就海报" 副标题
       ctx.font      = `28px ${FONT}`;
-      ctx.fillStyle = 'rgba(255,255,255,0.80)';
-      ctx.fillText('宝藏探险 · 成就海报', W / 2, 122);
+      ctx.fillStyle = '#82664B';
+      ctx.fillText('宝藏探险 · 成就海报', W / 2, 120);
 
-      // 总分（大字）
-      ctx.font      = `bold 72px ${FONT}`;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(`${totalScore} 分`, W / 2, 218);
+      // 通关总结 3 格（图标在上、数字、标签）—— 与通关页一致
+      const stats = [
+        { icon: '🌟', value: `${totalScore}`,                       label: '总得分' },
+        { icon: '✅', value: `${correctQuestions}/${totalQuestions}`, label: '答对题数' },
+        { icon: '⏱', value: timeStr,                               label: '用时' },
+      ];
+      const boxGap = 16;
+      const boxW   = (CW - boxGap * 2) / 3;
+      const boxH   = 132;
+      const boxY   = 150;
+      stats.forEach((s, i) => {
+        const bx = PAD + i * (boxW + boxGap);
+        // 米色圆角框 + 淡棕描边
+        ctx.fillStyle   = '#F4EAD5';
+        _posterRRect(ctx, bx, boxY, boxW, boxH, 18);
+        ctx.fill();
+        ctx.strokeStyle = '#D9C9AE';
+        ctx.lineWidth   = 1.5;
+        _posterRRect(ctx, bx, boxY, boxW, boxH, 18);
+        ctx.stroke();
+        ctx.textAlign = 'center';
+        // 图标
+        ctx.font      = `40px ${FONT}`;
+        ctx.fillText(s.icon, bx + boxW / 2, boxY + 52);
+        // 数字（超宽自动截断）
+        ctx.font      = `bold 38px ${FONT}`;
+        ctx.fillStyle = '#52402D';   // 深褐字
+        _posterFillFit(ctx, s.value, bx + boxW / 2, boxY + 96, boxW - 24);
+        // 标签
+        ctx.font      = `22px ${FONT}`;
+        ctx.fillStyle = '#82664B';
+        ctx.fillText(s.label, bx + boxW / 2, boxY + 122);
+      });
 
-      // 用时 + 答对数
-      ctx.font      = `30px ${FONT}`;
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-      ctx.fillText(`${timeStr}  ·  答对 ${correctQuestions}/${totalQuestions} 题`, W / 2, 274);
-
-      // ⑤ 白色内容区
-      ctx.fillStyle = '#ffffff';
+      // ⑤ 内容区：暖米色背景
+      ctx.fillStyle = '#F4EAD5';
       ctx.fillRect(0, H_HDR, W, totalH - H_HDR);
 
       let y = H_HDR + H_WPT;
 
       // ⑥ 按站成绩列表
-      ctx.fillStyle = '#1a1a2e';
+      ctx.fillStyle = '#52402D';
       ctx.textAlign = 'left';
       ctx.font      = `bold 36px ${FONT}`;
       ctx.fillText('📋 按站成绩', PAD, y + 36);
@@ -834,7 +886,7 @@
         ctx.fillStyle = s.totalScore > 0 ? '#16A34A' : '#DC2626';
         ctx.fillText(`${s.totalScore} 分`, W - PAD, y + 30);
 
-        ctx.strokeStyle = '#f0f0f0';
+        ctx.strokeStyle = '#D9C9AE';
         ctx.lineWidth   = 1.5;
         ctx.beginPath();
         ctx.moveTo(PAD,     y + H_SROW - 2);
@@ -969,7 +1021,7 @@
 
     // 水平分隔线
     function _posterDivider(ctx, y, W, PAD) {
-      ctx.strokeStyle = '#e5e7eb';
+      ctx.strokeStyle = '#D9C9AE';
       ctx.lineWidth   = 2;
       ctx.beginPath();
       ctx.moveTo(PAD,     y + 16);

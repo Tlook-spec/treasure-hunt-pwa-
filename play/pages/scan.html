@@ -56,12 +56,12 @@
     }
     .start-icon { font-size: 60px; line-height: 1; opacity: 0.75; }
     #btn-start-scan {
-      background: #4A90E2; color: #fff; border: none;
+      background: #E0772F; color: #fff; border: none;
       border-radius: 14px; padding: 14px 32px;
       font-size: 18px; font-weight: 700; cursor: pointer;
       width: 100%; max-width: 240px; min-height: 56px;
     }
-    #btn-start-scan:active { background: #3A7BC8; }
+    #btn-start-scan:active { background: #C2651F; }
     #btn-start-scan:disabled { opacity: 0.5; }
     #error-content {
       display: none; flex-direction: column;
@@ -458,6 +458,9 @@
     // 扫码成功动画：取景框绿光 + ✅ 弹出淡出（约 0.85 秒）
     // 用 rAF 确保浏览器先完成一帧布局再加动画类，防止 Safari 吞动画
     function showScanSuccess() {
+      // 手动输码路径没启动过摄像头，idle 的「点击开始扫码」还显示着，
+      // 绿色成功遮罩是半透明的会透出它 → 这里先把 start-overlay 藏掉
+      document.getElementById('start-overlay').style.display = 'none';
       const wrapper = document.querySelector('.camera-wrapper');
       wrapper.classList.add('scan-success');
       const overlay = document.getElementById('scan-success-overlay');
@@ -509,7 +512,7 @@
     // ── 数字码输入弹窗 ─────────────────────────────────────────────
 
     // 弹窗颜色主题（子/家长模式）
-    const MODAL_COLOR = { child: '#4A90E2', parent: '#F5A623' };
+    const MODAL_COLOR = { child: '#E0772F', parent: '#E8B43C' };
     const ERROR_TEXT  = {
       child:  '码不对哦，再看看二维码下面的数字',
       parent: '家长再仔细看下数字',
