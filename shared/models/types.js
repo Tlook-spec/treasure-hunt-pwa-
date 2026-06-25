@@ -23,7 +23,8 @@
  *
  * @property {number} recommendedPlayerCount  - 推荐人数，MVP 默认 1
  * @property {string} recommendedAge          - 推荐年龄段，如 "7-9"
- * @property {string} themeColor             - 主题色，如 "#4A90E2"
+ * @property {string} themeColor             - 主题色，如 "#4A90E2"（仅 admin 端卡片色标，游戏端不读）
+ * @property {string|null} coverImage  - 探险封面图 base64（V1，长边≤800）默认 null，空走默认 emoji 图标
  *
  * --- 以下字段 MVP 预留，UI 不显示，V1 启用 ---
  * @property {string} openingStory     - 开场故事文本（V1）默认 ""
@@ -32,7 +33,11 @@
  * @property {string} mapFontSize      - 地图字号 "small"|"medium"|"large"（V1）默认 "medium"
  * @property {string} mapNameColor     - 地图点位名称颜色（V1）默认 "#2C3E50"
  * @property {string} mapNameColorCompleted - 完成后高亮色（V1）默认 "#F5A623"
- * @property {Array}  customAwards     - 自定义奖项（V1）默认 []
+ *
+ * --- 通关小组奖（V1-28，多人通关给整队颁一枚；游戏端读取一律容错走默认）---
+ * @property {string}      groupAwardName  - 小组奖奖名（V1-28）默认 ""，空走内置默认「通关纪念奖」
+ * @property {string|null} groupAwardImage - 小组奖奖图 base64（V1-28，长边≤800）默认 null，空走默认奖杯 🏆
+ * @property {Array}       customAwards    - ⏭️ V2 投票颁奖预留，V1 不用，默认 []
  */
 
 // ============================================================
@@ -58,6 +63,7 @@
  * @property {number|null} mapY              - 地图 Y 坐标（百分比，V1）默认 null
  * @property {string}      questionIntroText - 答题引导文案（V1）默认 ""
  * @property {string}      completionText    - L2 通关庆祝文案（V1）默认 ""
+ * @property {string|null} hintImage         - 「找下一站」提示页图片 base64（V1，长边≤800）默认 null，空=不显示
  */
 
 // ============================================================
@@ -85,16 +91,16 @@
  */
 
 // ============================================================
-// 6.4 Player（玩家，V1 多人，MVP 不用）
+// 6.4 Player（玩家，V1-27 起启用；单人不产生 Player）
 // ============================================================
 
 /**
  * @typedef {Object} Player
- * @property {string} id              - 短 ID，格式 p_xxx_yyy
- * @property {string} name            - 玩家昵称
- * @property {string} avatarPhotoId   - 头像照片 ID（引用 PhotoBlob）
- * @property {string} color           - 玩家颜色，如 "#FF6B6B"
- * @property {string} playerNumber    - 编号，如 "P1"
+ * @property {string}      id              - 短 ID，格式 p_xxx_yyy
+ * @property {string}      name            - 玩家昵称（空时游戏端兜底「玩家N」）
+ * @property {string|null} avatarPhotoId   - 头像照片 ID（引用 PhotoBlob），没拍头像则 null（显示颜色块+编号）
+ * @property {string}      color           - 玩家颜色，如 "#FF6B6B"
+ * @property {string}      playerNumber    - 编号字符串，如 "1"、"2"（V1-27 用纯数字，开局校验不重复）
  */
 
 // ============================================================
@@ -134,11 +140,11 @@
  *
  * @property {PointRecord[]} pointRecords  - 每个 L2 的答题记录
  *
- * --- 以下字段 V1 多人，MVP 不用 ---
- * @property {Player[]} players      - 玩家列表（V1）默认 []
- * @property {string}   teamName     - 队名（V1）默认 ""
- * @property {Array}    voteRecords  - 投票记录（V1）默认 []
- * @property {Array}    awards       - 颁奖结果（V1）默认 []
+ * --- 以下字段 V1-27 起多人启用；单人 / MVP 老存档【无此字段】，读取一律 (session.players || []) 容错 ---
+ * @property {Player[]} players      - 玩家列表（V1-27），单人为 []；随 session 存 IndexedDB 自然持久（续玩不丢）
+ * @property {string}   teamName     - 队名（V1-27），单人为 ""，空时通关页显示「我们队」
+ * @property {Array}    voteRecords  - ⏭️ V2 投票预留，V1 不用，默认 []
+ * @property {Array}    awards       - ⏭️ V2 颁奖结果预留，V1 不用（V1 小组奖直接读 Level.groupAward*，不写这里）默认 []
  */
 
 // ============================================================
