@@ -33,6 +33,64 @@
     }
     .stat-box-label { font-size: 12px; color: #999; }
 
+    /* ── V1-29 队伍展示（队名 + 一排头像，仅多人）── */
+    #team-section { text-align: center; margin: 2px 0 10px; }
+    .team-name-banner {
+      font-size: 20px; font-weight: 800; color: var(--color-primary);
+      margin-bottom: 12px;
+    }
+    .team-avatars {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;
+    }
+    .team-avatar-chip {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      width: 56px;
+    }
+    .team-avatar-circle {
+      width: 48px; height: 48px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 18px; font-weight: 800;
+      border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+      overflow: hidden; flex-shrink: 0;
+    }
+    .team-avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+    .team-avatar-name {
+      font-size: 12px; color: var(--color-text-muted, #888);
+      max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* ── V1-29 小组颁奖（奖图 + 文字 + 头像，仅多人）── */
+    #award-section { margin: 8px 0 4px; }
+    .award-card {
+      background: var(--color-bg-card, #fff);
+      border: 1.5px solid var(--color-accent, #E8B43C);
+      border-radius: 18px;
+      padding: 20px 16px;
+      text-align: center;
+      box-shadow: 0 2px 12px rgba(224,119,47,0.15);
+    }
+    .award-emblem {
+      width: 110px; height: 110px; margin: 0 auto 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 84px; line-height: 1;
+    }
+    .award-emblem img {
+      width: 110px; height: 110px; object-fit: contain; border-radius: 14px;
+    }
+    .award-text {
+      font-size: 19px; font-weight: 800; color: var(--color-text, #52402D);
+      line-height: 1.5; margin-bottom: 14px;
+    }
+    .award-text b { color: var(--color-primary); }
+    /* 揭晓动画：从小放大 + 渐显，约 0.7s */
+    #award-section.award-reveal .award-card { animation: awardPop 0.7s ease-out; }
+    @keyframes awardPop {
+      0%   { opacity: 0; transform: scale(0.4); }
+      60%  { opacity: 1; transform: scale(1.08); }
+      80%  { transform: scale(0.97); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
     /* ── 按站成绩卡 ──────────────────────────── */
     .station-card {
       background: var(--color-bg-card);
@@ -183,6 +241,21 @@
       <div class="victory-trophy">🏆</div>
       <h1 class="victory-title">通关啦！</h1>
       <p class="victory-level-name" id="victory-level-name"></p>
+    </div>
+
+    <!-- V1-29 队伍展示（仅多人 session.players 非空时 JS 显示；单人维持现状不显示）-->
+    <div id="team-section" style="display:none">
+      <div class="team-name-banner" id="team-name-banner"></div>
+      <div class="team-avatars" id="team-avatars"></div>
+    </div>
+
+    <!-- V1-29 小组颁奖（仅多人；撒花后 JS 揭晓，scale+渐显动画）-->
+    <div id="award-section" style="display:none">
+      <div class="award-card">
+        <div class="award-emblem" id="award-emblem"></div>
+        <p class="award-text" id="award-text"></p>
+        <div class="team-avatars" id="award-avatars"></div>
+      </div>
     </div>
 
     <!-- 结局故事（endingStory 非空时显示，JS 控制）-->
@@ -393,6 +466,17 @@
             .filter(x => x.blob);
         }
 
+        // ⑧.5 V1-29 多人：队伍展示 + 预备小组颁奖（仅 session.players 非空；
+        //      单人 / 老存档 players 为空 → 整段跳过，通关页维持现状）
+        const players = session.players || [];   // 容错：缺字段当单人
+        const isMulti = players.length > 0;
+        if (isMulti) {
+          const teamName   = (session.teamName || '').trim() || '我们队';
+          const avatarUrls = await loadAvatarUrls(players);  // 头像 blob → objectURL
+          renderTeamSection(teamName, players, avatarUrls);  // 队名 + 头像（页面靠上）
+          prepareAwardSection(level, teamName, players, avatarUrls); // 预备奖，先不显示
+        }
+
         // ⑨ 显示页面 + 按钮
         document.getElementById('main-content').style.display  = 'block';
         document.getElementById('bottom-action').style.display = 'block';
@@ -400,6 +484,9 @@
         // ⑩ 撒花 + 通关音效！
         launchConfetti();
         playVictoryOnce(); // 桌面直接响；iOS 被拦时等首次触摸补播
+
+        // V1-29：多人撒花之后揭晓小组奖（短延时让撒花先出来）
+        if (isMulti) setTimeout(revealAward, 500);
 
       } catch (err) {
         console.error('[通关页] 初始化失败', err);
@@ -1044,6 +1131,98 @@
       ctx.strokeStyle = '#C0392B';
       ctx.lineWidth   = 1.5;
       ctx.stroke();
+    }
+
+    // ── V1-29 多人：队伍展示 + 小组颁奖 ─────────────────────
+
+    // 转义用户文本（队名/奖名走 innerHTML，需防 XSS）
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s == null ? '' : String(s);
+      return d.innerHTML;
+    }
+
+    // 按 avatarPhotoId 批量读头像 blob → objectURL（取法与合影一致）
+    async function loadAvatarUrls(players) {
+      const ids = players.map(p => p.avatarPhotoId).filter(Boolean);
+      const map = new Map();
+      if (ids.length === 0) return map;
+      const photos = await db.photos.bulkGet(ids);
+      photos.forEach((ph, i) => {
+        if (ph && ph.blob) map.set(ids[i], URL.createObjectURL(ph.blob));
+      });
+      return map;
+    }
+
+    // 单个头像小圆：有头像图 → 显图；没有 → 颜色块 + 编号（与 V1-27 创建时同一画法）
+    function buildAvatarChip(player, url) {
+      const chip = document.createElement('div');
+      chip.className = 'team-avatar-chip';
+
+      const circle = document.createElement('div');
+      circle.className = 'team-avatar-circle';
+      if (url) {
+        const img = document.createElement('img');
+        img.src = url; img.alt = '';
+        circle.appendChild(img);
+      } else {
+        circle.style.background = player.color || '#888';
+        circle.textContent = player.playerNumber || '';
+      }
+
+      const name = document.createElement('div');
+      name.className = 'team-avatar-name';
+      name.textContent = player.name || '';
+
+      chip.appendChild(circle);
+      chip.appendChild(name);
+      return chip;
+    }
+
+    // 渲染一排头像（队伍展示 / 颁奖区两处复用）
+    function renderAvatarRow(container, players, urlMap) {
+      container.innerHTML = '';
+      for (const p of players) {
+        const url = p.avatarPhotoId ? (urlMap.get(p.avatarPhotoId) || null) : null;
+        container.appendChild(buildAvatarChip(p, url));
+      }
+    }
+
+    // 队伍展示：队名 + 一排头像（页面靠上）
+    function renderTeamSection(teamName, players, urlMap) {
+      document.getElementById('team-name-banner').textContent = `🚩 ${teamName}`;
+      renderAvatarRow(document.getElementById('team-avatars'), players, urlMap);
+      document.getElementById('team-section').style.display = 'block';
+    }
+
+    // 预备小组颁奖（先填好内容、不显示；撒花后由 revealAward 揭晓）
+    function prepareAwardSection(level, teamName, players, urlMap) {
+      // 奖名 / 奖图：没配走内置默认（默认奖名「通关纪念奖」+ 默认奖杯 🏆）
+      const awardName = (level && (level.groupAwardName || '').trim()) || '通关纪念奖';
+      const awardImg  = level && level.groupAwardImage ? level.groupAwardImage : null;
+
+      const emblem = document.getElementById('award-emblem');
+      emblem.innerHTML = '';
+      if (awardImg) {
+        const img = document.createElement('img');
+        img.src = awardImg; img.alt = '小组奖';
+        emblem.appendChild(img);
+      } else {
+        emblem.textContent = '🏆';  // 内置默认奖杯
+      }
+
+      document.getElementById('award-text').innerHTML =
+        `🎉 <b>${esc(teamName)}</b> 获得 <b>【${esc(awardName)}】</b>！`;
+
+      // 奖图下方再放一排全体头像，呼应「人人有份」
+      renderAvatarRow(document.getElementById('award-avatars'), players, urlMap);
+    }
+
+    // 揭晓小组奖：显示颁奖区 + 加动画类（scale + 渐显）
+    function revealAward() {
+      const sec = document.getElementById('award-section');
+      sec.style.display = 'block';
+      requestAnimationFrame(() => sec.classList.add('award-reveal'));
     }
 
     // ── 错误状态 ─────────────────────────────────────────────
