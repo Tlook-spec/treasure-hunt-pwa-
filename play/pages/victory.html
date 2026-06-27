@@ -466,16 +466,18 @@
             .filter(x => x.blob);
         }
 
-        // ⑧.5 V1-29 多人：队伍展示 + 预备小组颁奖（仅 session.players 非空；
-        //      单人 / 老存档 players 为空 → 整段跳过，通关页维持现状）
-        const players = session.players || [];   // 容错：缺字段当单人
-        const isMulti = players.length > 0;
+        // ⑧.5 颁奖 + 队伍展示
+        //   队伍展示（队名+头像）：仅多人（session.players 非空）
+        //   颁奖：单人 + 多人都颁（单人显示「你」无头像；多人显示队名+头像）
+        const players  = session.players || [];   // 容错：缺字段当单人
+        const isMulti  = players.length > 0;
+        const teamName = (session.teamName || '').trim() || '我们队';
+        let avatarUrls = new Map();
         if (isMulti) {
-          const teamName   = (session.teamName || '').trim() || '我们队';
-          const avatarUrls = await loadAvatarUrls(players);  // 头像 blob → objectURL
+          avatarUrls = await loadAvatarUrls(players);        // 头像 blob → objectURL
           renderTeamSection(teamName, players, avatarUrls);  // 队名 + 头像（页面靠上）
-          prepareAwardSection(level, teamName, players, avatarUrls); // 预备奖，先不显示
         }
+        prepareAwardSection(level, isMulti, teamName, players, avatarUrls); // 预备奖，先不显示
 
         // ⑨ 显示页面 + 按钮
         document.getElementById('main-content').style.display  = 'block';
@@ -485,8 +487,8 @@
         launchConfetti();
         playVictoryOnce(); // 桌面直接响；iOS 被拦时等首次触摸补播
 
-        // V1-29：多人撒花之后揭晓小组奖（短延时让撒花先出来）
-        if (isMulti) setTimeout(revealAward, 500);
+        // 撒花之后揭晓通关奖（单人/多人都揭晓，短延时让撒花先出来）
+        setTimeout(revealAward, 500);
 
       } catch (err) {
         console.error('[通关页] 初始化失败', err);
@@ -1212,8 +1214,9 @@
       document.getElementById('team-section').style.display = 'block';
     }
 
-    // 预备小组颁奖（先填好内容、不显示；撒花后由 revealAward 揭晓）
-    function prepareAwardSection(level, teamName, players, urlMap) {
+    // 预备颁奖（先填好内容、不显示；撒花后由 revealAward 揭晓）
+    // 单人 + 多人都颁奖：多人显示队名 + 全体头像；单人显示「你」、无头像排。
+    function prepareAwardSection(level, isMulti, teamName, players, urlMap) {
       // 奖名 / 奖图：没配走内置默认（默认奖名「通关纪念奖」+ 默认奖杯 🏆）
       const awardName = (level && (level.groupAwardName || '').trim()) || '通关纪念奖';
       const awardImg  = level && level.groupAwardImage ? level.groupAwardImage : null;
@@ -1222,17 +1225,21 @@
       emblem.innerHTML = '';
       if (awardImg) {
         const img = document.createElement('img');
-        img.src = awardImg; img.alt = '小组奖';
+        img.src = awardImg; img.alt = '通关奖';
         emblem.appendChild(img);
       } else {
         emblem.textContent = '🏆';  // 内置默认奖杯
       }
 
+      // 多人显示队名，单人显示「你」
+      const winner = isMulti ? teamName : '你';
       document.getElementById('award-text').innerHTML =
-        `🎉 <b>${esc(teamName)}</b> 获得 <b>【${esc(awardName)}】</b>！`;
+        `🎉 <b>${esc(winner)}</b> 获得 <b>【${esc(awardName)}】</b>！`;
 
-      // 奖图下方再放一排全体头像，呼应「人人有份」
-      renderAvatarRow(document.getElementById('award-avatars'), players, urlMap);
+      // 多人在奖图下方放一排全体头像呼应「人人有份」；单人无头像排
+      const awardAvatars = document.getElementById('award-avatars');
+      if (isMulti) renderAvatarRow(awardAvatars, players, urlMap);
+      else         awardAvatars.innerHTML = '';
     }
 
     // 揭晓小组奖：显示颁奖区 + 加动画类（scale + 渐显）
