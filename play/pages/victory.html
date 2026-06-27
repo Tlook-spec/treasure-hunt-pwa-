@@ -77,6 +77,13 @@
     .award-emblem img {
       width: 110px; height: 110px; object-fit: contain; border-radius: 14px;
     }
+    /* 结局故事文案（移进颁奖卡：奖图下方、获奖文字上方）*/
+    .award-ending-story {
+      font-size: 17px; line-height: 1.8;
+      color: var(--color-text, #52402D);
+      white-space: pre-wrap; text-align: center;
+      margin: 0 0 14px;
+    }
     .award-text {
       font-size: 19px; font-weight: 800; color: var(--color-text, #52402D);
       line-height: 1.5; margin-bottom: 14px;
@@ -236,31 +243,21 @@
   <!-- 主内容（init 完成后才显示，避免闪烁空页）-->
   <main class="page-content has-bottom-action" id="main-content" style="display:none">
 
-    <!-- 通关大标题 -->
+    <!-- 通关大标题（奖杯 icon 已移除）-->
     <div class="victory-hero">
-      <div class="victory-trophy">🏆</div>
       <h1 class="victory-title">通关啦！</h1>
       <p class="victory-level-name" id="victory-level-name"></p>
     </div>
 
-    <!-- V1-29 队伍展示（仅多人 session.players 非空时 JS 显示；单人维持现状不显示）-->
-    <div id="team-section" style="display:none">
-      <div class="team-name-banner" id="team-name-banner"></div>
-      <div class="team-avatars" id="team-avatars"></div>
-    </div>
-
-    <!-- V1-29 小组颁奖（仅多人；撒花后 JS 揭晓，scale+渐显动画）-->
+    <!-- 颁奖卡（单人+多人都显示；撒花后 JS 揭晓，scale+渐显动画）
+         卡内顺序：奖图 → 结局故事文案 → 获奖文字（队名/你）→ 头像（仅多人）-->
     <div id="award-section" style="display:none">
       <div class="award-card">
         <div class="award-emblem" id="award-emblem"></div>
+        <p class="award-ending-story" id="award-ending-story" style="display:none"></p>
         <p class="award-text" id="award-text"></p>
         <div class="team-avatars" id="award-avatars"></div>
       </div>
-    </div>
-
-    <!-- 结局故事（endingStory 非空时显示，JS 控制）-->
-    <div id="ending-story-section" class="ending-story-section" style="display:none">
-      <p id="ending-story-text" class="story-text"></p>
     </div>
 
     <!-- 成绩卡：3 格独立框（图标在上、数字、标签）-->
@@ -401,10 +398,11 @@
         document.getElementById('victory-level-name').textContent = levelName;
 
         // 结局故事（非空才显示）
+        // 结局故事：移进颁奖卡内（奖图下方、获奖文字上方），随颁奖一起揭晓
         const endingStory = level ? (level.endingStory || '') : '';
         if (endingStory) {
-          document.getElementById('ending-story-text').textContent = endingStory;
-          document.getElementById('ending-story-section').style.display = 'block';
+          document.getElementById('award-ending-story').textContent   = endingStory;
+          document.getElementById('award-ending-story').style.display = 'block';
         }
 
         // ④ 计算成绩（遍历全部站、全部题）
@@ -474,8 +472,7 @@
         const teamName = (session.teamName || '').trim() || '我们队';
         let avatarUrls = new Map();
         if (isMulti) {
-          avatarUrls = await loadAvatarUrls(players);        // 头像 blob → objectURL
-          renderTeamSection(teamName, players, avatarUrls);  // 队名 + 头像（页面靠上）
+          avatarUrls = await loadAvatarUrls(players);        // 头像 blob → objectURL（颁奖卡内用）
         }
         prepareAwardSection(level, isMulti, teamName, players, avatarUrls); // 预备奖，先不显示
 
@@ -1205,13 +1202,6 @@
         const url = p.avatarPhotoId ? (urlMap.get(p.avatarPhotoId) || null) : null;
         container.appendChild(buildAvatarChip(p, url));
       }
-    }
-
-    // 队伍展示：队名 + 一排头像（页面靠上）
-    function renderTeamSection(teamName, players, urlMap) {
-      document.getElementById('team-name-banner').textContent = `🚩 ${teamName}`;
-      renderAvatarRow(document.getElementById('team-avatars'), players, urlMap);
-      document.getElementById('team-section').style.display = 'block';
     }
 
     // 预备颁奖（先填好内容、不显示；撒花后由 revealAward 揭晓）

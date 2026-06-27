@@ -12,4 +12,4 @@
 export const APP_VERSION = 'V1';
 
 // 推送标识：格式「任务号 · 日期」，每次推 GitHub 前更新这一行
-export const BUILD_TAG = '封面裁剪位置+单人也颁奖 · 2026-06-27';
+export const BUILD_TAG = '通关页布局调整 · 2026-06-27';
