@@ -98,7 +98,7 @@
       list.innerHTML = cards.map(({ level, pointCount, lastPlayText, icon }) => `
         <div class="level-card">
           <div class="level-icon">${level.coverImage
-            ? `<img src="${level.coverImage}" alt="" style="width:60px;height:60px;border-radius:12px;object-fit:cover;display:block;margin:0 auto">`
+            ? `<img src="${level.coverImage}" alt="" style="width:60px;height:60px;border-radius:12px;object-fit:cover;object-position:${level.coverPosition || '50% 50%'};display:block;margin:0 auto">`
             : icon}</div>
           <div class="level-body">
             <div class="level-name">${esc(level.name)}</div>

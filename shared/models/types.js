@@ -25,6 +25,7 @@
  * @property {string} recommendedAge          - 推荐年龄段，如 "7-9"
  * @property {string} themeColor             - 主题色，如 "#4A90E2"（仅 admin 端卡片色标，游戏端不读）
  * @property {string|null} coverImage  - 探险封面图 base64（V1，长边≤800）默认 null，空走默认 emoji 图标
+ * @property {string} coverPosition  - 封面裁剪位置 object-position，如 "50% 30%"，默认 "50% 50%"（admin 滑块调，play 列表/开始页套用）
  *
  * --- 以下字段 MVP 预留，UI 不显示，V1 启用 ---
  * @property {string} openingStory     - 开场故事文本（V1）默认 ""

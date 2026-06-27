@@ -30,6 +30,8 @@ let currentColor           = THEME_COLORS[0]; // 表单当前选中的主题色
 let editingLevelId         = null;             // null=新建，有值=编辑
 let currentMapImage        = null;             // base64 压缩后的地图底图，null=未上传
 let currentCoverImage      = null;             // base64 压缩后的封面图，null=未上传
+let currentCoverPosX       = 50;               // 封面裁剪横向位置 0-100（object-position X%）
+let currentCoverPosY       = 50;               // 封面裁剪纵向位置 0-100（object-position Y%）
 let currentGroupAwardImage = null;             // base64 压缩后的小组奖图，null=未上传（V1-28）
 
 // ── 入口 ────────────────────────────────────────────────────
@@ -182,11 +184,13 @@ function bindFormButtons() {
     hideMapPreview();
   });
 
-  // 封面图：选图后压缩（长边 ≤800px，JPEG 0.8）并显示预览
+  // 封面图：选图后压缩（长边 ≤800px，JPEG 0.8）并显示预览（新图默认居中）
   document.getElementById('input-cover-image').addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     currentCoverImage = await compressMapImage(file, 800);
+    currentCoverPosX = 50;
+    currentCoverPosY = 50;
     showCoverPreview(currentCoverImage);
   });
 
@@ -195,6 +199,16 @@ function bindFormButtons() {
     currentCoverImage = null;
     document.getElementById('input-cover-image').value = '';
     hideCoverPreview();
+  });
+
+  // 封面裁剪位置滑块：实时更新两个预览的 object-position
+  document.getElementById('cover-pos-x').addEventListener('input', (e) => {
+    currentCoverPosX = parseInt(e.target.value, 10);
+    applyCoverPos();
+  });
+  document.getElementById('cover-pos-y').addEventListener('input', (e) => {
+    currentCoverPosY = parseInt(e.target.value, 10);
+    applyCoverPos();
   });
 
   // 小组奖图（V1-28）：选图后压缩（长边 ≤800px，JPEG 0.8）并显示预览
@@ -289,8 +303,9 @@ async function saveForm() {
     recommendedPlayerCount:   parseInt(document.getElementById('select-player-count').value),
     recommendedAge:           document.getElementById('select-age-group').value,
     themeColor:               currentColor,
-    // 探险封面图（孩子端列表/开始页展示，可空）
+    // 探险封面图（孩子端列表/开始页展示，可空）+ 裁剪位置（object-position）
     coverImage:               currentCoverImage,
+    coverPosition:            `${currentCoverPosX}% ${currentCoverPosY}%`,
     // 探险地图字段（新建和编辑共用，从表单读取）
     mapImage:                 currentMapImage,
     mapFontSize:              document.querySelector('input[name="map-font-size"]:checked')?.value || 'medium',
@@ -477,30 +492,55 @@ function hideMapPreview() {
 
 // ── 封面图区域辅助函数 ─────────────────────────────────────
 
-/** 新建表单时清空封面图 */
+/** 新建表单时清空封面图 + 裁剪位置归中 */
 function resetCoverSection() {
   currentCoverImage = null;
+  currentCoverPosX = 50;
+  currentCoverPosY = 50;
   document.getElementById('input-cover-image').value = '';
   hideCoverPreview();
 }
 
-/** 编辑表单时把封面图填入 UI（老数据无此字段 → 空） */
+/** 编辑表单时把封面图 + 裁剪位置填入 UI（老数据无此字段 → 居中） */
 function loadCoverSection(level) {
   currentCoverImage = level.coverImage || null;
+  const pos = parseCoverPosition(level.coverPosition); // 老数据无 → 50/50
+  currentCoverPosX = pos.x;
+  currentCoverPosY = pos.y;
   if (currentCoverImage) showCoverPreview(currentCoverImage);
   else hideCoverPreview();
 }
 
-/** 显示封面缩略图 + 「移除」按钮 */
+/** 把 "X% Y%" 解析成 {x,y} 数字，非法/缺失回退 50/50 */
+function parseCoverPosition(str) {
+  const m = String(str || '').match(/(\d+)%\s+(\d+)%/);
+  if (!m) return { x: 50, y: 50 };
+  const clamp = n => Math.max(0, Math.min(100, isNaN(n) ? 50 : n));
+  return { x: clamp(+m[1]), y: clamp(+m[2]) };
+}
+
+/** 显示两个裁剪预览 + 滑块 + 「移除」按钮，并套用当前裁剪位置 */
 function showCoverPreview(base64) {
-  document.getElementById('cover-preview-img').src = base64;
+  document.getElementById('cover-preview-banner').src = base64;
+  document.getElementById('cover-preview-thumb').src  = base64;
+  document.getElementById('cover-pos-x').value = currentCoverPosX;
+  document.getElementById('cover-pos-y').value = currentCoverPosY;
+  applyCoverPos();
   document.getElementById('cover-preview-container').style.display = 'block';
   document.getElementById('btn-remove-cover').style.display = 'inline-flex';
 }
 
+/** 把当前裁剪位置套到两个预览图的 object-position 上 */
+function applyCoverPos() {
+  const pos = `${currentCoverPosX}% ${currentCoverPosY}%`;
+  document.getElementById('cover-preview-banner').style.objectPosition = pos;
+  document.getElementById('cover-preview-thumb').style.objectPosition  = pos;
+}
+
 /** 隐藏封面预览并清空 src */
 function hideCoverPreview() {
-  document.getElementById('cover-preview-img').src = '';
+  document.getElementById('cover-preview-banner').src = '';
+  document.getElementById('cover-preview-thumb').src  = '';
   document.getElementById('cover-preview-container').style.display = 'none';
   document.getElementById('btn-remove-cover').style.display = 'none';
 }

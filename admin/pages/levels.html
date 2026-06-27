@@ -208,9 +208,35 @@
                   class="btn btn-secondary btn-sm" style="display:none">🗑️ 移除封面</button>
         </div>
         <div id="cover-preview-container" style="display:none;margin-top:8px">
-          <img id="cover-preview-img"
-               style="width:160px;height:90px;border-radius:8px;
-                      border:1px solid var(--color-border);object-fit:cover;display:block">
+          <!-- 两个实时裁剪预览：开始页横幅 + 列表方块缩略图 -->
+          <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
+            <div>
+              <div style="font-size:11px;color:var(--color-text-muted);margin-bottom:3px">开始页横幅</div>
+              <img id="cover-preview-banner"
+                   style="width:200px;height:112px;border-radius:8px;
+                          border:1px solid var(--color-border);object-fit:cover;display:block">
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--color-text-muted);margin-bottom:3px">列表缩略图</div>
+              <img id="cover-preview-thumb"
+                   style="width:60px;height:60px;border-radius:12px;
+                          border:1px solid var(--color-border);object-fit:cover;display:block">
+            </div>
+          </div>
+          <!-- 裁剪位置滑块（横向 / 纵向）-->
+          <div style="margin-top:10px;max-width:340px">
+            <label style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--color-text-muted)">
+              <span style="width:28px;flex-shrink:0">横向</span>
+              <input type="range" id="cover-pos-x" min="0" max="100" value="50" style="flex:1">
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--color-text-muted);margin-top:8px">
+              <span style="width:28px;flex-shrink:0">纵向</span>
+              <input type="range" id="cover-pos-y" min="0" max="100" value="50" style="flex:1">
+            </label>
+            <p style="font-size:11px;color:var(--color-text-muted);margin:8px 0 0;line-height:1.5">
+              拖动滑块调整裁剪位置，让重要的部分（比如人脸）留在两个框里。
+            </p>
+          </div>
         </div>
       </div>
 
@@ -490,6 +516,6 @@
 </div>
 
 <script type="module">
-  import { initLevelsPage } from './scripts/level-form.js?v=V1-28';
+  import { initLevelsPage } from './scripts/level-form.js?v=V1-31';
   initLevelsPage();
 </script>

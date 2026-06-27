@@ -12,4 +12,4 @@
 export const APP_VERSION = 'V1';
 
 // 推送标识：格式「任务号 · 日期」，每次推 GitHub 前更新这一行
-export const BUILD_TAG = 'play-清理孤儿照片按钮 · 2026-06-27';
+export const BUILD_TAG = '封面裁剪位置 · 2026-06-27';

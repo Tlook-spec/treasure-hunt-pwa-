@@ -329,7 +329,9 @@
 
       // 顶部：有封面图显示横幅（名字叠图上）；否则用 emoji 概览
       if (level.coverImage) {
-        document.getElementById('cover-banner-img').src = level.coverImage;
+        const bannerImg = document.getElementById('cover-banner-img');
+        bannerImg.src = level.coverImage;
+        bannerImg.style.objectPosition = level.coverPosition || '50% 50%'; // 裁剪位置（admin 配）
         document.getElementById('cover-banner-name').textContent = level.name;
         document.getElementById('cover-banner').style.display = '';
         document.getElementById('level-overview').style.display = 'none';

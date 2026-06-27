@@ -1069,6 +1069,7 @@ db.version(1).stores({
   recommendedAge: "7-9",
   themeColor: "#4A90E2",         // admin 端 L1 主题色(用于卡片色条),与游戏端全局配色无关
   coverImage: null,              // V1(2026-06-25)封面图 base64(长边 ≤800)或 null,空=用默认 emoji 图标;孩子端探险列表/开始页展示
+  coverPosition: "50% 50%",      // V1(2026-06-27)封面裁剪位置 object-position,admin 滑块调,play 列表缩略图/开始页横幅套用,避免人脸被裁掉
   
   // ============ 以下字段 MVP 数据模型预留,UI 不显示 ============
   // V1 启用故事背景:
