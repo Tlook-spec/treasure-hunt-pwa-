@@ -79,6 +79,19 @@
       </div>
     </div>
     <div class="form-group">
+      <label class="form-label" for="input-point-code">
+        二维码数字码
+        <span style="font-size:12px;font-weight:400;color:var(--color-text-muted)">
+          （6 位数字，默认自动生成；想复用之前打印好的二维码，把上面的码填进来即可）
+        </span>
+      </label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="input-point-code" class="form-input" type="text"
+               inputmode="numeric" maxlength="6" placeholder="000000" style="max-width:140px">
+        <button id="btn-regen-point-code" type="button" class="btn btn-secondary btn-sm">🔀 随机生成</button>
+      </div>
+    </div>
+    <div class="form-group">
       <label class="form-label" for="input-point-parent-note">家长备忘</label>
       <textarea id="input-point-parent-note" class="form-textarea"
                 placeholder="如「贴在凉亭东侧第三根柱子上」" maxlength="200"></textarea>
@@ -212,8 +225,11 @@
           <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
             <div>
               <div style="font-size:11px;color:var(--color-text-muted);margin-bottom:3px">开始页横幅</div>
+              <!-- 比例需贴近孩子端真实横幅（calc(100% - 32px) 宽 × 170px 高，iPad 上约 3.5:1，
+                   很扁很宽）。之前用 200x112(1.786:1) 太方，纵向裁剪空间几乎为零，
+                   导致纵向滑块看起来像没反应——实际是预览框比例和真实横幅差太多。 -->
               <img id="cover-preview-banner"
-                   style="width:200px;height:112px;border-radius:8px;
+                   style="width:200px;height:56px;border-radius:8px;
                           border:1px solid var(--color-border);object-fit:cover;display:block">
             </div>
             <div>

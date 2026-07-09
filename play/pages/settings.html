@@ -133,6 +133,25 @@
 
     </div>
 
+    <!-- ====== 区块 B2：在线更新（云同步，替代 AirDrop）====== -->
+    <div class="stats-card">
+      <div class="stats-section-title">☁️ 在线更新</div>
+      <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:10px">
+        家长在电脑上「发布到云端」之后，这里粘贴一次 Gist ID（只需一次），
+        以后每次点「检查云端更新」就能直接拉取最新数据，不用再传文件。
+      </p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <input id="input-play-gist-id" type="text" placeholder="粘贴家长给的 Gist ID"
+               style="flex:1;min-width:160px;padding:10px 12px;border-radius:8px;
+                      border:1px solid #ddd;font-size:14px">
+      </div>
+      <button class="btn-primary" id="btn-gist-update" style="background:#3FAEB8">
+        🔄 检查云端更新
+      </button>
+      <div id="gist-update-result" style="display:none;margin-top:10px;padding:12px 14px;
+           border-radius:10px;font-size:14px;line-height:1.6"></div>
+    </div>
+
     <!-- ====== 区块 C：存储维护（清理游玩垃圾）====== -->
     <div class="stats-card">
       <div class="stats-section-title">🧹 存储维护</div>
@@ -477,6 +496,94 @@
         showSingleResult('❌ 导入失败：' + escHtml(err.message), true);
       } finally {
         setSingleBusy(false);
+      }
+    });
+
+    // ====== 区块 B2：在线更新（云同步，替代 AirDrop）======
+    // Gist 是「不公开列出」的 Secret Gist，读取不需要 token，只要知道 ID 就能拉取。
+    const GIST_ID_KEY = 'play-gist-id';
+    const inputGistId  = document.getElementById('input-play-gist-id');
+    const btnGistUpdate = document.getElementById('btn-gist-update');
+
+    inputGistId.value = localStorage.getItem(GIST_ID_KEY) || '';
+
+    function showGistResult(html, isError) {
+      const el = document.getElementById('gist-update-result');
+      el.style.display = 'block';
+      el.style.background = isError ? '#fdecea' : '#eafaf1';
+      el.style.border     = isError ? '1px solid #f5c6cb' : '1px solid #a9dfbf';
+      el.style.color      = isError ? '#721c24' : '#1a5c38';
+      el.innerHTML = html;
+    }
+
+    btnGistUpdate.addEventListener('click', async () => {
+      const gistId = inputGistId.value.trim();
+      if (!gistId) {
+        showGistResult('请先粘贴家长给的 Gist ID。', true);
+        inputGistId.focus();
+        return;
+      }
+      localStorage.setItem(GIST_ID_KEY, gistId);
+
+      btnGistUpdate.disabled = true;
+      btnGistUpdate.textContent = '⏳ 检查中…';
+      document.getElementById('gist-update-result').style.display = 'none';
+
+      try {
+        const resp = await fetch(`https://api.github.com/gists/${encodeURIComponent(gistId)}`, {
+          headers: { 'Accept': 'application/vnd.github+json' },
+        });
+        if (!resp.ok) {
+          if (resp.status === 404) throw new Error('找不到这个 Gist，请检查 ID 是否粘贴正确');
+          throw new Error(`网络请求失败（状态码 ${resp.status}）`);
+        }
+        const gist = await resp.json();
+        const file = Object.values(gist.files || {})[0];
+        if (!file) throw new Error('这个 Gist 里没有文件');
+
+        // 超过 1MB GitHub 会截断内容，需要再从 raw_url 单独取完整内容
+        const text = file.truncated
+          ? await (await fetch(file.raw_url)).text()
+          : file.content;
+
+        const result = validateJson(text);
+        if (!result.ok) throw new Error(result.error);
+        if (result.exportType !== 'full') throw new Error('云端文件格式不是整库备份，无法在线更新');
+
+        const { data } = result;
+
+        const inProgress = await db.sessions.where('status').equals('in_progress').toArray();
+        if (inProgress.length > 0) {
+          const go = await showConfirm(
+            '检测到正在进行中的游戏，更新会清除进度，确定吗？',
+            '确定更新',
+            true
+          );
+          if (!go) { btnGistUpdate.disabled = false; btnGistUpdate.textContent = '🔄 检查云端更新'; return; }
+        }
+
+        const confirmed = await showConfirm(
+          `将拉取云端最新数据：${data.levels.length} 个探险、${data.points.length} 个点位、` +
+          `${data.questions.length} 道题目，并替换当前所有数据。\n\n这个操作无法撤销，确定吗？`,
+          '确定更新',
+          true
+        );
+        if (!confirmed) return;
+
+        await db.sessions.clear();
+        await importFull(db, data);
+        localStorage.setItem('lastImportAt', String(Date.now()));
+        showGistResult(
+          `✅ 已更新到最新数据：${data.levels.length} 个探险、${data.questions.length} 道题目`,
+          false
+        );
+        renderStats();
+      } catch (err) {
+        console.error('[设置] 在线更新失败', err);
+        showGistResult('❌ ' + escHtml(err.message), true);
+      } finally {
+        btnGistUpdate.disabled = false;
+        btnGistUpdate.textContent = '🔄 检查云端更新';
       }
     });
 

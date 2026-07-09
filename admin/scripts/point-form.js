@@ -69,6 +69,17 @@ export function initPointForm() {
   document.getElementById('question-picker-modal')
     .addEventListener('click', e => { if (e.target === e.currentTarget) closePicker(); });
 
+  // 数字码：只允许输入数字，最多 6 位
+  document.getElementById('input-point-code').addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6);
+  });
+
+  // 「随机生成」按钮：换一个本探险内唯一的新码
+  document.getElementById('btn-regen-point-code').addEventListener('click', async () => {
+    const codesInLevel = await getExistingCodesInLevel(currentLevelId, currentPointId);
+    document.getElementById('input-point-code').value = generateUniqueCode(codesInLevel);
+  });
+
   // QR 预览弹窗
   document.getElementById('btn-preview-qr').addEventListener('click', openQrPreview);
   document.getElementById('btn-qr-close').addEventListener('click', closeQrModal);
@@ -123,6 +134,7 @@ export async function showPointForm(levelId, pointId) {
     document.getElementById('input-question-intro-text').value    = pt.questionIntroText || '';
     document.getElementById('input-completion-text').value        = pt.completionText || '';
     document.getElementById('input-location-hint').value          = pt.locationHint || '';
+    document.getElementById('input-point-code').value              = pt.code;
     currentQuestionIds = [...(pt.questionIds || [])];
     // 提示图片（老数据无此字段 → null）
     currentHintImage = pt.hintImage || null;
@@ -140,6 +152,9 @@ export async function showPointForm(levelId, pointId) {
     document.getElementById('input-question-intro-text').value    = '';
     document.getElementById('input-completion-text').value        = '';
     document.getElementById('input-location-hint').value          = '';
+    // 新建：预填一个本探险内唯一的随机码，家长想复用旧二维码可直接改这里
+    const codesInLevel = await getExistingCodesInLevel(levelId, null);
+    document.getElementById('input-point-code').value = generateUniqueCode(codesInLevel);
     currentQuestionIds = [];
     // 新建：清空提示图片
     currentHintImage = null;
@@ -175,8 +190,23 @@ async function savePointForm() {
     return;
   }
 
+  // 数字码：必须是 6 位数字，且在本探险内唯一（跨探险允许重复，方便复用打印好的二维码）
+  const code = document.getElementById('input-point-code').value.trim();
+  if (!/^\d{6}$/.test(code)) {
+    alert('二维码数字码必须是 6 位数字！');
+    document.getElementById('input-point-code').focus();
+    return;
+  }
+  const codesInLevel = await getExistingCodesInLevel(currentLevelId, currentPointId);
+  if (codesInLevel.includes(code)) {
+    alert('这个数字码已经被本探险内其他点位使用了，请换一个（可点「🔀 随机生成」）');
+    document.getElementById('input-point-code').focus();
+    return;
+  }
+
   const fields = {
     name,
+    code,
     parentNote:         document.getElementById('input-point-parent-note').value.trim(),
     discoveryText:      document.getElementById('input-discovery-text').value.trim(),
     questionIntroText:  document.getElementById('input-question-intro-text').value.trim(),
@@ -187,15 +217,10 @@ async function savePointForm() {
   };
 
   if (currentPointId) {
-    // 编辑：更新可变字段（order 和 code 不变）
+    // 编辑：更新可变字段（order 不变，code 现在允许改）
     await db.points.update(currentPointId, fields);
   } else {
-    // 新建：生成 ID + 不重复的 6 位码 + 计算 order
-    const allCodes  = await db.points.orderBy('code').keys();
-    let code;
-    do { code = generateSixDigitCode(); }
-    while (!isCodeUnique(code, [...allCodes]));
-
+    // 新建：生成 ID + 计算 order（code 已在 fields 里，来自表单）
     const existing  = await db.points.where('levelId').equals(currentLevelId).sortBy('order');
     const order     = existing.length > 0 ? existing[existing.length - 1].order + 1 : 1;
 
@@ -203,10 +228,9 @@ async function savePointForm() {
       id:      generateId('pt'),
       levelId: currentLevelId,
       order,
-      code,
       mapX:    null,  // V1 地图坐标，默认 null
       mapY:    null,
-      ...fields,      // questionIntroText / completionText 已在 fields 里
+      ...fields,      // code / questionIntroText / completionText 已在 fields 里
     });
   }
 
@@ -216,6 +240,28 @@ async function savePointForm() {
   // 通知 point-list.js 刷新列表
   document.dispatchEvent(new CustomEvent('point-saved', { detail: { levelId: currentLevelId } }));
   goBackToDetail();
+}
+
+// ── 数字码辅助函数 ───────────────────────────────────────
+
+/**
+ * 取本探险内「其他」点位已占用的数字码（当前编辑的点位自己不算占用）。
+ * 唯一性范围收窄到探险内，允许不同探险复用同一批打印好的二维码。
+ * @param {string} levelId
+ * @param {string|null} excludePointId - 编辑中的点位 ID，新建传 null
+ * @returns {Promise<string[]>}
+ */
+async function getExistingCodesInLevel(levelId, excludePointId) {
+  const points = await db.points.where('levelId').equals(levelId).toArray();
+  return points.filter(pt => pt.id !== excludePointId).map(pt => pt.code);
+}
+
+/** 生成一个不在 existingCodes 里的 6 位数字码 */
+function generateUniqueCode(existingCodes) {
+  let code;
+  do { code = generateSixDigitCode(); }
+  while (!isCodeUnique(code, existingCodes));
+  return code;
 }
 
 // ── 题目绑定列表 ─────────────────────────────────────────

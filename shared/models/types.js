@@ -60,8 +60,8 @@
  * @property {string}   code           - 6 位数字字符串，用于扫码和手动输入
  *
  * --- 以下字段 MVP 预留，UI 不显示，V1 启用 ---
- * @property {number|null} mapX              - 地图 X 坐标（百分比，V1）默认 null
- * @property {number|null} mapY              - 地图 Y 坐标（百分比，V1）默认 null
+ * @property {number|null} mapX              - 地图 X 坐标（0~1 小数，admin 端 clamp01 存储，渲染时 ×100 转百分比，V1）默认 null
+ * @property {number|null} mapY              - 地图 Y 坐标（0~1 小数，admin 端 clamp01 存储，渲染时 ×100 转百分比，V1）默认 null
  * @property {string}      questionIntroText - 答题引导文案（V1）默认 ""
  * @property {string}      completionText    - L2 通关庆祝文案（V1）默认 ""
  * @property {string|null} hintImage         - 「找下一站」提示页图片 base64（V1，长边≤800）默认 null，空=不显示
@@ -88,7 +88,7 @@
  * @property {string}      explanation    - 答对后解析，可为空字符串
  * @property {string|null} imagePath      - 选项插图路径（V1）默认 null
  *
- * @property {number}      usedCount      - 被绑定到 L2 的次数（只增不减）
+ * @property {number}      usedCount      - 字段已遗留（历史存量值，不再维护）；使用次数改为实时扫描 Point.questionIds 计算，见 CLAUDE.md 规则 14
  */
 
 // ============================================================

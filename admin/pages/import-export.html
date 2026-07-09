@@ -94,6 +94,41 @@
   </div>
 </div>
 
+<!-- ── 区块 D：发布到云端（Secret Gist）──────────────────── -->
+<div class="detail-section">
+  <div class="detail-section-title">☁️ 发布到云端（替代 AirDrop）</div>
+  <p style="font-size:14px;color:var(--color-text-muted);margin-bottom:var(--space-sm);line-height:1.7">
+    把整库数据发布到 GitHub 的一个「Secret Gist」（不公开列出，别人不知道网址就看不到），
+    iPad 端在「设置」页填一次 Gist ID，之后点一下就能拉取最新数据，不用再传文件。
+  </p>
+
+  <div style="background:#f0f7ff;border:1px solid #b3d4f7;border-radius:10px;
+              padding:12px 16px;margin-bottom:var(--space-sm);
+              font-size:13px;color:#2C3E50;line-height:1.8">
+    <strong>只需设置一次：</strong><br>
+    1. 打开 <code>github.com/settings/tokens?type=beta</code> → 「Generate new token」<br>
+    2. Repository access 选「No access」（不需要仓库权限），Permissions 里只勾 <strong>Gists → Read and write</strong><br>
+    3. 生成后复制那串 token，粘贴到下面「GitHub Token」框（只存在你这台电脑的浏览器里，不会上传）
+  </div>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label class="form-label" for="input-gist-token">GitHub Token</label>
+      <input id="input-gist-token" class="form-input" type="password"
+             placeholder="ghp_ 开头的一串字符" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="input-gist-id">
+        Gist ID <span style="font-weight:400;color:var(--color-text-muted)">（第一次发布留空，发布后自动生成）</span>
+      </label>
+      <input id="input-gist-id" class="form-input" type="text" placeholder="留空 = 新建">
+    </div>
+  </div>
+
+  <button id="btn-gist-publish" class="btn btn-primary">☁️ 发布到云端</button>
+  <div id="gist-publish-status" style="margin-top:var(--space-sm)"></div>
+</div>
+
 <!-- ── 确认替换弹窗 ───────────────────────────────────── -->
 <div id="import-confirm-modal" class="modal-overlay hidden">
   <div class="modal-box" style="max-width:420px">
@@ -451,4 +486,97 @@
     d.textContent = str;
     return d.innerHTML;
   }
+</script>
+
+<!-- ── 区块 D 脚本：发布到云端（Secret Gist）──────────────── -->
+<script type="module">
+  import db from '../shared/db/admin-db.js';
+  import { exportFull } from '../shared/utils/json-io.js';
+
+  const GIST_FILENAME = 'treasure-hunt-data.json';
+  const TOKEN_KEY = 'th-admin-gist-token';
+  const GIST_ID_KEY = 'th-admin-gist-id';
+
+  const tokenInput  = document.getElementById('input-gist-token');
+  const gistIdInput = document.getElementById('input-gist-id');
+  const btnPublish  = document.getElementById('btn-gist-publish');
+  const statusEl    = document.getElementById('gist-publish-status');
+
+  // 回填上次保存的 token / gist id（token 只存在本机浏览器 localStorage）
+  tokenInput.value  = localStorage.getItem(TOKEN_KEY) || '';
+  gistIdInput.value = localStorage.getItem(GIST_ID_KEY) || '';
+
+  function showGistStatus(html, kind) {
+    // kind: 'ok' | 'error' | 'info'
+    const colors = { ok: '#1a5c38', error: '#721c24', info: '#2C3E50' };
+    const bg     = { ok: '#eafaf1', error: '#fdecea', info: '#f0f7ff' };
+    statusEl.innerHTML = html;
+    statusEl.style.color      = colors[kind] || colors.info;
+    statusEl.style.background = bg[kind] || bg.info;
+    statusEl.style.border     = '1px solid ' + (kind === 'error' ? '#f5c6cb' : kind === 'ok' ? '#a9dfbf' : '#b3d4f7');
+    statusEl.style.borderRadius = '10px';
+    statusEl.style.padding    = '12px 16px';
+    statusEl.style.fontSize   = '14px';
+    statusEl.style.lineHeight = '1.7';
+  }
+
+  btnPublish.addEventListener('click', async () => {
+    const token  = tokenInput.value.trim();
+    let gistId   = gistIdInput.value.trim();
+
+    if (!token) {
+      showGistStatus('请先填写 GitHub Token（见上方说明）。', 'error');
+      tokenInput.focus();
+      return;
+    }
+
+    localStorage.setItem(TOKEN_KEY, token);
+
+    btnPublish.disabled = true;
+    btnPublish.textContent = '☁️ 发布中…';
+
+    try {
+      const json = await exportFull(db);
+      const body = {
+        description: '寻宝游戏数据（请勿删除，游戏端靠它同步）',
+        public: false, // Secret Gist：不在个人主页列出，只有知道链接/ID 的人能看
+        files: { [GIST_FILENAME]: { content: json } },
+      };
+
+      const url    = gistId ? `https://api.github.com/gists/${gistId}` : 'https://api.github.com/gists';
+      const method = gistId ? 'PATCH' : 'POST';
+
+      const resp = await fetch(url, {
+        method,
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github+json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!resp.ok) {
+        if (resp.status === 401) throw new Error('Token 无效或已过期，请重新生成一个（记得勾选 Gists 读写权限）');
+        if (resp.status === 404) throw new Error('这个 Gist ID 找不到了，可能已被删除。清空 Gist ID 框后重新发布会新建一个');
+        throw new Error(`GitHub 返回错误（状态码 ${resp.status}）`);
+      }
+
+      const result = await resp.json();
+      gistId = result.id;
+      gistIdInput.value = gistId;
+      localStorage.setItem(GIST_ID_KEY, gistId);
+
+      showGistStatus(
+        `✅ 发布成功！<br>
+         <strong>Gist ID：<code>${escapeHtml(gistId)}</code></strong><br>
+         <span style="font-size:13px">第一次发布的话，把这个 ID 告诉 iPad（在游戏端「设置」页粘贴一次即可，之后每次发布不用再改）。</span>`,
+        'ok'
+      );
+    } catch (err) {
+      showGistStatus('❌ 发布失败：' + escapeHtml(err.message), 'error');
+    } finally {
+      btnPublish.disabled = false;
+      btnPublish.textContent = '☁️ 发布到云端';
+    }
+  });
 </script>

@@ -24,21 +24,22 @@ export async function resolveCode(code, sessionId) {
   const { levelId, currentPointIndex } = session;
   const currentStationNumber = currentPointIndex + 1; // 1-based
 
-  // 按码查点位
-  const scannedPoint = await db.points.where('code').equals(code).first();
-  if (!scannedPoint || scannedPoint.levelId !== levelId) {
-    // 码查不到，或属于其他探险
-    return { status: 'not-found', currentStationNumber };
-  }
-
-  // 取本探险所有点位（order 升序），找到当前应扫的那个
-  // ⚠️ 不用 order === currentPointIndex：order 可能从 1 开始，直接比会差一位
+  // 先取本探险所有点位（order 升序），再在其中按码匹配。
+  // ⚠️ 不能直接全库按码查（db.points.where('code')）：不同探险允许复用同一个数字码
+  // （方案 A，二维码打印件可跨探险重复使用），全库查会把别的探险的码也当成匹配。
   const allPoints = await db.points
     .where('levelId').equals(levelId)
     .sortBy('order');
 
   const currentPoint = allPoints[currentPointIndex];
   if (!currentPoint) throw new Error('点位数据异常，请重新导入探险数据');
+
+  // ⚠️ 不用 order === currentPointIndex：order 可能从 1 开始，直接比会差一位
+  const scannedPoint = allPoints.find(pt => pt.code === code);
+  if (!scannedPoint) {
+    // 这个码不属于本探险任何点位
+    return { status: 'not-found', currentStationNumber };
+  }
 
   if (scannedPoint.id === currentPoint.id) {
     return { status: 'correct', currentStationNumber };
