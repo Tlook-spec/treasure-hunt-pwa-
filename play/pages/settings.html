@@ -32,9 +32,79 @@
     }
     .pref-toggle input:checked + .pref-toggle-knob { background: #E0772F; }
     .pref-toggle input:checked + .pref-toggle-knob::before { transform: translateX(22px); }
+
+    /* ── 访问锁遮罩（有密码时挡住整个设置页，防止孩子误入乱点）── */
+    .settings-lock {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #F4EAD5; /* 暖米底，不透明，完全挡住页面 */
+      display: flex; align-items: center; justify-content: center; padding: 24px;
+    }
+    .lock-box {
+      background: #FDF8EE; border: 1.5px solid #ece1c4; border-radius: 18px;
+      padding: 28px 22px; width: 100%; max-width: 340px; text-align: center;
+      box-shadow: 0 4px 20px rgba(120,100,60,0.12);
+    }
+    .lock-icon { font-size: 44px; }
+    .lock-title { font-size: 22px; font-weight: 800; color: #52402D; margin: 6px 0 4px; }
+    .lock-desc { font-size: 14px; color: #8a7a5c; margin: 0 0 14px; line-height: 1.6; }
+    .lock-input, .pwd-input {
+      width: 100%; padding: 14px; font-size: 16px; /* ≥16px 防 iOS 聚焦放大 */
+      border: 1.5px solid #ece1c4; border-radius: 12px; background: #fffdf6;
+      color: #52402D; box-sizing: border-box;
+    }
+    .lock-input { text-align: center; margin-bottom: 10px; }
+    .lock-error { color: #c0392b; font-size: 13px; min-height: 18px; margin-bottom: 6px; }
+    .lock-btn-primary {
+      width: 100%; padding: 14px; font-size: 17px; font-weight: 700;
+      color: #fff; background: #E0772F; border: none; border-radius: 12px; cursor: pointer;
+    }
+    .lock-btn-primary:active { opacity: .85; }
+    .lock-links { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+    .lock-link, .lock-link-btn {
+      font-size: 14px; color: #3FAEB8; background: none; border: none;
+      cursor: pointer; text-decoration: none; padding: 4px;
+    }
+    .lock-recovery { margin-top: 18px; padding-top: 16px; border-top: 1px solid #ece1c4; }
+    .lock-math { font-size: 26px; font-weight: 800; color: #52402D; margin: 8px 0 12px; letter-spacing: 1px; }
   </style>
 </head>
 <body>
+
+  <!-- 访问锁遮罩：默认显示，若没设过密码由下方内联脚本立刻隐藏（避免锁屏闪现） -->
+  <div id="settings-lock" class="settings-lock">
+    <div class="lock-box">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-title">设置已上锁</div>
+      <p class="lock-desc">请输入密码进入设置页</p>
+      <input type="password" id="lock-input" class="lock-input"
+             placeholder="输入密码" autocomplete="off">
+      <div id="lock-error" class="lock-error"></div>
+      <button id="lock-unlock-btn" class="lock-btn-primary">解锁</button>
+      <div class="lock-links">
+        <a href="../index.html" class="lock-link">← 返回游戏</a>
+        <button type="button" id="lock-forgot-btn" class="lock-link-btn">忘记密码？</button>
+      </div>
+
+      <!-- 忘记密码 → 家长验证（算术题，证明是大人在操作，答对即可重设密码）-->
+      <div id="lock-recovery" class="lock-recovery" style="display:none">
+        <p class="lock-desc" style="margin-bottom:6px">为确认是家长在操作，请算出：</p>
+        <div class="lock-math" id="lock-math-q">— × — = ?</div>
+        <input type="number" id="lock-math-input" class="lock-input"
+               inputmode="numeric" placeholder="算出的答案" autocomplete="off">
+        <div id="lock-math-error" class="lock-error"></div>
+        <button id="lock-math-btn" class="lock-btn-primary">验证并重设密码</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    // 没设过密码 → 不上锁，立刻隐藏遮罩（同步执行，在下方模块脚本加载前完成，避免闪现锁屏）
+    (function () {
+      if (!localStorage.getItem('play-settings-pwd')) {
+        var el = document.getElementById('settings-lock');
+        if (el) el.style.display = 'none';
+      }
+    })();
+  </script>
 
   <!-- 顶部返回栏 -->
   <header class="page-header">
@@ -164,6 +234,30 @@
       </button>
       <div id="clean-result" style="display:none;margin-top:10px;padding:12px 14px;
            border-radius:10px;font-size:14px;line-height:1.6;background:#EAF5F4;color:#2C3E50"></div>
+    </div>
+
+    <!-- ====== 区块 D：访问密码（防止孩子误入设置乱改数据）====== -->
+    <div class="stats-card">
+      <div class="stats-section-title" id="pwd-section-title">🔒 设置访问密码</div>
+      <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:12px">
+        设置密码后，进入本设置页要先输密码，防止孩子误入乱改数据。
+        忘记密码时，可在锁屏点「忘记密码？」做一道算术题（家长验证）来重设。
+      </p>
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:260px">
+        <input type="password" id="pwd-current" class="pwd-input"
+               placeholder="当前密码" autocomplete="off" style="display:none">
+        <input type="password" id="pwd-new" class="pwd-input"
+               placeholder="新密码（至少 4 位）" autocomplete="off">
+        <input type="password" id="pwd-confirm" class="pwd-input"
+               placeholder="再输一次新密码" autocomplete="off">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+        <button class="btn-primary" id="pwd-save-btn" style="background:#E0772F">设置密码</button>
+        <button class="btn-primary" id="pwd-remove-btn"
+                style="background:#999;display:none">取消密码保护</button>
+      </div>
+      <div id="pwd-result" style="display:none;margin-top:10px;padding:10px 14px;
+           border-radius:10px;font-size:14px;line-height:1.6"></div>
     </div>
 
     <!-- ====== 同步传输教学 ====== -->
@@ -502,6 +596,7 @@
     // ====== 区块 B2：在线更新（云同步，替代 AirDrop）======
     // Gist 是「不公开列出」的 Secret Gist，读取不需要 token，只要知道 ID 就能拉取。
     const GIST_ID_KEY = 'play-gist-id';
+    const GIST_FILENAME = 'treasure-hunt-data.json'; // admin 发布时固定用这个文件名
     const inputGistId  = document.getElementById('input-play-gist-id');
     const btnGistUpdate = document.getElementById('btn-gist-update');
 
@@ -538,16 +633,30 @@
           throw new Error(`网络请求失败（状态码 ${resp.status}）`);
         }
         const gist = await resp.json();
-        const file = Object.values(gist.files || {})[0];
-        if (!file) throw new Error('这个 Gist 里没有文件');
+        const files = Object.values(gist.files || {});
+        if (!files.length) throw new Error('这个 Gist 里没有文件');
 
-        // 超过 1MB GitHub 会截断内容，需要再从 raw_url 单独取完整内容
-        const text = file.truncated
-          ? await (await fetch(file.raw_url)).text()
-          : file.content;
+        // 选对文件：优先我们发布的数据文件，其次任意 .json，最后退回第一个。
+        // （家长若曾手动建 Gist 占位，里面可能混着别的文件，不能盲目取第一个）
+        const file = files.find(f => f.filename === GIST_FILENAME)
+                  || files.find(f => (f.filename || '').toLowerCase().endsWith('.json'))
+                  || files[0];
+
+        // 一律从 raw_url 取完整内容：含图片的整库 JSON 常超过 1MB，
+        // GitHub 会把 API 里的 content 截断成半截字符串（→ 解析失败），raw_url 不受此限。
+        let text;
+        try {
+          text = await (await fetch(file.raw_url)).text();
+        } catch {
+          text = file.content || ''; // raw_url 万一取不到，退回 API content
+        }
+        text = text.replace(/^﻿/, '').trim(); // 去掉可能的 BOM / 首尾空白
 
         const result = validateJson(text);
-        if (!result.ok) throw new Error(result.error);
+        if (!result.ok) {
+          console.error('[设置] 云端内容无法解析，前 200 字符：', text.slice(0, 200));
+          throw new Error(result.error);
+        }
         if (result.exportType !== 'full') throw new Error('云端文件格式不是整库备份，无法在线更新');
 
         const { data } = result;
@@ -707,6 +816,115 @@
     togglePinyin.addEventListener('change', () => {
       localStorage.setItem('play-show-pinyin', togglePinyin.checked ? 'on' : 'off');
     });
+
+    // ====== 区块 D + 访问锁：设置 / 修改 / 找回 密码 ======
+    // 目的：防止孩子误入设置页乱改数据。这不是高强度安全（本地存储，能开发者工具绕过），
+    // 只是挡住小孩。密码存 localStorage 的轻量哈希；忘记密码用「算术题」证明是家长在操作后重设。
+    const PWD_KEY = 'play-settings-pwd';
+    let recoveryMode = false; // 走「忘记密码」验证进来后，允许不填当前密码直接重设
+
+    // 轻量字符串哈希（djb2），不存明文即可，非加密级
+    function hashPwd(s) {
+      let h = 5381;
+      for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0;
+      return String(h);
+    }
+    function hasPwd()      { return !!localStorage.getItem(PWD_KEY); }
+    function checkPwd(s)   { return hashPwd(s) === localStorage.getItem(PWD_KEY); }
+
+    // ── 锁屏解锁 ──
+    const lockEl = document.getElementById('settings-lock');
+    function unlockPage() { lockEl.style.display = 'none'; }
+
+    document.getElementById('lock-unlock-btn').addEventListener('click', () => {
+      const errEl = document.getElementById('lock-error');
+      if (checkPwd(document.getElementById('lock-input').value)) { errEl.textContent = ''; unlockPage(); }
+      else errEl.textContent = '密码不对，再试一次';
+    });
+    document.getElementById('lock-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('lock-unlock-btn').click();
+    });
+
+    // ── 忘记密码 → 家长算术验证 ──
+    let mathAnswer = 0;
+    function newMathQuestion() {
+      const a = 12 + Math.floor(Math.random() * 78); // 12–89
+      const b = 12 + Math.floor(Math.random() * 78);
+      mathAnswer = a * b;
+      document.getElementById('lock-math-q').textContent = `${a} × ${b} = ?`;
+    }
+    document.getElementById('lock-forgot-btn').addEventListener('click', () => {
+      const rec = document.getElementById('lock-recovery');
+      const show = rec.style.display === 'none';
+      rec.style.display = show ? 'block' : 'none';
+      if (show) newMathQuestion();
+    });
+    document.getElementById('lock-math-btn').addEventListener('click', () => {
+      const errEl = document.getElementById('lock-math-error');
+      const v = parseInt(document.getElementById('lock-math-input').value, 10);
+      if (v === mathAnswer) {
+        recoveryMode = true;   // 允许不填当前密码直接重设
+        unlockPage();
+        renderPwdSection();
+        setTimeout(() => {
+          showPwdResult('✅ 家长验证通过，请在下方设置新密码', false);
+          document.getElementById('pwd-new').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      } else {
+        errEl.textContent = '答案不对，请再算一次';
+        document.getElementById('lock-math-input').value = '';
+        newMathQuestion();
+      }
+    });
+
+    // ── 页内设置 / 修改 / 取消密码 ──
+    const pwdCurrent   = document.getElementById('pwd-current');
+    const pwdNew       = document.getElementById('pwd-new');
+    const pwdConfirm   = document.getElementById('pwd-confirm');
+    const pwdRemoveBtn = document.getElementById('pwd-remove-btn');
+
+    function showPwdResult(msg, isError) {
+      const el = document.getElementById('pwd-result');
+      el.style.display = 'block';
+      el.style.background = isError ? '#fdecea' : '#eafaf1';
+      el.style.border     = isError ? '1px solid #f5c6cb' : '1px solid #a9dfbf';
+      el.style.color      = isError ? '#721c24' : '#1a5c38';
+      el.textContent = msg;
+    }
+
+    // 按当前状态切换文案 + 「当前密码」框/「取消保护」按钮的显隐
+    function renderPwdSection() {
+      const showCurrent = hasPwd() && !recoveryMode; // 已设密码且非找回模式才要验证当前密码
+      pwdCurrent.style.display   = showCurrent ? 'block' : 'none';
+      pwdRemoveBtn.style.display = showCurrent ? 'inline-block' : 'none';
+      document.getElementById('pwd-section-title').textContent =
+        !hasPwd() ? '🔒 设置访问密码' : (recoveryMode ? '🔒 重设访问密码' : '🔒 修改访问密码');
+      document.getElementById('pwd-save-btn').textContent =
+        !hasPwd() ? '设置密码' : (recoveryMode ? '重设密码' : '修改密码');
+    }
+
+    document.getElementById('pwd-save-btn').addEventListener('click', () => {
+      const cur = pwdCurrent.value, nw = pwdNew.value, cf = pwdConfirm.value;
+      if (hasPwd() && !recoveryMode && !checkPwd(cur)) { showPwdResult('❌ 当前密码不对', true); return; }
+      if (!nw)            { showPwdResult('❌ 新密码不能为空', true); return; }
+      if (nw.length < 4)  { showPwdResult('❌ 密码至少 4 位', true); return; }
+      if (nw !== cf)      { showPwdResult('❌ 两次输入的新密码不一致', true); return; }
+      localStorage.setItem(PWD_KEY, hashPwd(nw));
+      recoveryMode = false;
+      pwdCurrent.value = pwdNew.value = pwdConfirm.value = '';
+      renderPwdSection();
+      showPwdResult('✅ 密码已保存，下次进入设置页需要输入', false);
+    });
+
+    pwdRemoveBtn.addEventListener('click', () => {
+      if (!checkPwd(pwdCurrent.value)) { showPwdResult('❌ 请先在「当前密码」填对密码，再取消保护', true); return; }
+      localStorage.removeItem(PWD_KEY);
+      pwdCurrent.value = pwdNew.value = pwdConfirm.value = '';
+      renderPwdSection();
+      showPwdResult('✅ 已取消密码保护', false);
+    });
+
+    renderPwdSection();
 
   </script>
 
