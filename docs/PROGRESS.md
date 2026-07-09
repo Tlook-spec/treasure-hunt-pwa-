@@ -18,6 +18,7 @@
 - 2026-06-27：**封面图裁剪位置**（V1-31 联调反馈）——admin 封面区加横向/纵向滑块 + 双预览（横幅/方块），存 `Level.coverPosition`（object-position），play 列表缩略图/开始页横幅套用，避免人脸被裁掉（CACHE_VERSION **v2.32**，level-form.js?v=V1-31）
 - 2026-06-27：**单人通关也颁奖**（V1-31 联调反馈）——之前小组奖仅多人显示，现单人通关也显示同一枚奖「🎉 你 获得【奖名】！」（无队名/头像排），多人维持队名+头像；victory.html prepareAwardSection 单人/多人共用（CACHE_VERSION **v2.33**）
 - 2026-06-27：**通关页布局调整**（V1-31 联调反馈）——① 去掉「通关啦」上方的 🏆 ② 删掉颁奖卡上方重复的队名+队员展示区 ③ 结局故事文案移进颁奖卡（奖图下方、获奖文字上方）（CACHE_VERSION **v2.34**）
+- 2026-07-09：**二维码跨探险复用 + 云同步 + 三处 UI 修复**（本次会话，commit `1c570fe`，main/release 已同步推送）：二维码方案 A（v2.36）、Secret Gist 云同步（v2.37）、admin 封面纵向滑块 + 海报合影顶部偏向裁剪 + 队名输入框样式（v2.38）。详见下方「本次会话新增」
 - （更早 2026-06-24：v2.26 含 V1-21~25）
 
 **本次（2026-06-25）随 V1-27 一起发版的「非编号」UI 改动**：
@@ -28,7 +29,7 @@
 - 答题进度+总分条、过关「本站得分」、通关 3 格 + 海报暖白化
 - 修复：未到标记不显示站名、手动输码绿勾完整覆盖、地图 FAB 暖白底
 
-**本次会话新增（非编号，尚未 git 提交/发版，代码已在 main 工作区）**：
+**本次会话新增（非编号，已提交并双推 main/release，commit `1c570fe`，2026-07-09）**：
 - **二维码跨探险复用**（方案 A）：admin 点位表单数字码从「全库自动生成不可改」改为「可编辑，默认自动生成」，唯一性检查收窄到「同一探险内」；play 端 `resolveCode` 改为「先定位本探险点位，再按码匹配」，修掉了旧逻辑潜在的跨探险撞码 bug。家长可把打印好的二维码在新探险里手填复用，环保不用重印。CACHE_VERSION **v2.36**。测试清单：`docs/test-checklists/二维码跨探险复用.md`
 - **云同步（Secret Gist，替代 AirDrop）**：admin 端「导入导出」页新增「☁️ 发布到云端」，用 GitHub Personal Access Token 把整库 JSON 发布/更新到一个 Secret Gist；play 端「设置」页新增「☁️ 在线更新」，粘贴 Gist ID（无需 token）即可拉取最新数据并走现有 validateJson+importFull 流程。CACHE_VERSION **v2.37**。⚠️ 成功路径需真实 GitHub token 才能完整验证，本次只验证了报错路径，**首次使用请务必按测试清单走一遍成功路径**。测试清单：`docs/test-checklists/云同步-SecretGist.md`
 - 同时修正两处过期文档：CLAUDE.md §8 状态同步到 V1-30 已完成；`shared/models/types.js` 里 mapX/mapY 注释（百分比→0~1 小数）、usedCount 注释（只增不减→实时计算已遗留）
