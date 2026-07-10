@@ -133,29 +133,31 @@
       background: #fffdf6;
       color: var(--color-text, #5c5240);
     }
+    /* 两个队员信息并列一行（2 列网格），卡片内元素相应缩小紧凑 */
     .player-cards-container {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
     }
     /* 单张队员卡：暖白底 + 淡棕边 */
     .player-card {
       background: #fffdf6;
       border: 1.5px solid #ece1c4;
-      border-radius: 16px;
-      padding: 14px;
+      border-radius: 14px;
+      padding: 10px;
+      min-width: 0; /* 网格子项默认 min-width:auto 会撑破列宽，需显式清零 */
     }
     .player-card-main {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 8px;
     }
     /* 头像方块（圆角方形，点按拍照）*/
     .player-avatar-box { position: relative; flex-shrink: 0; }
     .player-avatar-tap {
       display: block;
-      width: 76px; height: 76px;
-      border-radius: 16px;
+      width: 52px; height: 52px;
+      border-radius: 12px;
       overflow: hidden;
       cursor: pointer;
       position: relative;
@@ -163,58 +165,58 @@
     .avatar-fallback {
       width: 100%; height: 100%;
       display: flex; align-items: center; justify-content: center;
-      color: #fff; font-size: 30px; font-weight: 800;
-      border-radius: 16px;
+      color: #fff; font-size: 20px; font-weight: 800;
+      border-radius: 12px;
     }
     .avatar-photo {
-      width: 100%; height: 100%; object-fit: cover; border-radius: 16px;
+      width: 100%; height: 100%; object-fit: cover; border-radius: 12px;
     }
     .avatar-cam-badge {
-      position: absolute; right: 4px; bottom: 4px;
-      width: 22px; height: 22px; border-radius: 50%;
-      background: rgba(0,0,0,0.45); color: #fff; font-size: 12px;
+      position: absolute; right: 2px; bottom: 2px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: rgba(0,0,0,0.45); color: #fff; font-size: 9px;
       display: flex; align-items: center; justify-content: center;
     }
     .avatar-del-btn {
       position: absolute; top: -6px; right: -6px;
-      width: 24px; height: 24px; border-radius: 50%;
+      width: 18px; height: 18px; border-radius: 50%;
       border: 2px solid #fff; background: #E74C3C; color: #fff;
-      font-size: 13px; font-weight: 700; cursor: pointer; padding: 0;
+      font-size: 10px; font-weight: 700; cursor: pointer; padding: 0;
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 1px 4px rgba(0,0,0,0.3);
     }
     /* 右侧：编号 + 名字 */
-    .player-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-    .player-num-row { display: flex; align-items: center; gap: 6px; }
+    .player-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+    .player-num-row { display: flex; align-items: center; gap: 4px; }
     .player-num-input {
-      width: 52px; text-align: center;
-      font-size: 16px; font-weight: 700;
-      padding: 6px 4px; border-radius: 8px;
+      width: 38px; text-align: center;
+      font-size: 15px; font-weight: 700;
+      padding: 4px 2px; border-radius: 7px;
       border: 1.5px solid #ddd; box-sizing: border-box;
     }
-    .player-num-suffix { font-size: 14px; color: var(--color-text-muted, #888); font-weight: 600; }
+    .player-num-suffix { font-size: 11px; color: var(--color-text-muted, #888); font-weight: 600; }
     .player-name-input {
-      width: 100%; font-size: 17px; font-weight: 600;
-      padding: 8px 10px; border-radius: 8px;
+      width: 100%; font-size: 16px; font-weight: 600;
+      padding: 6px 8px; border-radius: 7px;
       border: 1.5px solid #ddd; box-sizing: border-box;
     }
     /* 颜色行（名字下方，选中打勾）*/
     .player-color-row {
-      margin-top: 12px;
-      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      margin-top: 8px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
     }
-    .player-color-label { font-size: 13px; color: var(--color-text-muted, #888); }
-    .color-swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+    .player-color-label { font-size: 11px; color: var(--color-text-muted, #888); }
+    .color-swatches { display: flex; gap: 5px; flex-wrap: wrap; }
     .color-swatch {
-      width: 32px; height: 32px; border-radius: 50%;
+      width: 22px; height: 22px; border-radius: 50%;
       cursor: pointer; border: 2px solid #fff;
       box-shadow: 0 0 0 1.5px rgba(0,0,0,0.12);
       box-sizing: border-box; transition: transform 0.1s;
       display: flex; align-items: center; justify-content: center;
-      color: #fff; font-size: 16px; font-weight: 800;
+      color: #fff; font-size: 11px; font-weight: 800;
     }
     .color-swatch.selected {
-      box-shadow: 0 0 0 2.5px #5c5240;
+      box-shadow: 0 0 0 2px #5c5240;
       transform: scale(1.12);
     }
   </style>

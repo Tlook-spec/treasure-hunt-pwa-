@@ -218,12 +218,38 @@
       80%  { transform: scale(1); }
       100% { opacity: 1; transform: scale(1); }
     }
+
+    /* ====== 扫码成功：全屏闪光 + 星星迸发（约 0.5 秒，增加找到站点的爽感）====== */
+    #scan-flash {
+      position: fixed; inset: 0; z-index: 500; pointer-events: none;
+      background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(232,180,60,0.35) 45%, rgba(232,180,60,0) 75%);
+      opacity: 0;
+    }
+    #scan-flash.active { animation: scanFlashFade 0.5s ease-out forwards; }
+    @keyframes scanFlashFade {
+      0%   { opacity: 0; }
+      12%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    .scan-sparkle {
+      position: fixed; z-index: 501; pointer-events: none;
+      font-size: 26px; opacity: 0;
+      animation: scanSparkleBurst 0.6s ease-out forwards;
+    }
+    @keyframes scanSparkleBurst {
+      0%   { opacity: 0; transform: translate(0, 0) scale(0.4); }
+      15%  { opacity: 1; }
+      100% { opacity: 0; transform: var(--sparkle-end) scale(1); }
+    }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
+
+  <!-- 扫码成功全屏闪光（默认透明不挡交互，动画时短暂出现）-->
+  <div id="scan-flash"></div>
 
   <!-- 顶部导航 -->
   <header class="scan-header">
@@ -467,6 +493,34 @@
       requestAnimationFrame(() => {
         overlay.classList.add('active');
       });
+      launchScanSparkle();
+    }
+
+    // 全屏闪光 + 一小把星星从中心迸发（约 0.5-0.6 秒，纯 CSS，自动清理）
+    function launchScanSparkle() {
+      const flash = document.getElementById('scan-flash');
+      flash.classList.remove('active');
+      void flash.offsetWidth; // 强制重排，允许连续触发动画
+      flash.classList.add('active');
+
+      const emojis = ['✨', '⭐', '🌟'];
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      const count = 10;
+      for (let i = 0; i < count; i++) {
+        const angle  = (Math.PI * 2 * i) / count + Math.random() * 0.3;
+        const dist   = 90 + Math.random() * 70;
+        const dx     = Math.cos(angle) * dist;
+        const dy     = Math.sin(angle) * dist;
+        const el = document.createElement('span');
+        el.className   = 'scan-sparkle';
+        el.textContent = emojis[i % emojis.length];
+        el.style.left  = `${cx}px`;
+        el.style.top   = `${cy}px`;
+        el.style.setProperty('--sparkle-end', `translate(${dx}px, ${dy}px)`);
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 650);
+      }
     }
 
     // ── 扫码页按钮 ──

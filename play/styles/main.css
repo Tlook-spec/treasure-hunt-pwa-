@@ -422,16 +422,16 @@ body {
   margin-bottom: var(--space-sm);
 }
 .hint-card-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-accent);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--color-text); /* 原用金色强调色，暖米底+户外强光下对比度不够，改深褐正文色 */
   margin-bottom: 6px;
   display: flex;
   align-items: center;
   gap: 4px;
 }
 .hint-card-text {
-  font-size: 20px;
+  font-size: 23px; /* 原 20px，户外太阳下找站是孩子读得最多的文字，加大更好认 */
   font-weight: 700;
   color: var(--color-text);
   line-height: 1.5;

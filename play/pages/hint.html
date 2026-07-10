@@ -15,7 +15,7 @@
     .stepper-node {
       width: 34px; height: 34px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 15px; flex-shrink: 0;
+      font-weight: 700; font-size: 18px; flex-shrink: 0;
       background: #E5DCC5; color: #B0A189;
     }
     .stepper-node.done    { background: #E8B43C; color: #fff; }
@@ -45,6 +45,11 @@
       display: block;
       width: auto; height: auto;
       max-width: 100%; max-height: 55vh;   /* 和地图默认 55vh 一致 */
+      cursor: zoom-in;
+    }
+    .hint-image-tap-hint {
+      text-align: center; font-size: 12px; color: #8a7a5c;
+      margin: 4px 0 0;
     }
   </style>
   <!-- CDN 库（普通 script，必须在 type="module" 之前）-->
@@ -74,10 +79,11 @@
       <p class="hint-card-fallback">（仔细看二维码贴在哪里）</p>
     </div>
 
-    <!-- 提示图片（point.hintImage 非空时显示）-->
+    <!-- 提示图片（point.hintImage 非空时显示，点击可放大看细节）-->
     <div id="hint-image-wrap" class="hint-image-wrap" style="display:none">
       <img id="hint-image" alt="提示图片">
     </div>
+    <p id="hint-image-tap-hint" class="hint-image-tap-hint" style="display:none">👆 点一下看大图</p>
 
     <!-- 数据加载失败时显示（默认隐藏）-->
     <div id="error-state" style="display:none;padding:32px 0;text-align:center;color:#FF9F89;font-size:17px;line-height:1.8">
@@ -200,10 +206,13 @@
         currentPoint.locationHint || '仔细看二维码贴在哪里';
       document.getElementById('hint-card').style.display = 'block';
 
-      // ── 提示图片（有 hintImage 才显示）──
+      // ── 提示图片（有 hintImage 才显示，点击可放大看细节）──
       if (currentPoint.hintImage) {
-        document.getElementById('hint-image').src = currentPoint.hintImage;
+        const imgEl = document.getElementById('hint-image');
+        imgEl.src = currentPoint.hintImage;
+        imgEl.addEventListener('click', () => openImageFullscreen(imgEl.src));
         document.getElementById('hint-image-wrap').style.display = 'block';
+        document.getElementById('hint-image-tap-hint').style.display = 'block';
       }
 
       // ── 显示扫码按钮 ──
@@ -225,7 +234,7 @@
       }
     }
 
-    // ── 站点步进条：N 个圆点连线，当前站橙色高亮 ──
+    // ── 站点步进条：藏宝图风格——已找到=💎，当前要去=📍，还没到=数字 ──
     function renderStationStepper(allPoints, currentIndex) {
       const el = document.getElementById('station-stepper');
       const track = document.createElement('div');
@@ -239,7 +248,9 @@
         const node = document.createElement('div');
         const cls = i === currentIndex ? ' current' : (i < currentIndex ? ' done' : '');
         node.className = 'stepper-node' + cls;
-        node.textContent = String(i + 1);
+        if (i < currentIndex)      node.textContent = '💎'; // 已找到的站，宝藏已收集
+        else if (i === currentIndex) node.textContent = '📍'; // 当前要去的站
+        else                        node.textContent = String(i + 1); // 还没到，仍显示第几站方便数数
         track.appendChild(node);
       });
       const label = document.createElement('div');
@@ -291,6 +302,22 @@
     document.getElementById('btn-close-map-view').addEventListener('click', () => {
       document.getElementById('map-view-overlay').style.display = 'none';
     });
+
+    // ── 提示图片全屏查看（点一下放大，方便看清局部细节找站）──
+    function openImageFullscreen(src) {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = [
+        'position:fixed', 'inset:0', 'background:rgba(0,0,0,0.92)',
+        'display:flex', 'align-items:center', 'justify-content:center',
+        'z-index:1000', 'padding:16px',
+      ].join(';');
+      const img = document.createElement('img');
+      img.src           = src;
+      img.style.cssText = 'max-width:100%;max-height:90vh;object-fit:contain;border-radius:8px;';
+      overlay.appendChild(img);
+      overlay.addEventListener('click', () => overlay.remove());
+      document.body.appendChild(overlay);
+    }
 
     function showError() {
       document.getElementById('hint-card').style.display   = 'none';
