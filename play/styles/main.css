@@ -2,25 +2,27 @@
    游戏端公用样式 — 来自 docs/design-tokens.md */
 
 /* ======== 设计令牌 ======== */
+/* 方案 A「羊皮纸藏宝图」配色（2026-07-15 换肤，源自 claude.ai/design 儿童寻宝探险游戏 方案A）*/
 :root {
-  /* V0 暖色配色：橙主色 + 青绿次色 + 金强调 + 米底（OKLCH 的 sRGB 近似）*/
-  --color-primary:        #E0772F;   /* 探险橙：按钮/强调 */
-  --color-primary-dark:   #C2651F;   /* 按钮按下 */
-  --color-primary-light:  #EA9A63;
-  --color-secondary:      #3FAEB8;   /* 海洋青：顶部条/次要强调 */
-  --color-secondary-dark: #359AA3;
-  --color-accent:         #E8B43C;   /* 宝藏金：提示/得分点缀 */
-  --color-success:        #3E9E6E;   /* 草绿：答对/前进 */
+  --color-primary:        #E28638;   /* 探险橙：按钮/强调（渐变中间值）*/
+  --color-primary-dark:   #DA7530;   /* 按钮渐变深端 */
+  --color-primary-light:  #EC9646;   /* 按钮渐变浅端 */
+  --color-btn-shadow:     #B85C1F;   /* 橙色按钮 3D 底阴影 */
+  --color-secondary:      #4C9A93;   /* 海洋青：徽章/点缀 */
+  --color-secondary-dark: #3A7D5C;   /* 深藏宝绿 */
+  --color-accent:         #E8A33D;   /* 宝藏金：提示/得分点缀 */
+  --color-success:        #4FAE6B;   /* 草绿：答对/完成 */
+  --color-success-dark:   #3E8A50;   /* 绿色按钮渐变深端 */
   --color-error:          #D23B2A;   /* 红：答错 */
-  --color-bg-game:        #F4EAD5;   /* 暖奶油底 */
-  --color-bg-card:        #FDF8EE;   /* 近白米卡片 */
-  --color-text:           #52402D;   /* 深褐正文 */
-  --color-text-muted:     #82664B;
-  --color-border:         #D9C9AE;
-  --radius-btn:          12px;
-  --radius-card:         16px;
-  --shadow-card:         0 2px 8px rgba(0,0,0,0.10);
-  --shadow-float:        0 4px 12px rgba(0,0,0,0.15);
+  --color-bg-game:        #FCF4DC;   /* 羊皮纸底 */
+  --color-bg-card:        #FFFFFF;   /* 白卡片 */
+  --color-text:           #3A2E22;   /* 深褐正文 */
+  --color-text-muted:     #9A7E55;   /* 淡棕辅助字 */
+  --color-border:         #EADBB5;   /* 米金边框 */
+  --radius-btn:          999px;      /* 大按钮全圆角药丸形 */
+  --radius-card:         22px;
+  --shadow-card:         0 4px 14px rgba(58,46,34,0.08);
+  --shadow-float:        0 6px 18px rgba(58,46,34,0.14);
   --space-xs: 8px;
   --space-sm: 16px;
   --space-md: 24px;
@@ -45,12 +47,12 @@ body {
   touch-action: manipulation;
 }
 
-/* ======== 页面顶栏 ======== */
+/* ======== 页面顶栏（羊皮纸同色，融入背景）======== */
 .page-header {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: #fff;
+  background: var(--color-bg-game);
   border-bottom: 1px solid var(--color-border);
   display: flex;
   align-items: center;
@@ -90,7 +92,7 @@ body {
   margin: 0 auto;
 }
 
-/* ======== 通用大按钮 ======== */
+/* ======== 通用大按钮（方案A：橙色渐变 + 3D 底阴影，按下下沉）======== */
 .btn-primary {
   display: flex;
   align-items: center;
@@ -99,27 +101,32 @@ body {
   width: 100%;
   min-height: 64px;
   padding: 0 var(--space-md);
-  background: var(--color-primary);
-  color: #fff;
+  background: linear-gradient(var(--color-primary-light), var(--color-primary-dark));
+  color: #FFF7E9;
   border: none;
   border-radius: var(--radius-btn);
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: 2px;
   cursor: pointer;
-  text-decoration: none;  
-  transition: transform 0.1s ease, background 0.1s ease;
-  box-shadow: var(--shadow-float);
+  text-decoration: none;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  box-shadow: 0 6px 0 var(--color-btn-shadow), 0 14px 22px rgba(184,92,31,0.3);
 }
 .btn-primary:active {
-  transform: scale(0.97);
-  background: var(--color-primary-dark);
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 var(--color-btn-shadow), 0 6px 12px rgba(184,92,31,0.25);
 }
 
 .btn-warning {
-  background: var(--color-accent);
+  background: linear-gradient(#F2C24F, var(--color-accent));
   color: #fff;
+  box-shadow: 0 6px 0 #C9852A, 0 14px 22px rgba(201,133,42,0.3);
 }
-.btn-warning:active { background: #CF9A28; }
+.btn-warning:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #C9852A, 0 6px 12px rgba(201,133,42,0.25);
+}
 
 /* ======== 通用卡片 ======== */
 .card {
@@ -232,8 +239,8 @@ body {
 
 /* ======== 设置页：统计卡片 ======== */
 .stats-card {
-  background: #EBF4FF;
-  border: 1px solid #C5DCF5;
+  background: var(--color-bg-card);
+  border: 2px solid var(--color-border);
   border-radius: var(--radius-card);
   padding: var(--space-sm);
   margin-bottom: var(--space-md);
@@ -415,11 +422,12 @@ body {
 
 /* ======== 提示卡片（locationHint 展示）======== */
 .hint-card {
-  background: #FFFBEA;
-  border: 2px solid var(--color-accent);
+  background: var(--color-bg-card);
+  border: 2px solid var(--color-border);
   border-radius: var(--radius-card);
-  padding: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
   margin-bottom: var(--space-sm);
+  box-shadow: var(--shadow-card);
 }
 .hint-card-label {
   font-size: 14px;
@@ -461,12 +469,16 @@ body {
   padding-bottom: 96px;
 }
 
-/* 绿色（前进/成功操作）按钮 */
+/* 绿色（前进/成功操作）按钮：绿渐变 + 3D 底阴影 */
 .btn-success {
-  background: var(--color-success);
+  background: linear-gradient(var(--color-success-dark), #2E6B3C);
   color: #fff;
+  box-shadow: 0 6px 0 #235030, 0 14px 22px rgba(46,107,60,0.3);
 }
-.btn-success:active { background: #348A5F; }
+.btn-success:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 #235030, 0 6px 12px rgba(46,107,60,0.25);
+}
 
 /* ======== 探险概览卡片（开始冒险页）======== */
 .level-overview {
@@ -700,19 +712,19 @@ body {
 .option-btn:active:not(:disabled) { transform: scale(0.96); }
 .option-btn:disabled { opacity: 0.6; cursor: default; }
 
-/* ABCD 标签：小圆圈，起引导作用 */
+/* ABCD 标签：米金圆角方块（方案A）*/
 .option-label {
   flex-shrink: 0;
-  width: 26px;
-  height: 26px;
+  width: 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #EBF4FF;
-  border-radius: 50%;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--color-primary);
+  background: #F1E2BC;
+  border-radius: 10px;
+  font-size: 17px;
+  font-weight: 800;
+  color: #8A6E3E;
   line-height: 1;
 }
 
@@ -729,9 +741,10 @@ body {
 /* 选项状态：答对 / 答错 */
 .option-correct {
   border-color: var(--color-success) !important;
-  background: #F0FFF4 !important;
+  background: #EAF6EC !important;
+  box-shadow: 0 6px 16px rgba(79,174,107,0.22) !important;
 }
-.option-correct .option-label { background: #C6F6D5; color: #2D7A2D; }
+.option-correct .option-label { background: var(--color-success); color: #fff; }
 
 .option-wrong {
   border-color: var(--color-error) !important;
@@ -980,10 +993,13 @@ body {
   animation: confetti-fall linear forwards;
 }
 
-/* ── 通关大标题区 ── */
+/* ── 通关大标题区（方案A：橙色放射庆典横幅，白字）── */
 .victory-hero {
   text-align: center;
-  padding: 20px var(--space-md) var(--space-sm);  /* 收紧上下留白 */
+  padding: 26px var(--space-md) 24px;
+  background: radial-gradient(circle at 50% 0%, #EC9646, #D9742E);
+  border-radius: 0 0 30px 30px;
+  margin: 0 calc(-1 * var(--space-sm)) var(--space-sm);  /* 抵消 page-content 左右内边距，横幅通栏 */
 }
 
 @keyframes trophy-bounce {
@@ -1000,17 +1016,18 @@ body {
 }
 
 .victory-title {
-  font-size: 34px;   /* 调小（原 42px）*/
+  font-size: 38px;
   font-weight: 900;
-  color: var(--color-primary);
-  letter-spacing: 2px;
+  color: #fff;
+  letter-spacing: 3px;
   margin-bottom: 6px;
+  text-shadow: 2px 3px 0 rgba(0,0,0,0.12);
 }
 
 .victory-level-name {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 600;
-  color: var(--color-text-muted);
+  color: #FFF1DC;
 }
 
 /* ── 成绩卡 ── */
@@ -1272,25 +1289,31 @@ body {
   overflow: hidden;
 }
 
-/* 中段题干区：贴顶部排列（不再撑满居中），字号放大 */
+/* 中段题干区：方案A 白卡片包题干（米金边框 + 橙色题号小标）*/
 .quiz-question-section {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 10px;
-  padding: 14px 0 6px;   /* 上下收窄，选项更贴近题目 */
+  gap: 8px;
+  padding: 18px 20px 16px;
+  margin-top: 10px;
+  background: var(--color-bg-card);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
 .quiz-question-section #question-meta {
-  font-size: clamp(13px, 3.5vw, 16px);
-  color: var(--color-text-muted);
+  font-size: clamp(13px, 3.5vw, 15px);
+  font-weight: 700;
+  color: #C77B3C;
   margin: 0;
 }
 .quiz-question-section #question-text {
-  font-size: clamp(24px, 7vw, 38px);
+  font-size: clamp(24px, 7vw, 36px);
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 1.45;
   margin: 0;
   color: var(--color-text);
 }

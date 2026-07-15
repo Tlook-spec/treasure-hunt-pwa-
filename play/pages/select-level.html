@@ -3,9 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#F4EAD5">
+  <meta name="theme-color" content="#FCF4DC">
   <link rel="stylesheet" href="../styles/main.css">
   <title>选择探险 - 寻宝游戏</title>
+  <style>
+    /* ── 方案A 探险列表：两列卡片网格，封面图在上 ── */
+    .level-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .level-card-a {
+      background: var(--color-bg-card, #fff);
+      border: 1px solid rgba(58,46,34,0.05);
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 6px 18px rgba(58,46,34,0.10);
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    .level-card-a:active { transform: scale(0.97); }
+    /* 封面区：有封面图显示图，无封面显示青绿渐变 + 大 emoji */
+    .level-card-a-cover {
+      height: 120px;
+      position: relative;
+      background: radial-gradient(circle at 35% 30%, #86C8C0, #3E8E86);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .level-card-a-cover img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .level-card-a-cover .cover-emoji { font-size: 52px; line-height: 1; }
+    .level-card-a-body { padding: 12px 14px 14px; }
+    .level-card-a-name {
+      font-size: 19px; font-weight: 800; color: var(--color-text, #3A2E22);
+      line-height: 1.25;
+      overflow: hidden; display: -webkit-box;
+      -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    }
+    .level-card-a-meta {
+      font-size: 12px; font-weight: 500;
+      color: var(--color-text-muted, #9A7E55);
+      margin-top: 7px;
+    }
+    .level-card-a-go {
+      margin-top: 10px;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 42px;
+      background: linear-gradient(var(--color-primary-light, #EC9646), var(--color-primary-dark, #DA7530));
+      color: #FFF7E9; font-size: 15px; font-weight: 800; letter-spacing: 2px;
+      border-radius: 999px;
+      box-shadow: 0 4px 0 var(--color-btn-shadow, #B85C1F);
+    }
+    /* 窄屏（手机竖屏）退回单列 */
+    @media (max-width: 420px) {
+      .level-grid { grid-template-columns: 1fr; }
+    }
+  </style>
   <!-- CDN 库（普通 script，必须在 type="module" 之前）-->
   <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
 </head>
@@ -95,21 +152,18 @@
         return { level, pointCount, lastPlayText, icon: pickIcon(level.id) };
       }));
 
-      list.innerHTML = cards.map(({ level, pointCount, lastPlayText, icon }) => `
-        <div class="level-card">
-          <div class="level-icon">${level.coverImage
-            ? `<img src="${level.coverImage}" alt="" style="width:60px;height:60px;border-radius:12px;object-fit:cover;object-position:${level.coverPosition || '50% 50%'};display:block;margin:0 auto">`
-            : icon}</div>
-          <div class="level-body">
-            <div class="level-name">${esc(level.name)}</div>
-            ${level.description ? `<div class="level-desc">${esc(level.description)}</div>` : ''}
-            <div class="level-meta">
-              📍 ${pointCount} 个点位 &nbsp;·&nbsp; 上次游玩：${lastPlayText}
-            </div>
+      // 方案A：两列卡片网格，封面图在上（无封面 → 青绿渐变 + 该探险的固定 emoji）
+      list.innerHTML = `<div class="level-grid">` + cards.map(({ level, pointCount, lastPlayText, icon }) => `
+        <a class="level-card-a" href="start-level.html?levelId=${encodeURIComponent(level.id)}">
+          <div class="level-card-a-cover">${level.coverImage
+            ? `<img src="${level.coverImage}" alt="" style="object-position:${level.coverPosition || '50% 50%'}">`
+            : `<span class="cover-emoji">${icon}</span>`}</div>
+          <div class="level-card-a-body">
+            <div class="level-card-a-name">${esc(level.name)}</div>
+            <div class="level-card-a-meta">📍 ${pointCount} 个站点 · ${lastPlayText === '从未游玩' ? '还没玩过' : '上次 ' + lastPlayText}</div>
+            <div class="level-card-a-go">出发 ›</div>
           </div>
-          <a href="start-level.html?levelId=${encodeURIComponent(level.id)}"
-             class="btn-start-level">开始 ▶</a>
-        </div>`).join('');
+        </a>`).join('') + `</div>`;
     }
 
     // 格式化时间戳为 YYYY-MM-DD

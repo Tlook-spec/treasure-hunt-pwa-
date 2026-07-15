@@ -12,4 +12,4 @@
 export const APP_VERSION = 'V1';
 
 // 推送标识：格式「任务号 · 日期」，每次推 GitHub 前更新这一行
-export const BUILD_TAG = '找站体验优化+多人卡片紧凑化 · 2026-07-10';
+export const BUILD_TAG = '羊皮纸藏宝图换肤(方案A) · 2026-07-15';

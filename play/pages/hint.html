@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#F4EAD5">
+  <meta name="theme-color" content="#FCF4DC">
   <link rel="stylesheet" href="../styles/main.css">
   <title>找下一站 - 寻宝游戏</title>
   <style>
@@ -16,21 +16,21 @@
       width: 34px; height: 34px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-weight: 700; font-size: 18px; flex-shrink: 0;
-      background: #E5DCC5; color: #B0A189;
+      background: #EADBB5; color: #A8956A;
     }
-    .stepper-node.done    { background: #E8B43C; color: #fff; }
+    .stepper-node.done    { background: #E8A33D; color: #fff; }
     .stepper-node.current {
-      background: #E0772F; color: #fff;
-      box-shadow: 0 2px 8px rgba(224,119,47,0.45);
+      background: var(--color-primary, #E28638); color: #fff;
+      box-shadow: 0 0 0 5px rgba(226,134,56,0.22);
     }
     .stepper-line {
       height: 4px; width: 22px; flex-shrink: 0; border-radius: 2px;
-      background: #E5DCC5;
+      background: #EADBB5;
     }
     .stepper-label {
       margin-top: 10px; text-align: center;
-      font-size: 15px; font-weight: 700; letter-spacing: 1px;
-      color: #C2651F;
+      font-size: 15px; font-weight: 700; letter-spacing: 2px;
+      color: #C09A52;
     }
     /* ── 提示图片（尺寸约束同地图：整图一屏内、不撑满、居中）── */
     .hint-image-wrap {
@@ -108,7 +108,7 @@
           style="display:none; position:fixed; right:20px; bottom:96px; z-index:100;
                  width:60px; height:60px; border-radius:50%;
                  border:1.5px solid #E0D3B0;
-                 background:#FDF8EE; font-size:26px;
+                 background:#FFFFFF; font-size:26px;
                  box-shadow:0 4px 14px rgba(0,0,0,0.35); cursor:pointer;
                  align-items:center; justify-content:center;">🗺️</button>
 

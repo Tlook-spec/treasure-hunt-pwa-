@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#F4EAD5">
+  <meta name="theme-color" content="#FCF4DC">
   <link rel="stylesheet" href="../styles/main.css">
   <title>设置 - 寻宝游戏</title>
   <!-- CDN 库（普通 script，必须在 type="module" 之前）-->
@@ -30,42 +30,42 @@
       width: 22px; height: 22px; background: #fff; border-radius: 50%;
       top: 4px; left: 4px; transition: transform 0.2s;
     }
-    .pref-toggle input:checked + .pref-toggle-knob { background: #E0772F; }
+    .pref-toggle input:checked + .pref-toggle-knob { background: linear-gradient(#EC9646, #DA7530); }
     .pref-toggle input:checked + .pref-toggle-knob::before { transform: translateX(22px); }
 
     /* ── 访问锁遮罩（有密码时挡住整个设置页，防止孩子误入乱点）── */
     .settings-lock {
       position: fixed; inset: 0; z-index: 9999;
-      background: #F4EAD5; /* 暖米底，不透明，完全挡住页面 */
+      background: #FCF4DC; /* 暖米底，不透明，完全挡住页面 */
       display: flex; align-items: center; justify-content: center; padding: 24px;
     }
     .lock-box {
-      background: #FDF8EE; border: 1.5px solid #ece1c4; border-radius: 18px;
+      background: #FFFFFF; border: 1.5px solid #EADBB5; border-radius: 18px;
       padding: 28px 22px; width: 100%; max-width: 340px; text-align: center;
       box-shadow: 0 4px 20px rgba(120,100,60,0.12);
     }
     .lock-icon { font-size: 44px; }
-    .lock-title { font-size: 22px; font-weight: 800; color: #52402D; margin: 6px 0 4px; }
+    .lock-title { font-size: 22px; font-weight: 800; color: #3A2E22; margin: 6px 0 4px; }
     .lock-desc { font-size: 14px; color: #8a7a5c; margin: 0 0 14px; line-height: 1.6; }
     .lock-input, .pwd-input {
       width: 100%; padding: 14px; font-size: 16px; /* ≥16px 防 iOS 聚焦放大 */
-      border: 1.5px solid #ece1c4; border-radius: 12px; background: #fffdf6;
-      color: #52402D; box-sizing: border-box;
+      border: 1.5px solid #EADBB5; border-radius: 12px; background: #FFFFFF;
+      color: #3A2E22; box-sizing: border-box;
     }
     .lock-input { text-align: center; margin-bottom: 10px; }
     .lock-error { color: #c0392b; font-size: 13px; min-height: 18px; margin-bottom: 6px; }
     .lock-btn-primary {
       width: 100%; padding: 14px; font-size: 17px; font-weight: 700;
-      color: #fff; background: #E0772F; border: none; border-radius: 12px; cursor: pointer;
+      color: #fff; background: linear-gradient(#EC9646, #DA7530); border: none; border-radius: 12px; cursor: pointer;
     }
     .lock-btn-primary:active { opacity: .85; }
     .lock-links { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
     .lock-link, .lock-link-btn {
-      font-size: 14px; color: #3FAEB8; background: none; border: none;
+      font-size: 14px; color: #4C9A93; background: none; border: none;
       cursor: pointer; text-decoration: none; padding: 4px;
     }
-    .lock-recovery { margin-top: 18px; padding-top: 16px; border-top: 1px solid #ece1c4; }
-    .lock-math { font-size: 26px; font-weight: 800; color: #52402D; margin: 8px 0 12px; letter-spacing: 1px; }
+    .lock-recovery { margin-top: 18px; padding-top: 16px; border-top: 1px solid #EADBB5; }
+    .lock-math { font-size: 26px; font-weight: 800; color: #3A2E22; margin: 8px 0 12px; letter-spacing: 1px; }
   </style>
 </head>
 <body>
@@ -193,7 +193,7 @@
         <input type="file" id="file-input-single" accept=".json"
                style="display:none" aria-label="选择单个探险 JSON 文件">
         <button class="btn-primary" id="btn-import-single"
-                style="background:#E0772F">
+                style="background:linear-gradient(#EC9646, #DA7530)">
           📥 追加单个探险
         </button>
         <!-- 追加导入结果提示 -->
@@ -215,7 +215,7 @@
                style="flex:1;min-width:160px;padding:10px 12px;border-radius:8px;
                       border:1px solid #ddd;font-size:14px">
       </div>
-      <button class="btn-primary" id="btn-gist-update" style="background:#3FAEB8">
+      <button class="btn-primary" id="btn-gist-update" style="background:linear-gradient(#5AAFA7, #3A7D5C)">
         🔄 检查云端更新
       </button>
       <div id="gist-update-result" style="display:none;margin-top:10px;padding:12px 14px;
@@ -229,7 +229,7 @@
         清理玩过之后用不到的旧照片（导入新数据 / 放弃存档后残留的孤儿头像、合影）。
         <strong>不会动</strong>探险、当前未完成的存档、以及还被引用的合影（孩子的纪念都在）。
       </p>
-      <button class="btn-primary" id="btn-clean-storage" style="background:#3FAEB8">
+      <button class="btn-primary" id="btn-clean-storage" style="background:linear-gradient(#5AAFA7, #3A7D5C)">
         🧹 清理游玩垃圾
       </button>
       <div id="clean-result" style="display:none;margin-top:10px;padding:12px 14px;
@@ -252,7 +252,7 @@
                placeholder="再输一次新密码" autocomplete="off">
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
-        <button class="btn-primary" id="pwd-save-btn" style="background:#E0772F">设置密码</button>
+        <button class="btn-primary" id="pwd-save-btn" style="background:linear-gradient(#EC9646, #DA7530)">设置密码</button>
         <button class="btn-primary" id="pwd-remove-btn"
                 style="background:#999;display:none">取消密码保护</button>
       </div>

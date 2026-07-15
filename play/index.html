@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#F4EAD5">
+  <meta name="theme-color" content="#FCF4DC">
   <link rel="manifest" href="manifest.json">
   <!-- iOS PWA 专属 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,22 +19,26 @@
   <script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.18.2/dist/index.js"></script>
 
   <style>
-    /* 变量从 main.css 复制，避免启动页依赖外部 CSS 文件（减少首屏等待） */
+    /* 变量从 main.css 复制，避免启动页依赖外部 CSS 文件（减少首屏等待）
+       方案A「羊皮纸藏宝图」配色 */
     :root {
-      --color-primary: #E0772F;
-      --color-primary-dark: #C2651F;
-      --color-accent: #E8B43C;
-      --color-bg-game: #F4EAD5;
-      --color-text: #52402D;
-      --color-text-muted: #82664B;
-      --radius-btn: 12px;
-      --shadow-float: 0 4px 12px rgba(0,0,0,0.15);
+      --color-primary: #E28638;
+      --color-primary-dark: #DA7530;
+      --color-primary-light: #EC9646;
+      --color-btn-shadow: #B85C1F;
+      --color-accent: #E8A33D;
+      --color-bg-game: #FCF4DC;
+      --color-text: #3A2E22;
+      --color-text-muted: #9A7E55;
+      --radius-btn: 999px;
+      --shadow-float: 0 6px 18px rgba(58,46,34,0.14);
     }
 
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      background: var(--color-bg-game);
+      /* 羊皮纸放射渐变（方案A 首屏）*/
+      background: radial-gradient(circle at 50% 32%, #FCF4DC 0%, #F3E2B9 62%, #E7CF9E 100%);
       min-height: 100vh;
       min-height: 100dvh;
       font-family: -apple-system, "PingFang SC", "Hiragino Sans GB",
@@ -61,64 +65,89 @@
       margin: 0 auto;
     }
 
-    /* ====== Logo 方块（蓝色圆角，地图 emoji 居中）====== */
-    .logo-box {
-      width: 120px;
-      height: 120px;
-      background: var(--color-primary);
-      border-radius: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 64px;
-      line-height: 1;
-      box-shadow: var(--shadow-float);
-      animation: float 3s ease-in-out infinite;
+    /* ====== 藏宝图圆徽章（方案A：青绿海面 + 岛屿 + 虚线航线 + 红X）====== */
+    .emblem {
+      position: relative;
+      width: min(58vw, 260px);
+      height: min(58vw, 260px);
+      border-radius: 50%;
+      border: 6px solid #3A2E22;
+      background: radial-gradient(circle at 38% 32%, #86C8C0, #4C9A93 78%);
+      box-shadow: inset 0 0 0 8px rgba(255,255,255,0.32),
+                  inset 0 -10px 30px rgba(0,0,0,0.18),
+                  0 16px 32px rgba(76,154,147,0.34);
+      overflow: hidden;
+      animation: float 3.5s ease-in-out infinite;
     }
+    .emblem-dashring { position: absolute; inset: 11px; border: 2px dashed rgba(255,255,255,0.5); border-radius: 50%; }
+    .emblem-isle1 { position: absolute; width: 39%; height: 29%; left: 14%; top: 27%; background: #6FA86A; border-radius: 60% 40% 55% 45%/58% 60% 40% 42%; box-shadow: inset 0 -6px 0 rgba(0,0,0,0.08); }
+    .emblem-isle2 { position: absolute; width: 29%; height: 25%; right: 13%; top: 19%; background: #7FB873; border-radius: 50% 50% 45% 55%/55% 50% 50% 45%; box-shadow: inset 0 -6px 0 rgba(0,0,0,0.08); }
+    .emblem-isle3 { position: absolute; width: 21%; height: 16%; right: 24%; bottom: 16%; background: #6FA86A; border-radius: 55% 45% 60% 40%/60% 50% 50% 40%; }
+    .emblem-route { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .emblem-start { position: absolute; left: 26%; top: 58%; width: 6%; height: 6%; border-radius: 50%; background: #FCF4DC; border: 3px solid #E8623F; }
+    .emblem-x { position: absolute; right: 19%; top: 24%; width: 10%; height: 10%; }
+    .emblem-x::before, .emblem-x::after {
+      content: ''; position: absolute; top: 42%; left: 0; width: 100%; height: 16%;
+      background: #C0392B; border-radius: 3px;
+    }
+    .emblem-x::before { transform: rotate(45deg); }
+    .emblem-x::after  { transform: rotate(-45deg); }
 
     @keyframes float {
       0%, 100% { transform: translateY(0); }
       50%       { transform: translateY(-10px); }
     }
 
-    /* ====== 文字区 ====== */
+    /* ====== 文字区（方案A 首屏排版）====== */
+    .launch-kicker {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      color: #C77B3C;
+      text-align: center;
+    }
     .launch-title {
-      font-size: 36px;
+      font-size: 44px;
       font-weight: 900;
       color: var(--color-text);
-      letter-spacing: 4px;
+      letter-spacing: 5px;
       text-align: center;
+      text-shadow: 2px 3px 0 rgba(255,255,255,0.6);
+      margin-top: -6px;
     }
 
     .launch-subtitle {
-      font-size: 16px;
-      color: var(--color-text-muted);
+      font-size: 17px;
+      font-weight: 500;
+      color: #7A6446;
       text-align: center;
       line-height: 1.5;
       margin-top: -8px;
     }
 
-    /* ====== 开始游戏按钮 ====== */
+    /* ====== 开始游戏按钮（橙渐变 3D 药丸）====== */
     .btn-start {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 10px;
       width: 100%;
-      min-height: 72px;
-      background: var(--color-primary);
-      color: #fff;
+      max-width: 340px;
+      min-height: 74px;
+      background: linear-gradient(var(--color-primary-light), var(--color-primary-dark));
+      color: #FFF7E9;
       text-decoration: none;
       border-radius: var(--radius-btn);
-      font-size: 22px;
+      font-size: 24px;
       font-weight: 800;
-      box-shadow: var(--shadow-float);
-      transition: transform 0.12s ease, background 0.12s ease;
-      margin-top: 12px;
+      letter-spacing: 4px;
+      box-shadow: 0 7px 0 var(--color-btn-shadow), 0 16px 26px rgba(184,92,31,0.35);
+      transition: transform 0.08s ease, box-shadow 0.08s ease;
+      margin-top: 14px;
     }
     .btn-start:active {
-      transform: scale(0.96);
-      background: var(--color-primary-dark);
+      transform: translateY(5px);
+      box-shadow: 0 2px 0 var(--color-btn-shadow), 0 6px 12px rgba(184,92,31,0.25);
     }
 
     /* ====== 底部设置入口（右下角，不显眼）====== */
@@ -149,12 +178,24 @@
 </head>
 <body>
 
-  <!-- 启动页主体 -->
+  <!-- 启动页主体（方案A：字标 + 大标题 + 藏宝图圆徽章 + 药丸按钮）-->
   <div class="launch-body">
-    <div class="logo-box">🗺️</div>
+    <div class="launch-kicker">T R E A S U R E&nbsp;&nbsp;H U N T</div>
     <h1 class="launch-title">寻宝游戏</h1>
-    <p class="launch-subtitle">和小伙伴一起去探险吧！</p>
-    <a href="pages/select-level.html" class="btn-start">🎮 开始游戏</a>
+    <p class="launch-subtitle">出发去寻找隐藏在身边的宝藏</p>
+    <div class="emblem">
+      <div class="emblem-dashring"></div>
+      <div class="emblem-isle1"></div>
+      <div class="emblem-isle2"></div>
+      <div class="emblem-isle3"></div>
+      <svg class="emblem-route" viewBox="0 0 260 260">
+        <path d="M72 155 Q118 104 183 82" fill="none" stroke="#E8623F"
+              stroke-width="4" stroke-dasharray="1 12" stroke-linecap="round"/>
+      </svg>
+      <div class="emblem-start"></div>
+      <div class="emblem-x"></div>
+    </div>
+    <a href="pages/select-level.html" class="btn-start">开始冒险吧</a>
     <!-- 离线准备提示：SW 未就绪时显示，就绪后隐藏；不打扰正常用户 -->
     <div id="offline-tip" style="
       display: none;

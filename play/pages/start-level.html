@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#F4EAD5">
+  <meta name="theme-color" content="#FCF4DC">
   <link rel="stylesheet" href="../styles/main.css">
   <title>开始冒险 - 寻宝游戏</title>
   <style>
@@ -24,8 +24,8 @@
 
     /* ── 通用卡片（单屏各区块）：暖白底 + 淡棕边，跟米色底拉开层次 ── */
     .white-card {
-      background: #fffdf6;
-      border: 1.5px solid #ece1c4;
+      background: #FFFFFF;
+      border: 1.5px solid #EADBB5;
       border-radius: 18px;
       box-shadow: 0 2px 10px rgba(120,100,60,0.07);
       padding: 16px;
@@ -100,8 +100,8 @@
       transition: all 0.15s;
     }
     .player-count-btn.active {
-      background: var(--color-primary, #E0772F);
-      border-color: var(--color-primary, #E0772F);
+      background: var(--color-primary, #E28638);
+      border-color: var(--color-primary, #E28638);
       color: #fff;
     }
 
@@ -110,7 +110,7 @@
       font-size: 19px;
       font-weight: 800;
       margin-bottom: 14px;
-      color: var(--color-text, #5c5240);
+      color: var(--color-text, #3A2E22);
       text-align: left;
     }
     .team-name-group {
@@ -128,10 +128,10 @@
       max-width: 100%;
       padding: 14px 14px;
       font-size: 16px; /* ≥16px 避免 iOS Safari 聚焦时自动放大 */
-      border: 1.5px solid #ece1c4;
+      border: 1.5px solid #EADBB5;
       border-radius: 12px;
-      background: #fffdf6;
-      color: var(--color-text, #5c5240);
+      background: #FFFFFF;
+      color: var(--color-text, #3A2E22);
     }
     /* 两个队员信息并列一行（2 列网格），卡片内元素相应缩小紧凑 */
     .player-cards-container {
@@ -141,8 +141,8 @@
     }
     /* 单张队员卡：暖白底 + 淡棕边 */
     .player-card {
-      background: #fffdf6;
-      border: 1.5px solid #ece1c4;
+      background: #FFFFFF;
+      border: 1.5px solid #EADBB5;
       border-radius: 14px;
       padding: 10px;
       min-width: 0; /* 网格子项默认 min-width:auto 会撑破列宽，需显式清零 */
@@ -216,7 +216,7 @@
       color: #fff; font-size: 11px; font-weight: 800;
     }
     .color-swatch.selected {
-      box-shadow: 0 0 0 2px #5c5240;
+      box-shadow: 0 0 0 2px #3A2E22;
       transform: scale(1.12);
     }
   </style>
