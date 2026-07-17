@@ -1,7 +1,8 @@
 # 知识交接文档 —— AI 工具接手开发指南
 
 > **写给谁**：任何接手本项目继续开发的 AI 编程助手（或人类开发者）。
-> **写作时间**：2026-07-14，当时项目处于 V1 D 区收官阶段（V1-31 联调中）。
+> **写作时间**：2026-07-14（最后更新 2026-07-17），当时项目处于 V1 D 区收官阶段（V1-31 联调中）。
+> **视觉现状**（2026-07-15 起）：游戏端已换成「羊皮纸方案A」皮肤（源自 claude.ai/design），配色在 `play/styles/main.css` 的 `:root`，按钮是「橙渐变 + 3D 底阴影 + 药丸圆角」；首页主视觉是图片 `play/assets/images/treasure-map.jpg`。皮肤细节见 `docs/外观微调操作文档.md` 顶部更新记录。
 > **怎么用**：先通读本文档建立全貌，再按 §2 的顺序读其他文档，然后才动代码。
 > **最重要的一句话**：这是一位**零基础家长**为自己孩子做的真实生活工具，不是技术练习。一切决策以「简单、能用、别把孩子玩的版本搞坏」为最高原则。
 
@@ -136,7 +137,7 @@ L1 探险(Level) → L2 点位(Point，1个二维码+多道题，外键 levelId)
 
 ### 5.2 标准发版节奏
 
-1. 在 `main` 上开发，改动涉及 `play/` 任何文件 → `play/service-worker.js` 的 `CACHE_VERSION` 小数 +0.01（当前已到 v2.40，实时以文件为准）
+1. 在 `main` 上开发，改动涉及 `play/` 任何文件 → `play/service-worker.js` 的 `CACHE_VERSION` 小数 +0.01（2026-07-17 已到 v2.42，**实时以文件为准**）
 2. 每次推送前更新 `shared/version.js` 的 `BUILD_TAG`（格式「改动描述 · 日期」，用户在 iPad 设置页靠它确认跑的是新版）
 3. `git push` main → dev 网站更新 → 用户/自己在 dev 验收
 4. 发给孩子：`git checkout release && git reset --hard main && git push --force-with-lease && git checkout main`（release 是纯发布镜像，没有独立提交，reset --hard 是约定做法）
@@ -185,7 +186,8 @@ L1 探险(Level) → L2 点位(Point，1个二维码+多道题，外键 levelId)
 
 ### 6.5 图片处理约定
 
-- 全部走 Canvas 压缩为 JPEG base64 直接进数据（封面/提示图/奖图长边 ≤800、地图 ≤1600、拍照 ≤1280 quality 0.7），**没有也不要引入 zip/独立文件方案**
+- **两类图分清楚**：① **用户数据图**（封面/提示图/奖图/头像/合影/地图底图）——走 Canvas 压缩成 base64 **直接进 IndexedDB / 导出 JSON**（长边 ≤800、地图 ≤1600、拍照 ≤1280，quality 0.7~0.8），**不引入 zip/独立文件方案**；② **全站共用素材图**（UI 图标、首页藏宝图插画等）——放 `play/assets/`，**不进 JSON、不占探险数据空间**，但必须**加进 `service-worker.js` 的 `PRECACHE_URLS` 并升 `CACHE_VERSION`** 才能离线可用
+- 首页主视觉是共用素材图 `play/assets/images/treasure-map.jpg`（640px/~100KB，`index.html` 里 `.treasure-map-img`）；换图流程见 `docs/外观微调操作文档.md` §1.6
 - admin 封面裁剪滑块存 `Level.coverPosition`（object-position 字符串）；**预览框比例必须贴近孩子端真实横幅**（曾因预览框太方导致纵向滑块看似失灵，2026-07-09 修为 200×56）
 - 海报合影裁剪偏顶部（`victory.html` 里 `TOP_BIAS = 0.2`），因为合影人脸在画面上半部分，纯居中会切头
 

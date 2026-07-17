@@ -65,33 +65,15 @@
       margin: 0 auto;
     }
 
-    /* ====== 藏宝图圆徽章（方案A：青绿海面 + 岛屿 + 虚线航线 + 红X）====== */
-    .emblem {
-      position: relative;
-      width: min(58vw, 260px);
-      height: min(58vw, 260px);
-      border-radius: 50%;
-      border: 6px solid #3A2E22;
-      background: radial-gradient(circle at 38% 32%, #86C8C0, #4C9A93 78%);
-      box-shadow: inset 0 0 0 8px rgba(255,255,255,0.32),
-                  inset 0 -10px 30px rgba(0,0,0,0.18),
-                  0 16px 32px rgba(76,154,147,0.34);
-      overflow: hidden;
+    /* ====== 藏宝图插画（首屏主视觉，边缘羊皮纸质感与背景自然融合）====== */
+    .treasure-map-img {
+      width: min(74vw, 340px);
+      height: auto;
+      display: block;
+      border-radius: 12px;
+      filter: drop-shadow(0 12px 24px rgba(58,46,34,0.28));
       animation: float 3.5s ease-in-out infinite;
     }
-    .emblem-dashring { position: absolute; inset: 11px; border: 2px dashed rgba(255,255,255,0.5); border-radius: 50%; }
-    .emblem-isle1 { position: absolute; width: 39%; height: 29%; left: 14%; top: 27%; background: #6FA86A; border-radius: 60% 40% 55% 45%/58% 60% 40% 42%; box-shadow: inset 0 -6px 0 rgba(0,0,0,0.08); }
-    .emblem-isle2 { position: absolute; width: 29%; height: 25%; right: 13%; top: 19%; background: #7FB873; border-radius: 50% 50% 45% 55%/55% 50% 50% 45%; box-shadow: inset 0 -6px 0 rgba(0,0,0,0.08); }
-    .emblem-isle3 { position: absolute; width: 21%; height: 16%; right: 24%; bottom: 16%; background: #6FA86A; border-radius: 55% 45% 60% 40%/60% 50% 50% 40%; }
-    .emblem-route { position: absolute; inset: 0; width: 100%; height: 100%; }
-    .emblem-start { position: absolute; left: 26%; top: 58%; width: 6%; height: 6%; border-radius: 50%; background: #FCF4DC; border: 3px solid #E8623F; }
-    .emblem-x { position: absolute; right: 19%; top: 24%; width: 10%; height: 10%; }
-    .emblem-x::before, .emblem-x::after {
-      content: ''; position: absolute; top: 42%; left: 0; width: 100%; height: 16%;
-      background: #C0392B; border-radius: 3px;
-    }
-    .emblem-x::before { transform: rotate(45deg); }
-    .emblem-x::after  { transform: rotate(-45deg); }
 
     @keyframes float {
       0%, 100% { transform: translateY(0); }
@@ -178,23 +160,12 @@
 </head>
 <body>
 
-  <!-- 启动页主体（方案A：字标 + 大标题 + 藏宝图圆徽章 + 药丸按钮）-->
+  <!-- 启动页主体（方案A：字标 + 大标题 + 藏宝图插画 + 药丸按钮）-->
   <div class="launch-body">
     <div class="launch-kicker">T R E A S U R E&nbsp;&nbsp;H U N T</div>
     <h1 class="launch-title">寻宝游戏</h1>
     <p class="launch-subtitle">出发去寻找隐藏在身边的宝藏</p>
-    <div class="emblem">
-      <div class="emblem-dashring"></div>
-      <div class="emblem-isle1"></div>
-      <div class="emblem-isle2"></div>
-      <div class="emblem-isle3"></div>
-      <svg class="emblem-route" viewBox="0 0 260 260">
-        <path d="M72 155 Q118 104 183 82" fill="none" stroke="#E8623F"
-              stroke-width="4" stroke-dasharray="1 12" stroke-linecap="round"/>
-      </svg>
-      <div class="emblem-start"></div>
-      <div class="emblem-x"></div>
-    </div>
+    <img src="assets/images/treasure-map.jpg" class="treasure-map-img" alt="藏宝图">
     <a href="pages/select-level.html" class="btn-start">开始冒险吧</a>
     <!-- 离线准备提示：SW 未就绪时显示，就绪后隐藏；不打扰正常用户 -->
     <div id="offline-tip" style="
