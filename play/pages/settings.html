@@ -625,8 +625,13 @@
       document.getElementById('gist-update-result').style.display = 'none';
 
       try {
-        const resp = await fetch(`https://api.github.com/gists/${encodeURIComponent(gistId)}`, {
+        // ⚠️ 一律加 cache-busting（?_cb=时间戳 + no-store）：GitHub 的 API 和 raw_url 都有 CDN 缓存，
+        // 不绕过的话「更新成功」但拉到的可能是上一次发布的旧 JSON。这是同步「拉到旧内容」的根因。
+        const bust = '_cb=' + Date.now();
+        const apiUrl = `https://api.github.com/gists/${encodeURIComponent(gistId)}?${bust}`;
+        const resp = await fetch(apiUrl, {
           headers: { 'Accept': 'application/vnd.github+json' },
+          cache: 'no-store',
         });
         if (!resp.ok) {
           if (resp.status === 404) throw new Error('找不到这个 Gist，请检查 ID 是否粘贴正确');
@@ -644,9 +649,11 @@
 
         // 一律从 raw_url 取完整内容：含图片的整库 JSON 常超过 1MB，
         // GitHub 会把 API 里的 content 截断成半截字符串（→ 解析失败），raw_url 不受此限。
+        // raw_url 同样加 cache-busting，避免拉到 CDN 缓存的旧版本。
         let text;
         try {
-          text = await (await fetch(file.raw_url)).text();
+          const rawUrl = file.raw_url + (file.raw_url.includes('?') ? '&' : '?') + bust;
+          text = await (await fetch(rawUrl, { cache: 'no-store' })).text();
         } catch {
           text = file.content || ''; // raw_url 万一取不到，退回 API content
         }
@@ -660,6 +667,8 @@
         if (result.exportType !== 'full') throw new Error('云端文件格式不是整库备份，无法在线更新');
 
         const { data } = result;
+        // 云端数据的「导出时间」——让用户核对拉到的是不是自己刚发布的那一次
+        const exportedStr = result.exportedAt ? formatTs(result.exportedAt) : '未知';
 
         const inProgress = await db.sessions.where('status').equals('in_progress').toArray();
         if (inProgress.length > 0) {
@@ -672,7 +681,8 @@
         }
 
         const confirmed = await showConfirm(
-          `将拉取云端最新数据：${data.levels.length} 个探险、${data.points.length} 个点位、` +
+          `📅 云端数据导出于：${exportedStr}\n（请核对这是不是你刚发布的那一次）\n\n` +
+          `将拉取：${data.levels.length} 个探险、${data.points.length} 个点位、` +
           `${data.questions.length} 道题目，并替换当前所有数据。\n\n这个操作无法撤销，确定吗？`,
           '确定更新',
           true
@@ -683,7 +693,8 @@
         await importFull(db, data);
         localStorage.setItem('lastImportAt', String(Date.now()));
         showGistResult(
-          `✅ 已更新到最新数据：${data.levels.length} 个探险、${data.questions.length} 道题目`,
+          `✅ 已更新到云端数据（导出于 ${escHtml(exportedStr)}）：` +
+          `${data.levels.length} 个探险、${data.questions.length} 道题目`,
           false
         );
         renderStats();

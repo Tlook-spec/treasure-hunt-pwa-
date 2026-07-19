@@ -117,8 +117,9 @@ export function validateJson(jsonString) {
     return { ok: false, error: '文件格式不完整（data.levels / points / questions 缺失或不是数组）' };
   }
 
-  // 返回值新增 exportType，老调用方只读 .ok/.data 不受影响
-  return { ok: true, data, exportType: envelope.exportType };
+  // 返回值新增 exportType + exportedAt，老调用方只读 .ok/.data 不受影响。
+  // exportedAt 是 admin 导出/发布时的时间戳，云同步时显示给用户核对「拉到的是不是刚发布那次」。
+  return { ok: true, data, exportType: envelope.exportType, exportedAt: envelope.exportedAt };
 }
 
 // ============================================================
